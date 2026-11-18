@@ -7,12 +7,13 @@ import { archive, catalog, issues, live, parsePlaylist, personalPlaylist, playli
 import { selectEdition } from '../editorial/edition.mjs';
 import { editionShelf } from '../editorial/shelves.mjs';
 import RadioTrack, { type OnAir } from './radio-track';
+import TastePreferences from './taste-preferences';
 
 const pages = [
   ['rotation', 'Sélection'], ['radio', 'Radios'], ['playlists', 'Playlists'],
   ['live', 'Live'], ['mix', 'Mix'], ['archive', 'Archives'], ['library', 'Ma collection'],
 ] as const;
-type Page = typeof pages[number][0];
+type Page = typeof pages[number][0] | 'preferences';
 const formatLabels: Record<Format, string> = {
   Album: 'Album', 'Radio show': 'Émission radio', Playlist: 'Playlist', 'Live session': 'Session live', Track: 'Morceau',
 };
@@ -90,9 +91,9 @@ export default function Journal() {
     const readHash = () => {
       const hash = location.hash.slice(1);
       const match = pages.find(([name]) => name === hash);
-      setPage(match?.[0] ?? 'rotation');
+      setPage(hash === 'preferences' ? hash : match?.[0] ?? 'rotation');
       setMobileOpen(false);
-      if (match) window.scrollTo({ top: 0, behavior: 'instant' });
+      if (match || hash === 'preferences') window.scrollTo({ top: 0, behavior: 'instant' });
     };
     readHash();
     window.addEventListener('hashchange', readHash);
@@ -236,7 +237,7 @@ export default function Journal() {
         <a className="brand" href="#rotation" aria-label="Accueil Bonnes Ondes"><span className="brand-disc"><Disc3 size={20} /></span>Bonnes Ondes<span className="brand-dot">.</span></a>
         <button className="menu-button icon-button" onClick={() => setMobileOpen(!mobileOpen)} aria-expanded={mobileOpen} aria-controls="main-nav" aria-label="Afficher ou masquer le menu">{mobileOpen ? <X /> : <Menu />}</button>
         <nav id="main-nav" aria-label="Navigation principale" className={mobileOpen ? 'nav-open' : ''}>
-          {pages.map(([key, label]) => <a href={'#' + key} key={key} aria-current={page === key ? 'page' : undefined}
+          {pages.map(([key, label]) => <a href={'#' + key} key={key} aria-current={page === key || (page === 'preferences' && key === 'library') ? 'page' : undefined}
             className={key === 'library' ? 'library-nav' : undefined}>
             {key === 'library' && <Bookmark size={15} />}{label}
           </a>)}
@@ -327,6 +328,7 @@ export default function Journal() {
 
       {page === 'library' && <>
         <PageHeading label="TES FAVORIS" title="Ma collection" note="Retrouve tes favoris, tes écoutes et les découvertes auxquelles tu veux revenir." />
+        <a className="text-link" href="#preferences">Modifier mon profil musical <ArrowRight size={14} /></a>
         <div className="filters library-filters">
           <label className="filter">Afficher<select value={libraryView} onChange={event => setLibraryView(event.target.value)}>
             {['Saved', 'All discoveries', 'Listened', ...reactions].map(value => <option key={value} value={value}>{viewLabels[value]}</option>)}
@@ -340,6 +342,10 @@ export default function Journal() {
           </select></label>
         </div>
         {libraryResults.length ? cards(libraryResults) : <p className="empty">{libraryView === 'Saved' && !Object.values(library.entries).some(entry => entry.saved) ? 'Utilise le marque-page d’une recommandation pour la retrouver ici.' : 'Aucune découverte ne correspond à ces filtres.'}</p>}
+      </>}
+      {page === 'preferences' && <>
+        <PageHeading title="Mon profil musical" label="PRÉFÉRENCES" note="Enregistre les artistes, radios, médias et curateurs que tu veux suivre." />
+        <TastePreferences library={library} recommendations={all} libraryReady={ready} />
       </>}
     </main>
 
