@@ -1,35 +1,49 @@
-# Rapport de découverte
+# Exemple de collecte multi-sources
 
-Collecte : 2026-11-18T12:38:46.090Z
+Exécution réelle de `npm run discover` avec le profil neutre le 2026-11-18T16:10:36.401Z.
+Le rapport a trouvé 61 candidats hors catalogue, 3 doublons et 23 pistes éditoriales.
 
-## Nouveaux candidats (12)
-
-- Floating Points w/ Hikaru Utada · NTS Radio · 2026-07-27 (diffusion) · <https://www.nts.live/shows/floating-points/episodes/floating-points-27th-july-2026> · Source <https://www.nts.live/api/v2/shows/floating-points/episodes>
-- David Wrench · NTS Radio · 2025-12-15 (diffusion) · <https://www.nts.live/shows/floating-points/episodes/floating-points-15th-december-2025> · Source <https://www.nts.live/api/v2/shows/floating-points/episodes>
-- TOM SKINNER · NTS Radio · 2025-09-22 (diffusion) · <https://www.nts.live/shows/floating-points/episodes/floating-points-tom-skinner-22nd-september-2025> · Source <https://www.nts.live/api/v2/shows/floating-points/episodes>
-- Floating Points - Closing Set @ Sunflower Sound System, Glastonbury 2025 PART 2 · NTS Radio · 2025-08-25 (diffusion) · <https://www.nts.live/shows/floating-points/episodes/floating-points-25th-august-2025> · Source <https://www.nts.live/api/v2/shows/floating-points/episodes>
-- Floating Points - Opening Set @ Sunflower Sound System, Glastonbury 2025 · NTS Radio · 2025-07-28 (diffusion) · <https://www.nts.live/shows/floating-points/episodes/floating-points-28th-july-2025> · Source <https://www.nts.live/api/v2/shows/floating-points/episodes>
-- WILLOW in the Radio 1 Live Lounge - Circles, Unconditional and 1 Thing (Amerie cover) · BBC Radio 1 · Live Lounge · 2026-11-17 · <https://www.youtube.com/watch?v=Ji7g_Bks7Xc> · Source <https://www.youtube.com/feeds/videos.xml?channel_id=UC-FQUIVQ-bZiefzBiQAa8Fw>
-- Freya Skye's flawless 'Bad Taste' in the Radio 1 Live Lounge · BBC Radio 1 · Live Lounge · 2026-11-15 · <https://www.youtube.com/watch?v=JJSPDEyxSPk> · Source <https://www.youtube.com/feeds/videos.xml?channel_id=UC-FQUIVQ-bZiefzBiQAa8Fw>
-- sly withers cover gotye's 'somebody that i used to know' for like a version · triple j · Like A Version · 2026-11-12 · <https://www.youtube.com/watch?v=MqxZSXxT8b4> · Source <https://www.youtube.com/feeds/videos.xml?channel_id=UCd2KNtfphz8HvYzM4pwtHmg>
-- sly withers cover gotye for like a version · triple j · Like A Version · 2026-11-12 · <https://www.youtube.com/watch?v=NN6SpXeyoVM> · Source <https://www.youtube.com/feeds/videos.xml?channel_id=UCd2KNtfphz8HvYzM4pwtHmg>
-- Behind Sly Withers cover of Gotye’s ‘Somebody That I Used To Know’ for Like A Version (Interview) · triple j · Like A Version · 2026-11-12 · <https://www.youtube.com/watch?v=iUg3riIIiTA> · Source <https://www.youtube.com/feeds/videos.xml?channel_id=UCd2KNtfphz8HvYzM4pwtHmg>
-- Sly Withers - 'Sick' (live for Like A Version) · triple j · Like A Version · 2026-11-12 · <https://www.youtube.com/watch?v=OAQhR41Ei6Y> · Source <https://www.youtube.com/feeds/videos.xml?channel_id=UCd2KNtfphz8HvYzM4pwtHmg>
-- Sly Withers cover Gotye’s ‘Somebody That I Used to Know’ for Like A Version · triple j · Like A Version · 2026-11-12 · <https://www.youtube.com/watch?v=R03Hzewk_yk> · Source <https://www.youtube.com/feeds/videos.xml?channel_id=UCd2KNtfphz8HvYzM4pwtHmg>
-
-## Doublons (1)
-
-- Floating Points · NTS Radio · 2026-09-21 (diffusion) · <https://www.nts.live/shows/floating-points/episodes/floating-points-21st-september-2026> · Source <https://www.nts.live/api/v2/shows/floating-points/episodes>
+| Format | Candidats hors catalogue | Dates originales à vérifier |
+| --- | ---: | ---: |
+| Album | 17 | 17 |
+| Radio show | 39 | 0 |
+| Playlist | 1 | 0 |
+| Live session | 4 | 0 |
 
 ## État des sources
 
-- NTS · Floating Points · 6 vérifié(s) · <https://www.nts.live/api/v2/shows/floating-points/episodes>
+| Source | État | Candidats avant déduplication | Pistes |
+| --- | --- | ---: | ---: |
+| [Pitchfork · Album Reviews](https://pitchfork.com/feed/feed-album-reviews/rss) | Actif | 8 | 0 |
+| [Pitchfork · Best New Albums](https://pitchfork.com/feed/reviews/best/albums/rss) | Actif | 8 | 0 |
+| [FIP · Club Jazzafip](https://radiofrance-podcast.net/podcast09/podcast_13d4ef2f-2aca-4331-949b-bc8da638d670.xml) | Actif | 8 | 0 |
+| [Radio Nova · Nova Club](https://podcasts.nova.fr/radio-nova-nova-club/feed/rss/website.xml) | Actif | 8 | 0 |
+| [NTS · Floating Points](https://www.nts.live/api/v2/shows/floating-points/episodes) | Actif | 8 | 0 |
+| [NTS · Moxie](https://www.nts.live/api/v2/shows/moxie/episodes) | Actif | 8 | 0 |
+| [NTS · Don't Trip](https://www.nts.live/api/v2/shows/dont-trip/episodes) | Actif | 8 | 0 |
+| [COLORS](https://www.youtube.com/feeds/videos.xml?channel_id=UCTiOxjxmB4RRdbGinK43LrA) | Aucun résultat | 0 | 0 |
+| [BBC Radio 1 · Live Lounge](https://www.youtube.com/feeds/videos.xml?channel_id=UC-FQUIVQ-bZiefzBiQAa8Fw) | Actif | 2 | 0 |
+| [triple j · Like A Version](https://www.youtube.com/feeds/videos.xml?channel_id=UCd2KNtfphz8HvYzM4pwtHmg) | Actif | 2 | 0 |
+| [Basique](https://www.france.tv/spectacles-et-culture/basique/) | Manuel | 0 | 0 |
+| [Bandcamp Notes](https://bandcamp.substack.com/feed) | Actif | 1 | 7 |
+| [Rhymesayers Entertainment](https://rhymesayers.com/blogs/news.atom) | Actif | 0 | 8 |
+| [Mr Bongo · Actualités](https://www.mrbongo.com/blogs/news.atom) | Actif | 0 | 8 |
+| [Mr Bongo · Sélection hebdomadaire](https://open.spotify.com/playlist/64WCJyxoGnhFHdDe6LYwNG) | Actif | 1 | 0 |
+| [Coup De Main](https://open.spotify.com/playlist/7LXauPdOlnW55FQNDWPotY) | Actif | 1 | 0 |
+| [Kasey Gelsomino](https://open.spotify.com/playlist/2IbPrDIVfPmxZF6akHnj8R) | Actif | 1 | 0 |
+| [Radio La Belle Aventure](https://www.radiolabelleaventure.com/) | Limité | 0 | 0 |
+| [FIP](https://www.radiofrance.fr/fip) | Limité | 0 | 0 |
 
-- COLORS · 0 vérifié(s) · <https://www.youtube.com/feeds/videos.xml?channel_id=UCTiOxjxmB4RRdbGinK43LrA>
+## Exemples recueillis
 
-- BBC Radio 1 · Live Lounge · 2 vérifié(s) · <https://www.youtube.com/feeds/videos.xml?channel_id=UC-FQUIVQ-bZiefzBiQAa8Fw>
+- FIP · Club Jazzafip · [L'album du Club : "I wish I was a single girl again" de Dida Pelled](https://www.radiofrance.fr/fip/podcasts/club-jazzafip/l-album-du-club-i-wish-i-was-a-single-girl-again-1308933).
+- Radio Nova · Nova Club · [Les news : Âme, Bicep, Oklou, Armand Hammer, Jeune Morty, Shygirl et plus !](https://podcasts.nova.fr/radio-nova-nova-club/202611152215-les-news-ame-bicep-oklou-armand-hammer-jeune-morty-shygirl-e).
+- Pitchfork · Album Reviews · [U, Me & My Ego (Deluxe)](https://pitchfork.com/reviews/albums/chxrry-u-me-and-my-ego-deluxe).
+- NTS Radio · [Don't Trip w/ Margarita](https://www.nts.live/shows/dont-trip/episodes/dont-trip-13th-november-2026).
+- BBC Radio 1 · Live Lounge · [Rachel Chinouriri - Pretty Girls in the Radio 1 Live Lounge](https://www.youtube.com/watch?v=sWJbOWJMJQ0).
+- Spotify · [Mr Bongo Weekly Selections](https://open.spotify.com/playlist/64WCJyxoGnhFHdDe6LYwNG).
+- Bandcamp Notes · [Hundred Pieces](https://bandcamp.substack.com/p/i-love-this-record-hundred-pieces).
+- Rhymesayers Entertainment · [Atmosphere - Good Bye Make Party](https://rhymesayers.com/blogs/news/atmosphere-good-bye-make-party).
+- Mr Bongo · Actualités · [Favourite Finds: Somewhere Soul](https://www.mrbongo.com/blogs/news/favourite-finds-somewhere-soul).
 
-- triple j · Like A Version · 5 vérifié(s) · <https://www.youtube.com/feeds/videos.xml?channel_id=UCd2KNtfphz8HvYzM4pwtHmg>
-
-
-Une candidature reste à vérifier et à sélectionner avant publication.
+Les dates des 17 pistes d’albums correspondent à la publication de leurs critiques ou chroniques. Chaque date originale reste à vérifier auprès d’une source primaire. Club Jazzafip et Nova Club couvrent les épisodes de leurs flux respectifs.

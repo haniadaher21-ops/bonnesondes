@@ -1,0 +1,151 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { discover, renderReport } from '../scripts/discovery.mjs';
+import { emptyTasteProfile, normalizeTasteProfile } from '../editorial/taste-profile.mjs';
+
+const rss = items => '<rss><channel>' + items.join('') + '</channel></rss>';
+const xmlItem = (title, url, extra = '') => '<item><title>' + title + '</title><link>' + url
+  + '</link><pubDate>Wed, 18 Nov 2026 05:03:00 +0000</pubDate>' + extra + '</item>';
+const makeSource = (id, method, url, itemPrefix, format, extra = {}) => ({
+  id, name: id, mode: 'automatic', method, url, itemPrefix, format, feed: url + '/feed', ...extra,
+});
+const playlistId = '64WCJyxoGnhFHdDe6LYwNG';
+const playlist = 'https://open.spotify.com/playlist/' + playlistId;
+const spotify = () => Response.json({
+  title: 'Weekly selections', provider_name: 'Spotify', iframe_url: 'https://open.spotify.com/embed/playlist/' + playlistId,
+});
+
+test('publisher RSS keeps the review date distinct from release and only emits individual official replays', async () => {
+  const review = 'https://pitchfork.com/reviews/albums/example';
+  const fip = 'https://www.radiofrance.fr/fip/podcasts/jazz/individual';
+  const nova = 'https://podcasts.nova.fr/club/individual';
+  const sources = [
+    makeSource('pitchfork', 'pitchfork-rss', 'https://pitchfork.com', '/reviews/', 'Album'),
+    makeSource('fip', 'podcast-rss', 'https://www.radiofrance.fr', '/fip/podcasts/jazz/', 'Radio show'),
+    makeSource('nova', 'podcast-rss', 'https://podcasts.nova.fr', '/club/', 'Radio show'),
+  ];
+  const feeds = new Map([
+    [sources[0].feed, rss([xmlItem('Tender', review, '<dc:creator>Critic Name</dc:creator>')])],
+    [sources[1].feed, rss([xmlItem('Club replay', fip), xmlItem('Show page', fip.replace('/individual', ''))])],
+    [sources[2].feed, rss([xmlItem('Nova replay', nova + '?utm_source=feed'), xmlItem('Wrong host', 'https://elsewhere.test/club/episode')])],
+    [review, '<script type="application/ld+json">{"itemReviewed":{"name":"Artist: Tender"}}</script>'],
+  ]);
+  const result = await discover({ sources, fetcher: async url => new Response(feeds.get(url), {status: feeds.has(url) ? 200 : 503}) });
+  const [album, fipItem, novaItem] = result.candidates;
+  assert.deepEqual(result.candidates.map(item => item.url), [review, fip, nova]);
+  assert.equal(album.creator, 'Artist');
+  assert.equal(album.dateKind, 'published');
+  assert.equal(album.releaseDate, undefined);
+  assert.equal(album.verificationStatus, 'release-date-needed');
+  assert.equal(fipItem.sourceId, 'fip');
+  assert.equal(novaItem.sourceUrl, sources[2].feed);
+  assert.equal(result.coverage.Album.needsReleaseDate, 1);
+  assert.match(renderReport(result), /date originale à vérifier/);
+});
+
+test('official label Atom and Bandcamp newsletter preserve leads and validate playlist embeds', async () => {
+  const source = makeSource('label', 'label-atom', 'https://label.test', '/blogs/news/', 'Album');
+  const bandcamp = makeSource('notes', 'bandcamp-notes', 'https://bandcamp.substack.com', '/p/', 'Album');
+  const story = 'https://label.test/blogs/news/story';
+  const bandcampAlbum = 'https://artist.bandcamp.com/album/tender';
+  const links = '<a href="' + playlist + '">Playlist</a><a href="' + bandcampAlbum + '">Album</a>';
+  const atom = '<feed><entry><title>Label news</title><published>2026-11-17T09:00:00Z</published>'
+    + '<link rel="alternate" href="' + story + '"/><content><![CDATA[' + links + ']]></content></entry></feed>';
+  const notes = rss([xmlItem('I Love This Record - "Tender" by Artist', 'https://bandcamp.substack.com/p/tender')]);
+  const result = await discover({ sources: [source, bandcamp], fetcher: async url => {
+    if (url === source.feed) return new Response(atom);
+    if (url === bandcamp.feed) return new Response(notes);
+    assert.ok(url.startsWith('https://open.spotify.com/oembed?url='));
+    return spotify();
+  } });
+  const [playlistItem, album] = result.candidates;
+  assert.equal(playlistItem.id, 'spotify-' + playlistId);
+  assert.equal(playlistItem.sourceUrl, story);
+  assert.equal(playlistItem.verificationStatus, 'source-verified');
+  assert.deepEqual(result.leads[0].bandcampUrls, [bandcampAlbum]);
+  assert.equal(album.title, 'Tender');
+  assert.equal(album.creator, 'Artist');
+  assert.equal(album.releaseDate, undefined);
+});
+
+test('NTS supports independent series and includes only an official tracklist link', async () => {
+  const sources = ['a', 'b'].map(show => makeSource(show, 'nts-episodes', 'https://www.nts.live/shows/' + show, '', 'Radio show'));
+  const result = await discover({ sources, fetcher: async url => {
+    const source = sources.find(source => source.feed === url);
+    if (!source) return new Response('Replay');
+    const {id} = source;
+    return Response.json({results: [
+      { status: 'published', show_alias: id, episode_alias: id + '-episode', broadcast: '2026-11-17T00:00:00Z', name: id,
+        links: [{rel: 'tracklist', href: id === 'a' ? 'https://www.nts.live/api/v2/shows/a/episodes/a-episode/tracklist' : 'https://unrelated.test/tracklist'}] },
+      { status: 'draft', show_alias: id, episode_alias: 'unpublished' },
+    ]});
+  } });
+  assert.deepEqual(result.candidates.map(item => item.id), ['nts-a-episode', 'nts-b-episode']);
+  assert.match(result.candidates[0].tracklistUrl, /a-episode\/tracklist$/);
+  assert.equal(result.candidates[1].tracklistUrl, undefined);
+  assert.equal(result.candidates[1].dateKind, 'broadcast');
+});
+
+test('YouTube skips Shorts and interviews and collapses repeated titles from an official channel', async () => {
+  const source = makeSource('triple-j', 'youtube-atom', 'https://www.youtube.com/@triplej', '', 'Live session', {
+    channelId: 'UCfixture', titleContains: 'like a version',
+  });
+  const entry = (id, title, path = 'watch?v=') => '<entry><yt:videoId>' + id + '</yt:videoId>'
+    + '<yt:channelId>UCfixture</yt:channelId><title>' + title + '</title><published>2026-11-17T00:00:00Z</published>'
+    + '<link rel="alternate" href="https://www.youtube.com/' + path + id + '"/></entry>';
+  const xml = '<feed><yt:channelId>UCfixture</yt:channelId>'
+    + entry('aaaaaaaaaaa', 'Artist covers Track for Like A Version', 'shorts/')
+    + entry('bbbbbbbbbbb', 'Artist Interview for Like A Version')
+    + entry('ccccccccccc', 'Artist covers Track for Like A Version')
+    + entry('ddddddddddd', 'Artist covers Track for Like A Version!') + '</feed>';
+  const requests = [];
+  const result = await discover({ sources: [source], fetcher: async url => {
+    if (!url.includes('/oembed')) return new Response(xml);
+    requests.push(new URL(url).searchParams.get('url'));
+    return Response.json({title: 'Artist covers Track for Like A Version'});
+  } });
+  assert.equal(requests.length, 2);
+  assert.equal(result.candidates[0].id, 'youtube-ccccccccccc');
+  assert.equal(result.candidates[0].videoKind, 'cover');
+  assert.equal(result.duplicates[0].id, 'youtube-ddddddddddd');
+});
+
+test('preferences enable only catalogued artist channels and follow playlist URLs without account access', async () => {
+  const profile = normalizeTasteProfile({
+    ...emptyTasteProfile(), favoriteArtists: ['Artist'], favoriteRadios: ['FIP'],
+    spotify: [{url: playlist}, {url: 'https://open.spotify.com/user/curator'}],
+  });
+  const sources = [
+    makeSource('artist', 'youtube-atom', 'https://www.youtube.com/@artist', '', 'Live session',
+      {artist: 'Artist', onlyWhenFollowed: true, channelId: 'UCartist'}),
+    makeSource('other', 'youtube-atom', 'https://www.youtube.com/@other', '', 'Live session',
+      {artist: 'Other', onlyWhenFollowed: true, channelId: 'UCother'}),
+  ];
+  const urls = [];
+  const result = await discover({ sources, profile, fetcher: async url => {
+    urls.push(url);
+    return url.includes('open.spotify.com') ? spotify() : new Response('<feed><yt:channelId>UCartist</yt:channelId></feed>');
+  } });
+  assert.equal(urls.length, 2);
+  assert.ok(urls.some(url => url.includes('UCartist')));
+  assert.ok(urls.every(url => !url.includes('UCother')));
+  assert.equal(result.sources[1].status, 'limited');
+  assert.equal(result.candidates[0].url, playlist);
+});
+
+test('a rate limit suspends that host for the run while other providers finish', async () => {
+  const sources = [
+    makeSource('first', 'podcast-rss', 'https://limited.test/show-a', '/show-a/', 'Radio show'),
+    makeSource('second', 'podcast-rss', 'https://limited.test/show-b', '/show-b/', 'Radio show'),
+    makeSource('other', 'podcast-rss', 'https://other.test/club', '/club/', 'Radio show'),
+  ];
+  const requests = [];
+  const result = await discover({ sources, fetcher: async url => {
+    requests.push(url);
+    if (url.includes('limited.test')) return new Response(null, {status: 429, headers: {'Retry-After': '60'}});
+    return new Response(rss([xmlItem('Replay', 'https://other.test/club/replay')]));
+  } });
+  assert.equal(requests.filter(url => url.includes('limited.test')).length, 1);
+  assert.deepEqual(result.sources.map(source => source.status), ['error', 'error', 'ok']);
+  assert.equal(result.candidates[0].sourceId, 'other');
+});
