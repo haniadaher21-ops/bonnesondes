@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { validateEdition, selectEdition } from '../editorial/edition.mjs';
+import { validateEdition, selectEdition, readPublishedEditions } from '../editorial/edition.mjs';
 import { deduplicate, discover, renderReport } from '../scripts/discovery.mjs';
-import { legacyEdition } from '../scripts/editorial-files.mjs';
+import { legacyEdition, legacyItems } from '../scripts/editorial-files.mjs';
 
 function selection() {
   const item = (id, format, url) => ({ id, format, title: id, source: 'Source de test', url, sourceUrl: url, reason: 'Motif éditorial de test.' });
@@ -15,7 +15,7 @@ function selection() {
     })),
     mixes: [nts, item('nova', 'Radio show', 'https://www.nova.fr/podcasts/episode')],
     playlists: [item('playlist', 'Playlist', 'https://open.spotify.com/playlist/7LXauPdOlnW55FQNDWPotY')],
-    live: [item('live', 'Live session', 'https://www.youtube.com/watch?v=xL1yyEflGlo')],
+    live: [item('live', 'Live session', 'https://www.youtube.com/watch?v=abcdefghijk')],
   };
 }
 
@@ -93,6 +93,45 @@ test('collects an official YouTube Atom entry and validates its video URL', asyn
   assert.equal(result.candidates[0].publishedAt, '2026-11-20T12:00:00Z');
 });
 
+const curatorPlaylist = legacyItems.find(item => item.id === 'spotify-7LXauPdOlnW55FQNDWPotY');
+const selectedPlaylist = {
+  ...curatorPlaylist,
+  url: 'https://open.spotify.com/intl-fr/playlist/7LXauPdOlnW55FQNDWPotY?si=shared',
+  sourceUrl: curatorPlaylist.url,
+  reason: 'Une nouvelle raison éditoriale.',
+};
+
+test('reuses stable identities while rejecting URL, ID and format collisions', () => {
+  const draft = selection();
+  draft.playlists = [selectedPlaylist];
+  assert.deepEqual(validateEdition(draft, [legacyEdition], legacyItems), []);
+  draft.playlists = [{ ...selectedPlaylist, id: 'another-id' }];
+  assert.match(validateEdition(draft, [legacyEdition], legacyItems).join(), /URL déjà associée/);
+  draft.playlists = [{ ...selectedPlaylist, url: 'https://open.spotify.com/playlist/0123456789abcdefghijkl', embed: undefined }];
+  assert.match(validateEdition(draft, [legacyEdition], legacyItems).join(), /Identifiant déjà associé/);
+  draft.playlists = [selectedPlaylist];
+  draft.live[0] = { ...draft.live[0], id: selectedPlaylist.id, url: selectedPlaylist.url };
+  assert.match(validateEdition(draft, [legacyEdition], legacyItems).join(), /Identifiant déjà associé/);
+  draft.live = [selection().live[0], { ...selection().live[0], id: 'second-live' }];
+  assert.match(validateEdition(draft, [legacyEdition], legacyItems).join(), /Doublon/);
+});
+
+test('reads two successive editions with the same playlist and keeps their editorial notes', () => {
+  const first = { ...selection(), playlists: [selectedPlaylist] };
+  const secondPlaylist = { ...selectedPlaylist, reason: 'Une raison différente la semaine suivante.' };
+  const second = {
+    ...first, number: '003', startsOn: '2026-11-30', playlists: [secondPlaylist],
+  };
+  const accepted = readPublishedEditions([first, second], legacyEdition, legacyItems);
+  assert.deepEqual(accepted, [first, second]);
+  assert.equal(selectEdition(accepted, new Date('2026-11-29T22:59:59Z')).playlists[0].reason, selectedPlaylist.reason);
+  assert.equal(selectEdition(accepted, new Date('2026-11-29T23:00:00Z')).playlists[0].reason, secondPlaylist.reason);
+  assert.equal(selectEdition(accepted, new Date('2026-11-29T23:00:00Z')).playlists[0].id, curatorPlaylist.id);
+
+  const collision = { ...second, mixes: [{ ...second.mixes[0], id: 'different-nts-id' }, second.mixes[1]], featuredId: 'different-nts-id' };
+  assert.deepEqual(readPublishedEditions([first, collision], legacyEdition, legacyItems), [first]);
+});
+
 test('keeps published data intact when CLI approval fails or is omitted', async () => {
   const { mkdtempSync, cpSync, readFileSync, writeFileSync, rmSync } = await import('node:fs');
   const { spawnSync } = await import('node:child_process');
@@ -105,17 +144,20 @@ test('keeps published data intact when CLI approval fails or is omitted', async 
     }
     const published = join(copy, 'editorial', 'editions.json');
     const input = join(copy, 'selection.json');
-    const run = (...args) => spawnSync(process.execPath, [join(copy, 'scripts/prepare-edition.mjs'), input, ...args]);
+    cpSync(new URL('../package.json', import.meta.url), join(copy, 'package.json'));
+    const run = (...args) => spawnSync('npm', ['run', 'edition', '--', 'selection.json', ...args], {
+      cwd: copy, encoding: 'utf8',
+    });
     const draft = selection();
-    // Use distinct IDs and URLs instead of the historical fixtures' links.
-    draft.playlists[0].url = 'https://open.spotify.com/playlist/0123456789abcdefghijkl';
-    draft.live[0].url = 'https://www.youtube.com/watch?v=abcdefghijk';
+    draft.playlists = [selectedPlaylist];
     writeFileSync(published, '[]\n');
     writeFileSync(input, JSON.stringify({ ...draft, albums: [] }));
     assert.equal(run('--approve').status, 1);
     assert.equal(readFileSync(published, 'utf8'), '[]\n');
     writeFileSync(input, JSON.stringify(draft));
-    assert.equal(run().status, 0);
+    const checked = run();
+    assert.equal(checked.status, 0, checked.stderr);
+    assert.match(checked.stdout, /Édition 002 valide/);
     assert.equal(readFileSync(published, 'utf8'), '[]\n');
     assert.equal(run('--approve').status, 0);
     assert.deepEqual(JSON.parse(readFileSync(published, 'utf8')), [draft]);

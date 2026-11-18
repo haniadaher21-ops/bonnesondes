@@ -1,6 +1,6 @@
 import { open, rename, unlink } from 'node:fs/promises';
 import { validateEdition } from '../editorial/edition.mjs';
-import { editionItems, legacyEdition, legacyItems, publishedFile, readJson } from './editorial-files.mjs';
+import { legacyEdition, legacyItems, publishedFile, readJson } from './editorial-files.mjs';
 
 const [file, approval, ...extra] = process.argv.slice(2);
 if (!file || (approval && approval !== '--approve') || extra.length) {
@@ -14,12 +14,10 @@ try {
   if (approval === '--approve') pending = await open(temporary, 'wx');
   const published = readJson(publishedFile);
   const earlier = [legacyEdition];
-  const ids = legacyItems.map(item => item.id);
   for (const edition of [...published, readJson(file)]) {
-    const errors = validateEdition(edition, earlier, ids);
+    const errors = validateEdition(edition, earlier, legacyItems);
     if (errors.length) throw new Error(errors.join('\n'));
     earlier.push(edition);
-    ids.push(...editionItems(edition).map(item => item.id));
   }
   const draft = earlier.at(-1);
   if (pending) {

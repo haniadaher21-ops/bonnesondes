@@ -1,7 +1,7 @@
 import legacyCatalog from '../editorial/legacy-catalog.json';
 import legacyEdition from '../editorial/legacy.json';
 import publishedEditions from '../editorial/editions.json';
-import { validateEdition } from '../editorial/edition.mjs';
+import { readPublishedEditions } from '../editorial/edition.mjs';
 
 export type Format = 'Album' | 'Radio show' | 'Playlist' | 'Live session' | 'Track';
 
@@ -49,12 +49,10 @@ export const issues: Edition[] = [{
 }];
 
 export const catalog = [...new Map([...albums, ...mixes, ...playlists, ...live, ...archive].map(item => [item.id, item])).values()];
-const reservedIds = catalog.map(item => item.id);
-for (const draft of (Array.isArray(publishedEditions) ? publishedEditions : []) as (Omit<Edition, 'featured'> & { featuredId: string })[]) {
-  if (validateEdition(draft, issues, reservedIds).length) break;
+const drafts = (Array.isArray(publishedEditions) ? publishedEditions : []) as (Omit<Edition, 'featured'> & { featuredId: string })[];
+for (const draft of readPublishedEditions(drafts, legacyEdition, catalog)) {
   const featured = draft.mixes.find(item => item.id === draft.featuredId)!;
   issues.push({ ...draft, featured });
-  reservedIds.push(...[...draft.albums, ...draft.mixes, ...draft.playlists, ...draft.live].map(item => item.id));
 }
 
 export type RadioMetadata =

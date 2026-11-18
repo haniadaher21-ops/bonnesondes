@@ -34,7 +34,7 @@ const text = value => typeof value === 'string' && value.trim().length > 0;
 const isNts = url => !!url && ['www.nts.live', 'nts.live'].includes(url.hostname)
   && /^\/shows\/[^/]+\/episodes\/[^/]+\/?$/.test(url.pathname);
 
-export function validateEdition(edition, earlier = [], reservedIds = []) {
+export function validateEdition(edition, earlier = [], catalog = []) {
   if (!edition || typeof edition !== 'object') return ['Édition manquante.'];
   const errors = [];
   const { number, startsOn, label, albumWindowStart } = edition;
@@ -49,7 +49,14 @@ export function validateEdition(edition, earlier = [], reservedIds = []) {
     errors.push('La fenêtre des sorties doit commencer au plus 14 jours avant l’édition.');
   }
 
-  const ids = new Set(reservedIds);
+  const knownById = new Map();
+  const knownByUrl = new Map();
+  for (const item of [...catalog, ...earlier.flatMap(editionItems)]) {
+    const url = canonicalUrl(item.url);
+    knownById.set(item.id, { url, format: item.format });
+    if (url) knownByUrl.set(url, item.id);
+  }
+  const ids = new Set();
   const urls = new Set();
   for (const [group, format] of Object.entries(formatByGroup)) {
     const items = edition[group];
@@ -69,6 +76,13 @@ export function validateEdition(edition, earlier = [], reservedIds = []) {
       if (!url || !provenance) errors.push('Liens HTTPS requis pour ' + item.id + '.');
       const key = url && canonicalUrl(url.href);
       if (ids.has(item.id) || (key && urls.has(key))) errors.push('Doublon : ' + item.id + '.');
+      const known = knownById.get(item.id);
+      if (known && (known.url !== key || known.format !== item.format)) {
+        errors.push('Identifiant déjà associé à un autre contenu : ' + item.id + '.');
+      }
+      if (key && knownByUrl.has(key) && knownByUrl.get(key) !== item.id) {
+        errors.push('URL déjà associée à un autre identifiant : ' + item.id + '.');
+      }
       ids.add(item.id);
       if (key) urls.add(key);
       if (item.date !== undefined && !isoDate(item.date)) errors.push('Date invalide : ' + item.id + '.');
@@ -91,6 +105,26 @@ export function validateEdition(edition, earlier = [], reservedIds = []) {
   if (!mixes.some(item => sourceUrl(item?.url) && !isNts(sourceUrl(item.url)))) errors.push('Un mix d’une autre source est obligatoire.');
   if (!mixes.some(item => item?.id === edition.featuredId && isNts(sourceUrl(item.url)))) errors.push('Le mix vedette doit être un épisode NTS sélectionné.');
   return errors;
+}
+
+export function editionItems(edition) {
+  return Object.keys(formatByGroup).flatMap(group => edition[group] ?? []);
+}
+
+/**
+ * @template Draft
+ * @param {Draft[]} drafts
+ * @param {{ number: string, startsOn: string }} legacy
+ * @param {{ id: string, format: string, url: string }[]} catalog
+ * @returns {Draft[]}
+ */
+export function readPublishedEditions(drafts, legacy, catalog) {
+  const accepted = [];
+  for (const draft of drafts) {
+    if (validateEdition(draft, [legacy, ...accepted], catalog).length) break;
+    accepted.push(draft);
+  }
+  return accepted;
 }
 
 function validEmbed(item, url) {
