@@ -1,3 +1,8 @@
+import legacyCatalog from '../editorial/legacy-catalog.json';
+import legacyEdition from '../editorial/legacy.json';
+import publishedEditions from '../editorial/editions.json';
+import { validateEdition } from '../editorial/edition.mjs';
+
 export type Format = 'Album' | 'Radio show' | 'Playlist' | 'Live session' | 'Track';
 
 export interface Recommendation {
@@ -24,118 +29,33 @@ const playlist = (id: string, title: string, creator: string, details: Partial<R
   url: 'https://open.spotify.com/playlist/' + id, embed: { provider: 'spotify', id }, ...details,
 });
 
-export const playlists = [
-  playlist('7LXauPdOlnW55FQNDWPotY', '🔮 TRUE JAMS ✨', 'coupdemain', {
-    genre: 'Indie / pop', note: 'La playlist de Coup De Main passe de Slow Pulp à Slayyyter et Sophia Stel.',
-    reason: 'Pour découvrir les goûts du magazine à travers ses enchaînements.',
-  }),
-  playlist('2IbPrDIVfPmxZF6akHnj8R', 'oat milk lattes in the mountains', 'kasey gelsomino', {
-    mood: 'Matins tranquilles', season: 'Automne', genre: 'Indie folk',
-    note: 'Adrianne Lenker, Searows et Neil Young pour un matin tranquille à la maison.',
-    reason: 'Notre choix pour un après-midi d’automne où l’on préfère laisser la main à quelqu’un d’autre.',
-  }),
-  playlist('37i9dQZF1DXdwmD5Q7Gxah', 'Lorem', 'Spotify'),
-  playlist('3CjLCri3yLqkSKBZvc8HSR', 'fickleberry FM', 'keni'),
-];
+export const { albums, mixes, playlists, live, archive } = legacyCatalog as Record<
+  'albums' | 'mixes' | 'playlists' | 'live' | 'archive', Recommendation[]
+>;
 
-const session = (id: string, title: string, creator: string, publisher: string, details: Partial<Recommendation>): Recommendation => ({
-  id, title, creator, publisher, format: 'Live session', source: 'YouTube',
-  url: 'https://www.youtube.com/watch?v=' + id,
-  artwork: 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg', embed: { provider: 'youtube', id }, ...details,
-});
+interface Edition {
+  number: string;
+  startsOn: string;
+  label: string;
+  featured: Recommendation;
+  albums: Recommendation[];
+  mixes: Recommendation[];
+  playlists: Recommendation[];
+  live: Recommendation[];
+}
 
-export const live = [
-  session('xL1yyEflGlo', 'Doudou (reprise d’Aya Nakamura)', 'INO CASABLANCA', 'Basique', {
-    date: '2025-05-04', minutes: 3.2, mood: 'Détente',
-    note: 'INO CASABLANCA reprend « Doudou » d’Aya Nakamura pour Basique.',
-    reason: 'Écoute comment sa voix et son phrasé déplacent les accents de la mélodie.',
-  }),
-  session('2scS3s_I050', 'Joy.', 'RAYE feat. Amma & Absolutely', 'The Late Show with Stephen Colbert', {
-    note: 'RAYE partage la scène avec Amma et Absolutely.',
-    reason: 'Les trois voix se passent le relais, puis se rejoignent.',
-  }),
-  session('NOvIw8rBK4Q', 'My Moon My Man', 'FINNEAS', 'Canadian Songwriters Hall of Fame', {
-    note: 'FINNEAS reprend Feist au Panthéon des auteurs et compositeurs canadiens en 2026.',
-  }),
-  session('HLaZ38r8ecA', 'Brand New Chanel$', 'Slayyyter', 'triple j Like A Version', {
-    note: 'Slayyyter interprète son morceau dans le studio de triple j.',
-  }),
-  session('iLF0ZNdhNM0', 'YUKON (sur la scène des Grammy Awards 2026)', 'Justin Bieber', 'JustinBieberVEVO', {
-    date: '2026-04-16', minutes: 5.15,
-    note: 'Justin Bieber interprète « YUKON » lors de la 68e cérémonie des Grammy Awards.',
-    reason: 'Un arrangement intime sur une grande scène qui laisse toute la place à la voix.',
-  }),
-];
-
-export const albums: Recommendation[] = [
-  {
-    id: 'lahai', title: 'Lahai', creator: 'Sampha', format: 'Album', source: 'Spotify',
-    url: 'https://open.spotify.com/album/5GuWww4OaildzkmTTlfMN3', embed: { provider: 'spotify', id: '5GuWww4OaildzkmTTlfMN3' }, date: '2023-10-20', minutes: 42, artwork: 'https://f4.bcbits.com/img/a1179241798_5.jpg',
-    mood: 'Introspectif', genre: 'Soul',
-    note: 'La voix de Sampha se faufile entre piano, rythmes syncopés et harmonies superposées.',
-    reason: 'Commence par « Spirit 2.0 » et suis les percussions à mesure que l’arrangement s’ouvre.',
-  },
-  {
-    id: 'promises', title: 'Promises', creator: 'Floating Points, Pharoah Sanders & The London Symphony Orchestra',
-    format: 'Album', source: 'Spotify', url: 'https://open.spotify.com/album/3ShtO5VCYa3ctlR5uzLWBa', embed: { provider: 'spotify', id: '3ShtO5VCYa3ctlR5uzLWBa' },
-    date: '2021-03-26', minutes: 47, artwork: 'https://f4.bcbits.com/img/a2975740667_5.jpg', mood: 'Introspectif', genre: 'Jazz',
-    note: 'Un motif récurrent relie neuf mouvements pour électronique, saxophone et orchestre.',
-    reason: 'Écoute l’album d’une traite, jusqu’aux cordes qui montent derrière Sanders dans « Movement 6 ».',
-  },
-  {
-    id: 'a-la-sala', title: 'A LA SALA', creator: 'Khruangbin', format: 'Album', source: 'Spotify',
-    url: 'https://open.spotify.com/album/1PeC1ckDJSzYHkwo6JHbP2', embed: { provider: 'spotify', id: '1PeC1ckDJSzYHkwo6JHbP2' }, date: '2024-04-05', minutes: 39, artwork: 'https://f4.bcbits.com/img/a4088322578_5.jpg',
-    mood: 'Matins tranquilles', genre: 'Soul psychédélique',
-    note: 'Un disque aéré où guitare, basse et batterie se répondent en permanence.',
-    reason: 'Sur « May Ninth », quelques notes de guitare suffisent à installer toute une ambiance.',
-  },
-];
-
-export const mixes: Recommendation[] = [
-  {
-    id: 'floating-points-sep', title: 'Floating Points', creator: 'Floating Points',
-    format: 'Radio show', source: 'NTS Radio', date: '2026-09-21', mood: 'Fin de soirée', genre: 'Soul / house',
-    artwork: 'https://media2.ntslive.co.uk/resize/1600x1600/5f4bfd54-08aa-434c-937e-281638bd1952_1459292400.jpeg',
-    url: 'https://www.nts.live/shows/floating-points/episodes/floating-points-21st-september-2026',
-    note: 'Soul rare et grooves chaleureux. Dans cette archive de NTS, Sam Shepherd nous emmène doucement vers la piste de danse.',
-    reason: 'Reste pour le passage de Larry Young à Lincoln Olivetti. Sam Shepherd change de disque sans rompre l’ambiance.',
-  },
-  {
-    id: 'nova-club', title: 'Sets de HiTech, Logic1000 et Victor Rosado', creator: 'Nova Club avec David Blot',
-    format: 'Radio show', source: 'Radio Nova', minutes: 116,
-    artwork: 'https://assets.voxeus.com/podcasts/assets/images/rs/episode/1200/97fc6857072b59da3058f34125f5daea0373f28a/61be0085-e2df-438a-8191-566469bd419f/2a2e6900633f82b58ff759df8787e26365a409ac.png', mood: 'Pour danser',
-    url: 'https://podcasts.nova.fr/radio-nova-nova-club/202504161240-special-djs-sets-hi-tech-logic1000-et-victor-rosado-du-parad',
-    note: 'Trois sets qui relient Detroit, Berlin et New York.',
-    reason: 'Trois façons de faire danser une salle dans la même émission.',
-  },
-  {
-    id: 'floating-points-brilliant-corners', title: 'Live from Brilliant Corners',
-    creator: 'Floating Points & Four Tet', format: 'Radio show', source: 'NTS Radio',
-    date: '2017-07-10', mood: 'Fin de soirée',
-    url: 'https://www.nts.live/shows/floating-points/episodes/floating-points-10th-july-2017',
-    note: 'Floating Points et Four Tet aux platines de Brilliant Corners, à Londres.',
-    reason: 'Un set à deux pour prolonger la sélection NTS du mois de septembre.',
-  },
-];
-
-export const archive: Recommendation[] = [
-  {
-    id: 'floating-points-2018', title: 'Floating Points, Jamie XX, Four Tet & Daphni',
-    creator: 'Floating Points, Jamie xx, Four Tet & Daphni', format: 'Radio show', source: 'NTS Radio',
-    date: '2018-10-29', mood: 'Pour danser',
-    url: 'https://www.nts.live/shows/floating-points/episodes/floating-points-four-tet-daphni-and-jamie-xx-29th-october-2018',
-    note: 'Quatre DJs se relaient aux platines un lundi à Londres.',
-    reason: 'En se passant la main, les DJs laissent à chaque disque la possibilité de faire bifurquer le set.',
-  },
-  albums[1], playlists[3],
-];
-
-export const issues = [{
-  number: '001', startsOn: '2026-11-16', label: 'du 16 au 22 novembre 2026',
-  featured: mixes[0], albums, mixes, playlists: playlists.slice(0, 2), live: live.slice(0, 2),
+export const issues: Edition[] = [{
+  ...legacyEdition, featured: mixes[0], albums, mixes, playlists: playlists.slice(0, 2), live: live.slice(0, 2),
 }];
 
 export const catalog = [...new Map([...albums, ...mixes, ...playlists, ...live, ...archive].map(item => [item.id, item])).values()];
+const reservedIds = catalog.map(item => item.id);
+for (const draft of (Array.isArray(publishedEditions) ? publishedEditions : []) as (Omit<Edition, 'featured'> & { featuredId: string })[]) {
+  if (validateEdition(draft, issues, reservedIds).length) break;
+  const featured = draft.mixes.find(item => item.id === draft.featuredId)!;
+  issues.push({ ...draft, featured });
+  reservedIds.push(...[...draft.albums, ...draft.mixes, ...draft.playlists, ...draft.live].map(item => item.id));
+}
 
 export type RadioMetadata =
   | { provider: 'radio-france' | 'azuracast'; endpoint: string }

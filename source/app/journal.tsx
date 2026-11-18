@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'rea
 import { ArrowDown, ArrowRight, ArrowUpRight, Bookmark, Disc3, Headphones, Menu, Music2, Play, Plus, Radio, X } from 'lucide-react';
 import { archive, catalog, issues, live, parsePlaylist, personalPlaylist, playlists, stations, type Format, type Recommendation } from './content';
 
+import { selectEdition } from '../editorial/edition.mjs';
 import RadioTrack, { type OnAir } from './radio-track';
 
 const pages = [
@@ -29,10 +30,6 @@ const dateLabel = (value: string) => new Intl.DateTimeFormat('fr-FR', {
   dateStyle: 'medium', timeZone: 'UTC',
 }).format(new Date(value + 'T12:00:00Z'));
 const displayMinutes = (minutes: number) => Math.ceil(minutes) + ' min';
-const issueDate = (date: Date) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Paris' }).format(date);
-const selectIssue = () => [...issues].filter(issue => issue.startsOn <= issueDate(new Date()))
-  .sort((a, b) => b.startsOn.localeCompare(a.startsOn))[0] ?? issues[0];
-
 function SourceLink({ item, children }: { item: { url: string }; children: ReactNode }) {
   return <a className="text-link" href={item.url} target="_blank" rel="noopener noreferrer">{children}<ArrowUpRight size={15} /></a>;
 }
@@ -98,7 +95,7 @@ export default function Journal() {
     };
     readHash();
     window.addEventListener('hashchange', readHash);
-    setIssue(selectIssue());
+    setIssue(selectEdition(issues) ?? issues[0]);
     try {
       const raw = localStorage.getItem(storageKey);
       if (raw) setLibrary({ ...emptyLibrary, ...JSON.parse(raw) });

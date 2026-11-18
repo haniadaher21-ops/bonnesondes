@@ -1,0 +1,290 @@
+{
+  "albums": [
+    {
+      "id": "lahai",
+      "title": "Lahai",
+      "creator": "Sampha",
+      "format": "Album",
+      "source": "Spotify",
+      "url": "https://open.spotify.com/album/5GuWww4OaildzkmTTlfMN3",
+      "embed": {
+        "provider": "spotify",
+        "id": "5GuWww4OaildzkmTTlfMN3"
+      },
+      "date": "2023-10-20",
+      "minutes": 42,
+      "artwork": "https://f4.bcbits.com/img/a1179241798_5.jpg",
+      "mood": "Introspectif",
+      "genre": "Soul",
+      "note": "La voix de Sampha se faufile entre piano, rythmes syncopés et harmonies superposées.",
+      "reason": "Commence par « Spirit 2.0 » et suis les percussions à mesure que l’arrangement s’ouvre."
+    },
+    {
+      "id": "promises",
+      "title": "Promises",
+      "creator": "Floating Points, Pharoah Sanders & The London Symphony Orchestra",
+      "format": "Album",
+      "source": "Spotify",
+      "url": "https://open.spotify.com/album/3ShtO5VCYa3ctlR5uzLWBa",
+      "embed": {
+        "provider": "spotify",
+        "id": "3ShtO5VCYa3ctlR5uzLWBa"
+      },
+      "date": "2021-03-26",
+      "minutes": 47,
+      "artwork": "https://f4.bcbits.com/img/a2975740667_5.jpg",
+      "mood": "Introspectif",
+      "genre": "Jazz",
+      "note": "Un motif récurrent relie neuf mouvements pour électronique, saxophone et orchestre.",
+      "reason": "Écoute l’album d’une traite, jusqu’aux cordes qui montent derrière Sanders dans « Movement 6 »."
+    },
+    {
+      "id": "a-la-sala",
+      "title": "A LA SALA",
+      "creator": "Khruangbin",
+      "format": "Album",
+      "source": "Spotify",
+      "url": "https://open.spotify.com/album/1PeC1ckDJSzYHkwo6JHbP2",
+      "embed": {
+        "provider": "spotify",
+        "id": "1PeC1ckDJSzYHkwo6JHbP2"
+      },
+      "date": "2024-04-05",
+      "minutes": 39,
+      "artwork": "https://f4.bcbits.com/img/a4088322578_5.jpg",
+      "mood": "Matins tranquilles",
+      "genre": "Soul psychédélique",
+      "note": "Un disque aéré où guitare, basse et batterie se répondent en permanence.",
+      "reason": "Sur « May Ninth », quelques notes de guitare suffisent à installer toute une ambiance."
+    }
+  ],
+  "mixes": [
+    {
+      "id": "floating-points-sep",
+      "title": "Floating Points",
+      "creator": "Floating Points",
+      "format": "Radio show",
+      "source": "NTS Radio",
+      "date": "2026-09-21",
+      "mood": "Fin de soirée",
+      "genre": "Soul / house",
+      "artwork": "https://media2.ntslive.co.uk/resize/1600x1600/5f4bfd54-08aa-434c-937e-281638bd1952_1459292400.jpeg",
+      "url": "https://www.nts.live/shows/floating-points/episodes/floating-points-21st-september-2026",
+      "note": "Soul rare et grooves chaleureux. Dans cette archive de NTS, Sam Shepherd nous emmène doucement vers la piste de danse.",
+      "reason": "Reste pour le passage de Larry Young à Lincoln Olivetti. Sam Shepherd change de disque sans rompre l’ambiance."
+    },
+    {
+      "id": "nova-club",
+      "title": "Sets de HiTech, Logic1000 et Victor Rosado",
+      "creator": "Nova Club avec David Blot",
+      "format": "Radio show",
+      "source": "Radio Nova",
+      "minutes": 116,
+      "artwork": "https://assets.voxeus.com/podcasts/assets/images/rs/episode/1200/97fc6857072b59da3058f34125f5daea0373f28a/61be0085-e2df-438a-8191-566469bd419f/2a2e6900633f82b58ff759df8787e26365a409ac.png",
+      "mood": "Pour danser",
+      "url": "https://podcasts.nova.fr/radio-nova-nova-club/202504161240-special-djs-sets-hi-tech-logic1000-et-victor-rosado-du-parad",
+      "note": "Trois sets qui relient Detroit, Berlin et New York.",
+      "reason": "Trois façons de faire danser une salle dans la même émission."
+    },
+    {
+      "id": "floating-points-brilliant-corners",
+      "title": "Live from Brilliant Corners",
+      "creator": "Floating Points & Four Tet",
+      "format": "Radio show",
+      "source": "NTS Radio",
+      "date": "2017-07-10",
+      "mood": "Fin de soirée",
+      "url": "https://www.nts.live/shows/floating-points/episodes/floating-points-10th-july-2017",
+      "note": "Floating Points et Four Tet aux platines de Brilliant Corners, à Londres.",
+      "reason": "Un set à deux pour prolonger la sélection NTS du mois de septembre."
+    }
+  ],
+  "playlists": [
+    {
+      "id": "spotify-7LXauPdOlnW55FQNDWPotY",
+      "title": "🔮 TRUE JAMS ✨",
+      "creator": "coupdemain",
+      "format": "Playlist",
+      "source": "Spotify",
+      "url": "https://open.spotify.com/playlist/7LXauPdOlnW55FQNDWPotY",
+      "embed": {
+        "provider": "spotify",
+        "id": "7LXauPdOlnW55FQNDWPotY"
+      },
+      "genre": "Indie / pop",
+      "note": "La playlist de Coup De Main passe de Slow Pulp à Slayyyter et Sophia Stel.",
+      "reason": "Pour découvrir les goûts du magazine à travers ses enchaînements."
+    },
+    {
+      "id": "spotify-2IbPrDIVfPmxZF6akHnj8R",
+      "title": "oat milk lattes in the mountains",
+      "creator": "kasey gelsomino",
+      "format": "Playlist",
+      "source": "Spotify",
+      "url": "https://open.spotify.com/playlist/2IbPrDIVfPmxZF6akHnj8R",
+      "embed": {
+        "provider": "spotify",
+        "id": "2IbPrDIVfPmxZF6akHnj8R"
+      },
+      "mood": "Matins tranquilles",
+      "season": "Automne",
+      "genre": "Indie folk",
+      "note": "Adrianne Lenker, Searows et Neil Young pour un matin tranquille à la maison.",
+      "reason": "Notre choix pour un après-midi d’automne où l’on préfère laisser la main à quelqu’un d’autre."
+    },
+    {
+      "id": "spotify-37i9dQZF1DXdwmD5Q7Gxah",
+      "title": "Lorem",
+      "creator": "Spotify",
+      "format": "Playlist",
+      "source": "Spotify",
+      "url": "https://open.spotify.com/playlist/37i9dQZF1DXdwmD5Q7Gxah",
+      "embed": {
+        "provider": "spotify",
+        "id": "37i9dQZF1DXdwmD5Q7Gxah"
+      }
+    },
+    {
+      "id": "spotify-3CjLCri3yLqkSKBZvc8HSR",
+      "title": "fickleberry FM",
+      "creator": "keni",
+      "format": "Playlist",
+      "source": "Spotify",
+      "url": "https://open.spotify.com/playlist/3CjLCri3yLqkSKBZvc8HSR",
+      "embed": {
+        "provider": "spotify",
+        "id": "3CjLCri3yLqkSKBZvc8HSR"
+      }
+    }
+  ],
+  "live": [
+    {
+      "id": "xL1yyEflGlo",
+      "title": "Doudou (reprise d’Aya Nakamura)",
+      "creator": "INO CASABLANCA",
+      "publisher": "Basique",
+      "format": "Live session",
+      "source": "YouTube",
+      "url": "https://www.youtube.com/watch?v=xL1yyEflGlo",
+      "artwork": "https://i.ytimg.com/vi/xL1yyEflGlo/hqdefault.jpg",
+      "embed": {
+        "provider": "youtube",
+        "id": "xL1yyEflGlo"
+      },
+      "date": "2025-05-04",
+      "minutes": 3.2,
+      "mood": "Détente",
+      "note": "INO CASABLANCA reprend « Doudou » d’Aya Nakamura pour Basique.",
+      "reason": "Écoute comment sa voix et son phrasé déplacent les accents de la mélodie."
+    },
+    {
+      "id": "2scS3s_I050",
+      "title": "Joy.",
+      "creator": "RAYE feat. Amma & Absolutely",
+      "publisher": "The Late Show with Stephen Colbert",
+      "format": "Live session",
+      "source": "YouTube",
+      "url": "https://www.youtube.com/watch?v=2scS3s_I050",
+      "artwork": "https://i.ytimg.com/vi/2scS3s_I050/hqdefault.jpg",
+      "embed": {
+        "provider": "youtube",
+        "id": "2scS3s_I050"
+      },
+      "note": "RAYE partage la scène avec Amma et Absolutely.",
+      "reason": "Les trois voix se passent le relais, puis se rejoignent."
+    },
+    {
+      "id": "NOvIw8rBK4Q",
+      "title": "My Moon My Man",
+      "creator": "FINNEAS",
+      "publisher": "Canadian Songwriters Hall of Fame",
+      "format": "Live session",
+      "source": "YouTube",
+      "url": "https://www.youtube.com/watch?v=NOvIw8rBK4Q",
+      "artwork": "https://i.ytimg.com/vi/NOvIw8rBK4Q/hqdefault.jpg",
+      "embed": {
+        "provider": "youtube",
+        "id": "NOvIw8rBK4Q"
+      },
+      "note": "FINNEAS reprend Feist au Panthéon des auteurs et compositeurs canadiens en 2026."
+    },
+    {
+      "id": "HLaZ38r8ecA",
+      "title": "Brand New Chanel$",
+      "creator": "Slayyyter",
+      "publisher": "triple j Like A Version",
+      "format": "Live session",
+      "source": "YouTube",
+      "url": "https://www.youtube.com/watch?v=HLaZ38r8ecA",
+      "artwork": "https://i.ytimg.com/vi/HLaZ38r8ecA/hqdefault.jpg",
+      "embed": {
+        "provider": "youtube",
+        "id": "HLaZ38r8ecA"
+      },
+      "note": "Slayyyter interprète son morceau dans le studio de triple j."
+    },
+    {
+      "id": "iLF0ZNdhNM0",
+      "title": "YUKON (sur la scène des Grammy Awards 2026)",
+      "creator": "Justin Bieber",
+      "publisher": "JustinBieberVEVO",
+      "format": "Live session",
+      "source": "YouTube",
+      "url": "https://www.youtube.com/watch?v=iLF0ZNdhNM0",
+      "artwork": "https://i.ytimg.com/vi/iLF0ZNdhNM0/hqdefault.jpg",
+      "embed": {
+        "provider": "youtube",
+        "id": "iLF0ZNdhNM0"
+      },
+      "date": "2026-04-16",
+      "minutes": 5.15,
+      "note": "Justin Bieber interprète « YUKON » lors de la 68e cérémonie des Grammy Awards.",
+      "reason": "Un arrangement intime sur une grande scène qui laisse toute la place à la voix."
+    }
+  ],
+  "archive": [
+    {
+      "id": "floating-points-2018",
+      "title": "Floating Points, Jamie XX, Four Tet & Daphni",
+      "creator": "Floating Points, Jamie xx, Four Tet & Daphni",
+      "format": "Radio show",
+      "source": "NTS Radio",
+      "date": "2018-10-29",
+      "mood": "Pour danser",
+      "url": "https://www.nts.live/shows/floating-points/episodes/floating-points-four-tet-daphni-and-jamie-xx-29th-october-2018",
+      "note": "Quatre DJs se relaient aux platines un lundi à Londres.",
+      "reason": "En se passant la main, les DJs laissent à chaque disque la possibilité de faire bifurquer le set."
+    },
+    {
+      "id": "promises",
+      "title": "Promises",
+      "creator": "Floating Points, Pharoah Sanders & The London Symphony Orchestra",
+      "format": "Album",
+      "source": "Spotify",
+      "url": "https://open.spotify.com/album/3ShtO5VCYa3ctlR5uzLWBa",
+      "embed": {
+        "provider": "spotify",
+        "id": "3ShtO5VCYa3ctlR5uzLWBa"
+      },
+      "date": "2021-03-26",
+      "minutes": 47,
+      "artwork": "https://f4.bcbits.com/img/a2975740667_5.jpg",
+      "mood": "Introspectif",
+      "genre": "Jazz",
+      "note": "Un motif récurrent relie neuf mouvements pour électronique, saxophone et orchestre.",
+      "reason": "Écoute l’album d’une traite, jusqu’aux cordes qui montent derrière Sanders dans « Movement 6 »."
+    },
+    {
+      "id": "spotify-3CjLCri3yLqkSKBZvc8HSR",
+      "title": "fickleberry FM",
+      "creator": "keni",
+      "format": "Playlist",
+      "source": "Spotify",
+      "url": "https://open.spotify.com/playlist/3CjLCri3yLqkSKBZvc8HSR",
+      "embed": {
+        "provider": "spotify",
+        "id": "3CjLCri3yLqkSKBZvc8HSR"
+      }
+    }
+  ]
+}
