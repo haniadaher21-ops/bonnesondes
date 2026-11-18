@@ -5,6 +5,7 @@ import { ArrowDown, ArrowRight, ArrowUpRight, Bookmark, Disc3, Headphones, Menu,
 import { archive, catalog, issues, live, parsePlaylist, personalPlaylist, playlists, stations, type Format, type Recommendation } from './content';
 
 import { selectEdition } from '../editorial/edition.mjs';
+import { editionShelf } from '../editorial/shelves.mjs';
 import RadioTrack, { type OnAir } from './radio-track';
 
 const pages = [
@@ -148,13 +149,16 @@ export default function Journal() {
     ...state, curators: state.curators.includes(name) ? state.curators.filter(value => value !== name) : [...state.curators, name],
   }));
 
+  const shelf = editionShelf(issues, issue, 'playlists', [...playlists, ...library.playlists]);
+  const liveShelf = editionShelf(issues, issue, 'live', live);
+
   const addPlaylist = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const field = (name: string) => String(form.get(name) ?? '').trim();
     const id = parsePlaylist(field('url'));
     if (!id) return setPlaylistError('Saisis un lien de playlist Spotify depuis open.spotify.com.');
-    if ([...playlists, ...library.playlists].some(item => item.embed?.id === id)) {
+    if (shelf.some(item => parsePlaylist(item.url) === id)) {
       return setPlaylistError('Cette playlist figure déjà dans ta sélection.');
     }
     const item = personalPlaylist(id, field('title'), field('curator'), field('mood'), field('season'), field('genre'));
@@ -212,7 +216,6 @@ export default function Journal() {
   const all = [...new Map([...catalog, ...issues.flatMap(edition => [
     edition.featured, ...edition.albums, ...edition.mixes, ...edition.playlists, ...edition.live,
   ]), ...library.playlists, ...Object.values(library.radioTracks)].map(item => [item.id, item])).values()];
-  const shelf = [...playlists, ...library.playlists];
   const shelfResults = shelf.filter(item => (!curator || (curator === '★ Créateurs favoris'
     ? library.curators.includes(item.creator ?? '') : item.creator === curator))
     && (!genre || item.genre === genre) && (!season || item.season === season) && (!shelfMood || item.mood === shelfMood));
@@ -309,7 +312,7 @@ export default function Journal() {
 
       {page === 'live' && <>
         <PageHeading label="SESSIONS ET REPRISES" title="Live" note="Des performances à regarder, le son bien ouvert." />
-        {cards(live, true)}
+        {cards(liveShelf, true)}
       </>}
 
       {page === 'mix' && <>
@@ -318,7 +321,7 @@ export default function Journal() {
       </>}
 
       {page === 'archive' && <>
-        <PageHeading label="À RÉÉCOUTER" title="Archives" note="Des mixes, disques et playlists qui méritent une autre écoute." />
+        <PageHeading label="À RÉÉCOUTER" title="Archives" note="Une sélection à réécouter. Retrouve les anciennes playlists et sessions dans leurs rubriques, et les sélections hebdomadaires dans « Ma collection », sous « Toutes les découvertes »." />
         {cards(archive)}
       </>}
 
