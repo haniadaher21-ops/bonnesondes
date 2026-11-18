@@ -3,6 +3,8 @@ import { test } from 'node:test';
 import { validateEdition, selectEdition, readPublishedEditions } from '../editorial/edition.mjs';
 import { deduplicate, discover, renderReport } from '../scripts/discovery.mjs';
 import { legacyEdition, legacyItems } from '../scripts/editorial-files.mjs';
+import legacyCatalog from '../editorial/legacy-catalog.json' with { type: 'json' };
+import { editionShelf } from '../editorial/shelves.mjs';
 
 function selection() {
   const item = (id, format, url) => ({ id, format, title: id, source: 'Source de test', url, sourceUrl: url, reason: 'Motif éditorial de test.' });
@@ -166,4 +168,56 @@ test('keeps published data intact when CLI approval fails or is omitted', async 
   } finally {
     rmSync(copy, { recursive: true, force: true });
   }
+});
+
+test('validated edition 002 leads the dedicated shelves alongside older and personal picks', () => {
+  const { playlists: historicalPlaylists, live: historicalLive } = legacyCatalog;
+  const first = { ...legacyEdition, playlists: historicalPlaylists.slice(0, 2), live: historicalLive.slice(0, 2) };
+  const draft = selection();
+  draft.playlists = [{
+    ...draft.playlists[0], id: 'spotify-64WCJyxoGnhFHdDe6LYwNG', title: 'Mr Bongo Weekly Selections',
+    url: 'https://open.spotify.com/playlist/64WCJyxoGnhFHdDe6LYwNG',
+    sourceUrl: 'https://www.mrbongo.com/index', embed: { provider: 'spotify', id: '64WCJyxoGnhFHdDe6LYwNG' },
+  }];
+  draft.live = [
+    ['Ji7g_Bks7Xc', 'WILLOW in the Radio 1 Live Lounge'],
+    ['R03Hzewk_yk', 'Somebody That I Used to Know (reprise de Gotye)'],
+  ].map(([id, title]) => {
+    const url = 'https://www.youtube.com/watch?v=' + id;
+    return {
+      ...draft.live[0], id: 'youtube-' + id, title, url, sourceUrl: url,
+      officialVideo: true, videoSourceUrl: url, embed: { provider: 'youtube', id },
+    };
+  });
+
+  const [published] = readPublishedEditions([draft], legacyEdition, legacyItems);
+  assert.ok(published);
+  const editions = [first, published];
+  const active = selectEdition(editions, new Date('2026-11-22T23:00:00Z'));
+  assert.equal(active, published);
+
+  const personal = { id: 'spotify-AAAAAAAAAAAAAAAAAAAAAA', url: 'https://open.spotify.com/playlist/AAAAAAAAAAAAAAAAAAAAAA', creator: 'Ma sélection' };
+  const saved = { [personal.id]: { saved: true }, [historicalPlaylists[0].id]: { saved: true } };
+  const playlists = editionShelf(editions, active, 'playlists', [...historicalPlaylists, personal]);
+  const live = editionShelf(editions, active, 'live', historicalLive);
+  assert.deepEqual(playlists.map(item => item.id), [draft.playlists[0].id, ...historicalPlaylists.map(item => item.id), personal.id]);
+  assert.deepEqual(live.map(item => item.id), [...draft.live, ...historicalLive].map(item => item.id));
+  assert.deepEqual(playlists[0].embed, draft.playlists[0].embed);
+  assert.deepEqual(live.slice(0, 2).map(item => item.embed), draft.live.map(item => item.embed));
+  assert.deepEqual(playlists.filter(item => saved[item.id]?.saved), [historicalPlaylists[0], personal]);
+  assert.ok(!editionShelf(editions, first, 'playlists', historicalPlaylists).some(item => item.id === draft.playlists[0].id));
+});
+
+test('a returning recommendation keeps its stable ID and fills in missing metadata only for the same URL', () => {
+  const older = { id: 'spotify-64WCJyxoGnhFHdDe6LYwNG', url: 'https://open.spotify.com/playlist/64WCJyxoGnhFHdDe6LYwNG', genre: 'Soul' };
+  const active = {
+    startsOn: '2026-11-30',
+    playlists: [{ id: older.id, url: 'https://open.spotify.com/intl-fr/playlist/64WCJyxoGnhFHdDe6LYwNG?si=shared', reason: 'Le choix de la semaine' }],
+    live: [],
+  };
+  const early = { startsOn: '2026-11-23', playlists: [older], live: [] };
+  const unrelated = { id: older.id, url: 'https://open.spotify.com/playlist/AAAAAAAAAAAAAAAAAAAAAA', mood: 'Calme' };
+  assert.deepEqual(editionShelf([early, active], active, 'playlists', [unrelated]), [
+    { ...active.playlists[0], genre: older.genre },
+  ]);
 });
