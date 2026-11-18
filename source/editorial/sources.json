@@ -1,0 +1,14 @@
+[
+  {"id":"nts-floating-points","name":"NTS · Floating Points","mode":"automatic","method":"nts-episodes","url":"https://www.nts.live/shows/floating-points","feed":"https://www.nts.live/api/v2/shows/floating-points/episodes"},
+  {"id":"fip","name":"FIP","mode":"manual","method":"Choisir un replay sur la page officielle.","url":"https://www.radiofrance.fr/fip"},
+  {"id":"nova","name":"Radio Nova","mode":"manual","method":"Vérifier la page individuelle du replay.","url":"https://www.nova.fr/podcasts/"},
+  {"id":"belle-aventure","name":"Radio La Belle Aventure","mode":"manual","method":"Relever un lien de replay publié par la radio.","url":"https://www.radiolabelleaventure.com/"},
+  {"id":"colors","name":"COLORS","mode":"automatic","method":"youtube-atom","url":"https://www.youtube.com/@COLORS","channelId":"UCTiOxjxmB4RRdbGinK43LrA","titleContains":"a colors show"},
+  {"id":"bbc-live-lounge","name":"BBC Radio 1 · Live Lounge","mode":"automatic","method":"youtube-atom","url":"https://www.youtube.com/@BBCRadio1","channelId":"UC-FQUIVQ-bZiefzBiQAa8Fw","titleContains":"live lounge"},
+  {"id":"basique","name":"Basique","mode":"manual","method":"Vérifier la vidéo et sa chaîne à partir de la fiche officielle.","url":"https://www.france.tv/spectacles-et-culture/basique/"},
+  {"id":"triple-j","name":"triple j · Like A Version","mode":"automatic","method":"youtube-atom","url":"https://www.youtube.com/@triplej","channelId":"UCd2KNtfphz8HvYzM4pwtHmg","titleContains":"like a version"},
+  {"id":"coup-de-main","name":"Coup De Main","mode":"manual","method":"Vérifier la playlist et le nom du curateur dans Spotify.","url":"https://open.spotify.com/playlist/7LXauPdOlnW55FQNDWPotY"},
+  {"id":"kasey-gelsomino","name":"Kasey Gelsomino","mode":"manual","method":"Vérifier la playlist et le nom du curateur dans Spotify.","url":"https://open.spotify.com/playlist/2IbPrDIVfPmxZF6akHnj8R"},
+  {"id":"bandcamp-daily","name":"Bandcamp Daily","mode":"manual","method":"Vérifier la date sur la fiche Bandcamp du label ou de l’artiste.","url":"https://daily.bandcamp.com/"},
+  {"id":"pitchfork","name":"Pitchfork","mode":"manual","method":"Vérifier la date originale auprès de l’artiste ou du label.","url":"https://pitchfork.com/reviews/albums/"}
+]
