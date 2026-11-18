@@ -33,7 +33,7 @@ export const { albums, mixes, playlists, live, archive } = legacyCatalog as Reco
   'albums' | 'mixes' | 'playlists' | 'live' | 'archive', Recommendation[]
 >;
 
-interface Edition {
+export interface Edition {
   number: string;
   startsOn: string;
   label: string;

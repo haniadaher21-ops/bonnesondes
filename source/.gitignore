@@ -8,3 +8,5 @@ out/
 
 .discovery/
 editorial/editions.json.tmp
+
+.preview/

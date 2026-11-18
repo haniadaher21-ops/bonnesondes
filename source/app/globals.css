@@ -171,3 +171,12 @@ input[type=checkbox] { accent-color: var(--accent); }
 .radio-track p:last-child { font-size: 13px; }
 
 .radio-save { margin-top: 8px; min-height: 35px; }
+
+.preview-banner {
+  background: #9d211c;
+  color: #fff;
+  font-weight: 700;
+  margin: 1rem 0;
+  padding: 0.65rem 1rem;
+  text-align: center;
+}

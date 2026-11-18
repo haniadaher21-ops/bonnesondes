@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { ArrowDown, ArrowRight, ArrowUpRight, Bookmark, Disc3, Headphones, Menu, Music2, Play, Plus, Radio, X } from 'lucide-react';
-import { archive, catalog, issues, live, parsePlaylist, personalPlaylist, playlists, stations, type Format, type Recommendation } from './content';
+import { archive, catalog, issues, live, parsePlaylist, personalPlaylist, playlists, stations, type Edition, type Format, type Recommendation } from './content';
 
 import { selectEdition } from '../editorial/edition.mjs';
 import { editionShelf } from '../editorial/shelves.mjs';
@@ -26,7 +26,7 @@ type Reaction = typeof reactions[number];
 type Entry = { saved?: boolean; listened?: boolean; reaction?: Reaction };
 type Library = { entries: Record<string, Entry>; playlists: Recommendation[]; radioTracks: Record<string, Recommendation>; curators: string[] };
 const emptyLibrary: Library = { entries: {}, playlists: [], radioTracks: {}, curators: [] };
-const storageKey = 'off-frequency.library.v1';
+const productionStorageKey = 'off-frequency.library.v1';
 const dateLabel = (value: string) => new Intl.DateTimeFormat('fr-FR', {
   dateStyle: 'medium', timeZone: 'UTC',
 }).format(new Date(value + 'T12:00:00Z'));
@@ -62,9 +62,12 @@ function Section({ label, title, children, id }: { label?: string; title: string
   </section>;
 }
 
-export default function Journal() {
+export default function Journal({ preview }: { preview?: { edition: Edition; basePath: string } }) {
+  const previewEdition = preview?.edition;
+  const storageKey = previewEdition ? productionStorageKey + '.preview-' + previewEdition.number : productionStorageKey;
+  const availableIssues = previewEdition ? [...issues.filter(edition => edition.number !== previewEdition.number), previewEdition] : issues;
   const [page, setPage] = useState<Page>('rotation');
-  const [issue, setIssue] = useState(issues[0]);
+  const [issue, setIssue] = useState(previewEdition ?? issues[0]);
   const [library, setLibrary] = useState<Library>(emptyLibrary);
   const [ready, setReady] = useState(false);
   const [storageMessage, setStorageMessage] = useState('');
@@ -96,7 +99,7 @@ export default function Journal() {
     };
     readHash();
     window.addEventListener('hashchange', readHash);
-    setIssue(selectEdition(issues) ?? issues[0]);
+    setIssue(previewEdition ?? selectEdition(issues) ?? issues[0]);
     try {
       const raw = localStorage.getItem(storageKey);
       if (raw) setLibrary({ ...emptyLibrary, ...JSON.parse(raw) });
@@ -105,13 +108,13 @@ export default function Journal() {
     }
     setReady(true);
     return () => window.removeEventListener('hashchange', readHash);
-  }, []);
+  }, [previewEdition, storageKey]);
 
   useEffect(() => {
     if (!ready) return;
     try { localStorage.setItem(storageKey, JSON.stringify(library)); }
     catch { setStorageMessage('Ce navigateur n’a pas pu enregistrer les changements apportés à ta collection.'); }
-  }, [library, ready]);
+  }, [library, ready, storageKey]);
 
   useEffect(() => {
     const dialog = modal.current;
@@ -149,8 +152,8 @@ export default function Journal() {
     ...state, curators: state.curators.includes(name) ? state.curators.filter(value => value !== name) : [...state.curators, name],
   }));
 
-  const shelf = editionShelf(issues, issue, 'playlists', [...playlists, ...library.playlists]);
-  const liveShelf = editionShelf(issues, issue, 'live', live);
+  const shelf = editionShelf(availableIssues, issue, 'playlists', [...playlists, ...library.playlists]);
+  const liveShelf = editionShelf(availableIssues, issue, 'live', live);
 
   const addPlaylist = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -213,7 +216,7 @@ export default function Journal() {
       <option value="">Tout</option>{values.map(option => <option key={option} value={option}>{option in formatLabels ? formatLabels[option as Format] : option}</option>)}
     </select></label>;
 
-  const all = [...new Map([...catalog, ...issues.flatMap(edition => [
+  const all = [...new Map([...catalog, ...availableIssues.flatMap(edition => [
     edition.featured, ...edition.albums, ...edition.mixes, ...edition.playlists, ...edition.live,
   ]), ...library.playlists, ...Object.values(library.radioTracks)].map(item => [item.id, item])).values()];
   const shelfResults = shelf.filter(item => (!curator || (curator === '★ Créateurs favoris'
@@ -245,6 +248,7 @@ export default function Journal() {
     </header>
 
     <main className="shell" id="main-content">
+      {previewEdition && <p className="preview-banner">APERÇU · ÉDITION {previewEdition.number} · NON PUBLIÉE</p>}
       {storageMessage && <p className="empty" role="status">{storageMessage}</p>}
       {page === 'rotation' && <>
         <div className="issue-line"><span><span className="signal-dot" /> Journal musical</span><span>N° {issue.number} <b> / </b> {issue.label}</span></div>
@@ -254,7 +258,7 @@ export default function Journal() {
             <a className="text-link" href="#essential-albums">Voir la sélection <ArrowDown size={15} /></a></div>
         </header>
         <article className="feature">
-          <div className="feature-art"><img src="/art/disques.jpg" alt="Une personne porte une pile de disques vinyles sous le bras" /></div>
+          <div className="feature-art"><img src={(preview?.basePath ?? '') + '/art/disques.jpg'} alt="Une personne porte une pile de disques vinyles sous le bras" /></div>
           <div className="feature-copy">
             <p className="eyebrow"><span className="signal-dot" /> Mix de la semaine</p>
             <h2>{featured.title}</h2>
