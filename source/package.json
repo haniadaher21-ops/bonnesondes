@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "preview:002": "node scripts/build-preview-002.mjs",
     "typecheck": "tsc --noEmit",
     "discover": "node scripts/discover.mjs",
     "edition": "node scripts/prepare-edition.mjs",

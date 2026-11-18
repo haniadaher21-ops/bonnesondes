@@ -71,3 +71,22 @@ Lance `npm run edition -- selection.json` pour vérifier les champs et les quota
 Après relecture, lance `npm run edition -- selection.json --approve`. La commande ajoute l’édition validée à `editorial/editions.json` et conserve les éditions précédentes. Une sélection invalide laisse le fichier publié intact. Le site retient la dernière édition validée dont la date de début est arrivée à Paris. L’édition 001 est conservée comme édition historique.
 
 Fais relire la modification par PR. Le passage en ligne est une release distincte. La commande d’approbation et l’action de découverte n’actualisent jamais les fichiers publics de GitHub Pages. Exécute `npm test`, `npm run typecheck` et `npm run build` avant de proposer une release.
+
+### Aperçu de l’édition 002
+
+Avec les dépendances installées, lance `npm run preview:002`, puis
+`python3 -m http.server 8765 --bind 127.0.0.1 --directory .preview`.
+Ouvre [l’aperçu local](http://127.0.0.1:8765/bonnesondes/preview-002/).
+Ce build charge le brouillon 002 et l’affiche quelle que soit la date.
+Il utilise sa propre collection dans le navigateur.
+
+Après autorisation de publier **l’aperçu**, le dossier `preview-002/` à la
+racine du dépôt est servi par GitHub Pages à l’adresse
+[bonnesondes/preview-002/](https://haniadaher21-ops.github.io/bonnesondes/preview-002/).
+Une branche de PR seule ne suffit pas. Il faut fusionner la PR qui ajoute cet
+export dans `main`, puis attendre la fin du déploiement Pages. Pour actualiser
+l’export, remplace uniquement `preview-002/` à la racine par le contenu
+de `source/.preview/bonnesondes/preview-002/`.
+
+Pour retirer l’URL après la relecture, supprime uniquement le dossier
+`preview-002/` de `main` dans une PR de retrait et attends le déploiement Pages.
