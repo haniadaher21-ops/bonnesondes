@@ -71,3 +71,40 @@ Lance `npm run edition -- selection.json` pour vérifier les champs et les quota
 Après relecture, lance `npm run edition -- selection.json --approve`. La commande ajoute l’édition validée à `editorial/editions.json` et conserve les éditions précédentes. Une sélection invalide laisse le fichier publié intact. Le site retient la dernière édition validée dont la date de début est arrivée à Paris. L’édition 001 est conservée comme édition historique.
 
 Fais relire la modification par PR. Le passage en ligne est une release distincte. La commande d’approbation et l’action de découverte n’actualisent jamais les fichiers publics de GitHub Pages. Exécute `npm test`, `npm run typecheck` et `npm run build` avant de proposer une release.
+
+### Profil musical
+
+Dans **Ma collection → Modifier mon profil musical**, saisis tes artistes, radios,
+médias, genres ou ambiances et liens Spotify, puis enregistre. Le profil est
+modulable à tout moment sur ce navigateur. Les liens Spotify servent à retrouver
+les playlists et curateurs choisis. Aucun compte, historique d’écoute Spotify
+ou accès aux morceaux des playlists de tiers n’est utilisé.
+
+**Télécharger le profil** exporte les préférences enregistrées en JSON. Coche
+l’option des favoris et réactions pour ajouter ces signaux de Bonnes Ondes,
+dont les créateurs favoris, les identifiants des recommandations et les
+métadonnées utiles au classement. Le fichier peut alors contenir des goûts
+personnels, y compris des titres ou artistes présents dans les identifiants de
+morceaux radio. **Importer un profil JSON** remplace les préférences et le
+dernier lot de signaux importés. La collection de ce navigateur garde ses
+favoris et réactions. Les réactions locales priment sur les signaux importés
+pour les mêmes identifiants lors d’un export.
+
+Pour les connecteurs #10 et le classement #11, le contrat versionné se trouve
+dans `editorial/taste-profile.mjs`. Le parseur `parseTasteProfile(json)`
+valide et normalise le format. Les connecteurs peuvent lire `favoriteArtists`,
+`favoriteRadios`, `favoritePublications` et `spotify` pour prioriser des
+sources autorisées. Le classement peut aussi lire `explore`, `avoid` et
+`signals`. La fixture `editorial/taste-profile.example.json` est neutre.
+
+Le site statique n’a pas de synchronisation automatique. Pour les futures
+tâches planifiées, place l’export hors du dépôt sur la machine ou le runner
+privé qui exécute les tâches, par exemple dans
+`~/.config/bonnes-ondes/taste-profile.json` (répertoire en mode 700 et fichier
+en mode 600 sur Unix). Configure le futur lecteur avec un chemin privé, par
+exemple via `TASTE_PROFILE_PATH`, puis remplace ce fichier uniquement quand
+tu veux transmettre des changements. Le fichier reste lisible par la tâche
+sur cette machine, même navigateur fermé. Le lecteur planifié sera ajouté
+dans les phases suivantes. Les workflows publics doivent utiliser la fixture
+neutre. Garde les exports personnels et les résultats personnalisés hors
+des commits, builds statiques, journaux, artefacts et PR publics.

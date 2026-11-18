@@ -171,3 +171,35 @@ input[type=checkbox] { accent-color: var(--accent); }
 .radio-track p:last-child { font-size: 13px; }
 
 .radio-save { margin-top: 8px; min-height: 35px; }
+
+.taste-profile textarea {
+  background: var(--paper, #f5efe1);
+  border: 1px solid currentColor;
+  color: inherit;
+  font: inherit;
+  padding: 0.65rem;
+  resize: vertical;
+  width: 100%;
+}
+
+.taste-profile small {
+  display: block;
+  font-weight: normal;
+}
+
+.taste-profile-transfer {
+  display: grid;
+  gap: 0.75rem;
+  margin-block: 1.5rem;
+}
+
+.taste-profile-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.taste-profile-actions input {
+  display: block;
+}

@@ -8,3 +8,6 @@ out/
 
 .discovery/
 editorial/editions.json.tmp
+
+# Personal preference exports
+bonnes-ondes-profil*.json
