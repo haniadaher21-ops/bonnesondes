@@ -1,28 +1,26 @@
-import { XMLParser, XMLValidator } from 'fast-xml-parser';
 import { canonicalUrl, isoDate, sourceUrl } from '../editorial/edition.mjs';
+import { editorialFeed, parseFeed, reviewedArtist, spotifyCandidate, text } from './discovery-feeds.mjs';
 
-const parser = new XMLParser({
-  ignoreAttributes: false, parseTagValue: false, isArray: tag => tag === 'entry',
-  htmlEntities: false, maxNestedTags: 40,
-});
-const list = (value, field) => {
-  if (!Array.isArray(value)) throw new Error('Champ absent ou invalide : ' + field);
-  return value;
-};
-const text = value => typeof value === 'string' ? value.trim() : '';
+const formats = ['Album', 'Radio show', 'Playlist', 'Live session'];
+const label = value => text(value).normalize('NFC').toLowerCase();
+const excludedVideo = /\b(?:shorts?|interview|behind the scenes|behind (?:the|.+ like a) version|teaser|trailer|sneak peek|official music video|preview|highlight(?:s)?|extrait)\b/i;
 
 function ntsCandidates(payload) {
-  const episodes = list(payload?.results, 'results');
-  return episodes.filter(episode => episode.status === 'published').slice(0, 6).map(episode => {
+  const episodes = payload?.results;
+  if (!Array.isArray(episodes)) throw new Error('Liste des épisodes NTS absente.');
+  return episodes.filter(episode => episode?.status === 'published').slice(0, 8).flatMap(episode => {
     const { show_alias: show, episode_alias: alias } = episode;
     const title = text(episode.name);
     const date = text(episode.broadcast).slice(0, 10);
     if (!title || !isoDate(date) || ![show, alias].every(value => typeof value === 'string' && /^[a-z0-9-]+$/.test(value))) {
-      throw new Error('Épisode NTS sans titre, date ou identifiant vérifiable.');
+      return [];
     }
+    const tracklist = sourceUrl(episode.links?.find(link => link.rel === 'tracklist')?.href);
+    const tracklistPath = '/api/v2/shows/' + show + '/episodes/' + alias + '/tracklist';
     return {
+      ...(tracklist?.origin === 'https://www.nts.live' && tracklist.pathname === tracklistPath && { tracklistUrl: tracklist.href }),
       id: 'nts-' + alias, title, format: 'Radio show', source: 'NTS Radio', date,
-      dateKind: 'broadcast',
+      dateKind: 'broadcast', broadcastAt: text(episode.broadcast),
       url: 'https://www.nts.live/shows/' + show + '/episodes/' + alias,
       artwork: sourceUrl(episode.media?.picture_medium)?.href,
     };
@@ -30,26 +28,29 @@ function ntsCandidates(payload) {
 }
 
 function youtubeCandidates(xml, source) {
-  if (/<!DOCTYPE|<!ENTITY/i.test(xml) || XMLValidator.validate(xml) !== true) {
-    throw new Error('Flux Atom invalide.');
-  }
-  const feed = parser.parse(xml).feed;
+  const feed = parseFeed(xml).feed;
   const feedChannel = feed?.['yt:channelId'];
   if (![source.channelId, source.channelId.slice(2)].includes(feedChannel)) {
     throw new Error('Chaîne YouTube non confirmée.');
   }
-  return (feed.entry ?? []).filter(entry => !source.titleContains
-    || text(entry.title).toLowerCase().includes(source.titleContains.toLowerCase())).slice(0, 6).map(entry => {
+  return (feed.entry ?? []).filter(entry => {
+    const title = text(entry.title);
+    const alternate = sourceUrl(entry.link?.['@_href']);
+    return !alternate?.pathname.startsWith('/shorts/') && !excludedVideo.test(title)
+      && (!source.titleContains || label(title).includes(label(source.titleContains)));
+  }).slice(0, 8).flatMap(entry => {
     const id = entry['yt:videoId'];
     const title = text(entry.title);
     const publishedAt = text(entry.published);
     const date = publishedAt.slice(0, 10);
     if (entry['yt:channelId'] !== source.channelId || !/^[a-zA-Z0-9_-]{11}$/.test(id ?? '') || !title || !isoDate(date)) {
-      throw new Error('Vidéo sans chaîne, titre, date ou identifiant vérifiable.');
+      return [];
     }
     return {
       id: 'youtube-' + id, title, format: 'Live session', source: source.name,
-      url: 'https://www.youtube.com/watch?v=' + id, date, dateKind: 'published', publishedAt,
+      url: 'https://www.youtube.com/watch?v=' + id, creator: source.artist, date, dateKind: 'published', publishedAt,
+      videoKind: /\b(?:covers?|reprise)\b/i.test(title) ? 'cover' : 'live',
+      performanceKey: source.channelId + ':' + label(title).replace(/[^\p{L}\p{N}]+/gu, ' ').trim(),
     };
   });
 }
@@ -57,89 +58,214 @@ function youtubeCandidates(xml, source) {
 export function deduplicate(candidates, existing = []) {
   const ids = new Set(existing.map(item => item.id));
   const links = new Set(existing.map(item => canonicalUrl(item.url)).filter(Boolean));
+  const performances = new Set(existing.map(item => item.performanceKey).filter(Boolean));
   const fresh = [];
   const duplicates = [];
   for (const item of candidates) {
     const key = canonicalUrl(item.url);
-    if (ids.has(item.id) || (key && links.has(key))) {
+    if ((item.id && ids.has(item.id)) || (key && links.has(key)) || (item.performanceKey && performances.has(item.performanceKey))) {
       duplicates.push(item);
     } else {
       fresh.push(item);
+      if (item.id) ids.add(item.id);
+      if (key) links.add(key);
+      if (item.performanceKey) performances.add(item.performanceKey);
     }
-    ids.add(item.id);
-    if (key) links.add(key);
   }
   return { candidates: fresh, duplicates };
 }
 
-async function request(fetcher, url) {
-  const response = await fetcher(url, { signal: AbortSignal.timeout(10_000) });
-  if (!response.ok) throw new Error('HTTP ' + response.status + ' (' + url + ')');
-  return response;
+function requester(fetcher) {
+  const pending = new Map();
+  const limited = new Set();
+  return async url => {
+    const target = sourceUrl(url);
+    if (!target) throw new Error('URL HTTPS invalide.');
+    const origin = target.origin;
+    const next = (pending.get(origin) ?? Promise.resolve()).then(async () => {
+      if (limited.has(origin)) throw new Error('Limite HTTP 429 atteinte pour cet hôte.');
+      let response;
+      try {
+        response = await fetcher(url, { signal: AbortSignal.timeout(10_000), redirect: 'follow' });
+      } catch {
+        throw new Error('Réseau indisponible ou délai dépassé.');
+      }
+      if (response.status === 429) limited.add(origin);
+      if (!response.ok) {
+        await response.body?.cancel();
+        throw new Error('HTTP ' + response.status);
+      }
+      if (response.url && !sourceUrl(response.url)) {
+        await response.body?.cancel();
+        throw new Error('Redirection vers une URL non HTTPS.');
+      }
+      return response;
+    });
+    pending.set(origin, next.catch(() => {}));
+    return next;
+  };
 }
 
-export async function discover({ sources, manual = [], existing = [], fetcher = fetch, now = new Date() }) {
-  const collectedAt = now.toISOString();
-  const outcomes = await Promise.all(sources.filter(source => source.mode === 'automatic').map(async source => {
-    const feed = source.method === 'youtube-atom'
-      ? 'https://www.youtube.com/feeds/videos.xml?channel_id=' + encodeURIComponent(source.channelId)
-      : source.feed;
-    try {
-      const response = await request(fetcher, feed);
-      const items = source.method === 'nts-episodes'
-        ? ntsCandidates(await response.json())
-        : youtubeCandidates(await response.text(), source);
-      const verified = await Promise.allSettled(items.map(async item => {
-        if (source.method === 'youtube-atom') {
-          const metadata = await (await request(fetcher, 'https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent(item.url))).json();
-          if (!text(metadata.title)) throw new Error('Vidéo non confirmée : ' + item.url);
-        } else {
-          await (await request(fetcher, item.url)).body?.cancel();
-        }
-        return { ...item, sourceUrl: feed, collectedAt };
-      }));
-      return {
-        name: source.name, feed,
-        items: verified.flatMap(result => result.status === 'fulfilled' ? [result.value] : []),
-        errors: verified.flatMap(result => result.status === 'rejected' ? [String(result.reason)] : []),
-      };
-    } catch (error) {
-      return { name: source.name, feed, items: [], errors: [String(error)] };
-    }
+function prioritize(sources, profile) {
+  if (!profile) return sources.filter(source => !source.onlyWhenFollowed);
+  const preferences = new Set([
+    ...profile.favoriteArtists, ...profile.favoriteRadios, ...profile.favoritePublications,
+  ].map(label));
+  const follows = profile.spotify.slice(0, 12).map((item, index) => ({
+    id: 'spotify-follow-' + (index + 1), name: item.name ?? 'Spotify · lien suivi',
+    method: item.kind === 'playlist' ? 'spotify-playlist' : 'Profil suivi. Son catalogue nécessite un accès Spotify autorisé.',
+    mode: item.kind === 'playlist' ? 'automatic' : 'limited',
+    url: item.url, format: 'Playlist', provider: 'Spotify', priority: 2,
   }));
+  const enabled = sources.filter(source => !source.onlyWhenFollowed || preferences.has(label(source.artist)));
+  return [...enabled, ...follows].sort((a, b) => {
+    const score = item => item.priority ?? Number([item.provider, item.name, item.artist].some(name => preferences.has(label(name))));
+    return score(b) - score(a);
+  });
+}
+
+async function verifyCandidate(item, source, request) {
+  if (item.format === 'Playlist') {
+    const metadata = await (await request('https://open.spotify.com/oembed?url=' + encodeURIComponent(item.url))).json();
+    const iframe = sourceUrl(metadata.iframe_url);
+    if (!text(metadata.title) || metadata.provider_name !== 'Spotify'
+      || iframe?.origin !== 'https://open.spotify.com' || iframe.pathname !== '/embed/playlist/' + item.embed.id) {
+      throw new Error('Destination de playlist non confirmée.');
+    }
+    return { ...item, title: text(metadata.title), creator: source.curator, source: 'Spotify' };
+  }
+  if (source.method === 'youtube-atom') {
+    const metadata = await (await request('https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent(item.url))).json();
+    if (!text(metadata.title) || excludedVideo.test(metadata.title)) throw new Error('Vidéo non confirmée.');
+    return { ...item, videoSourceUrl: item.url, officialVideo: true, embed: { provider: 'youtube', id: item.id.slice(8) } };
+  }
+  if (source.method === 'nts-episodes') {
+    await (await request(item.url)).body?.cancel();
+  }
+  if (source.method === 'pitchfork-rss') {
+    const response = await request(item.url);
+    const url = response.url && sourceUrl(response.url);
+    if (url && url.hostname.replace(/^www\./, '') !== 'pitchfork.com') {
+      await response.body?.cancel();
+      throw new Error('Critique redirigée hors de Pitchfork.');
+    }
+    return { ...item, creator: reviewedArtist(await response.text(), item.title) };
+  }
+  return item;
+}
+
+async function collect(source, request, collectedAt) {
+  const sourceId = source.id ?? source.name;
+  if (source.mode !== 'automatic') {
+    return { sourceId, name: source.name, feed: source.url, format: source.format, provider: source.provider,
+      status: source.mode, note: source.method, items: [], leads: [], errors: [] };
+  }
+  const feed = source.method === 'youtube-atom'
+    ? 'https://www.youtube.com/feeds/videos.xml?channel_id=' + encodeURIComponent(source.channelId)
+    : source.feed ?? source.url;
+  const outcome = { sourceId, name: source.name, feed, format: source.format, provider: source.provider,
+    status: 'ok', items: [], leads: [], errors: [] };
+  try {
+    let items;
+    switch (source.method) {
+      case 'nts-episodes': items = ntsCandidates(await (await request(feed)).json()); break;
+      case 'youtube-atom': items = youtubeCandidates(await (await request(feed)).text(), source); break;
+      case 'spotify-playlist': items = [spotifyCandidate(source.url, source.provenance ?? feed)].filter(Boolean); break;
+      case 'podcast-rss':
+      case 'pitchfork-rss':
+      case 'label-atom':
+      case 'bandcamp-notes': {
+        const parsed = editorialFeed(await (await request(feed)).text(), source);
+        items = parsed.candidates;
+        outcome.leads = parsed.leads.map(item => ({
+          ...item, sourceId, source: source.name, sourceUrl: feed, collectedAt, verificationStatus: 'editorial-lead',
+        }));
+        break;
+      }
+      default: throw new Error('Connecteur inconnu.');
+    }
+    for (const item of items.slice(0, 8)) {
+      let verified = item;
+      try {
+        verified = await verifyCandidate(item, source, request);
+      } catch (error) {
+        outcome.errors.push(error instanceof SyntaxError ? 'Réponse fournisseur invalide.' : error.message);
+        if (source.method !== 'pitchfork-rss') continue;
+      }
+      outcome.items.push({
+        source: source.name, ...verified, sourceId, sourceUrl: verified.sourceUrl ?? feed, collectedAt,
+        verificationStatus: verified.verificationStatus ?? 'source-verified',
+      });
+    }
+    outcome.status = outcome.errors.length
+      ? outcome.items.length || outcome.leads.length ? 'partial' : 'error'
+      : outcome.items.length || outcome.leads.length ? 'ok' : 'empty';
+  } catch (error) {
+    outcome.status = 'error';
+    outcome.errors.push(error instanceof SyntaxError ? 'Réponse fournisseur invalide.' : error.message);
+  }
+  return outcome;
+}
+
+export async function discover({ sources, manual = [], existing = [], profile, fetcher = fetch, now = new Date() }) {
+  const collectedAt = now.toISOString();
+  const request = requester(fetcher);
+  const ordered = prioritize(sources, profile);
+  const outcomes = await Promise.all(ordered.map(source => collect(source, request, collectedAt)));
   const manualErrors = [];
   const manualItems = [];
   for (const [index, item] of manual.entries()) {
     if (!item || !text(item.id) || !text(item.title) || !text(item.source) || !sourceUrl(item.url)
-      || !sourceUrl(item.sourceUrl) || !['Album', 'Radio show', 'Playlist', 'Live session'].includes(item.format)
+      || !sourceUrl(item.sourceUrl) || !formats.includes(item.format)
       || item.verified !== true || (item.date !== undefined && !isoDate(item.date))
       || (item.format === 'Album' && !isoDate(item.date))) {
       manualErrors.push('Candidat manuel invalide à la ligne de liste ' + (index + 1) + '.');
       continue;
     }
-    manualItems.push({ ...item, collectedAt });
+    manualItems.push({ ...item, sourceId: item.sourceId ?? 'manual', collectedAt, verificationStatus: 'editor-verified',
+      ...(item.format === 'Album' && { dateKind: 'release', releaseDate: item.date }) });
   }
+  const { candidates, duplicates } = deduplicate([...manualItems, ...outcomes.flatMap(outcome => outcome.items)], existing);
+  const leads = deduplicate(outcomes.flatMap(outcome => outcome.leads)).candidates;
+  const coverage = Object.fromEntries(formats.map(format => {
+    const items = candidates.filter(item => item.format === format);
+    return [format, {
+      count: items.length,
+      needsReleaseDate: items.filter(item => item.verificationStatus === 'release-date-needed').length,
+      sources: outcomes.filter(source => source.format === format || source.items.some(item => item.format === format)).map(({ sourceId, status }) => ({ sourceId, status })),
+    }];
+  }));
   return {
-    collectedAt, ...deduplicate([...manualItems, ...outcomes.flatMap(outcome => outcome.items)], existing),
-    sources: outcomes.map(({ name, feed, items, errors }) => ({ name, feed, count: items.length, errors })),
-    manualErrors,
+    collectedAt, candidates, duplicates, leads, coverage, manualErrors,
+    sources: outcomes.map(({ items, leads, ...source }) => ({ ...source, count: items.length, leads: leads.length })),
   };
 }
 
 export function renderReport(result) {
   const clean = value => String(value).replace(/[\r\n]/g, ' ').replace(/[<\[\]`]/g, '\\$&');
+  const dates = { broadcast: 'diffusion', published: 'publication du lien', release: 'sortie originale' };
+  const status = { ok: 'actif', partial: 'partiel', empty: 'aucun résultat', error: 'en erreur', manual: 'manuel', limited: 'limité' };
   const lines = items => items.length ? items.map(item =>
-    '- ' + clean(item.title) + ' · ' + clean(item.source) + (item.date ? ' · ' + item.date + (item.dateKind === 'broadcast' ? ' (diffusion)' : '') : '')
+    '- ' + clean(item.title) + ' · ' + clean(item.source) + (item.date ? ' · ' + item.date + (dates[item.dateKind] ? ' (' + dates[item.dateKind] + ')' : '') : '')
+    + (item.verificationStatus === 'release-date-needed' ? ' · date originale à vérifier' : '')
     + ' · <' + item.url + '> · Source <' + item.sourceUrl + '>'
   ).join('\n') : 'Aucun.';
   return [
     '# Rapport de découverte', 'Collecte : ' + result.collectedAt,
+    '## Couverture par format',
+    Object.entries(result.coverage).map(([format, data]) =>
+      '- ' + format + ' · ' + data.count + ' nouveau(x)' +
+      (data.needsReleaseDate ? ' · ' + data.needsReleaseDate + ' date(s) de sortie à vérifier' : '') +
+      (data.sources.length ? ' · ' + data.sources.map(source => clean(source.sourceId) + ' (' + status[source.status] + ')').join(', ') : '')
+    ).join('\n'),
     '## Nouveaux candidats (' + result.candidates.length + ')', lines(result.candidates),
+    '## Pistes éditoriales (' + result.leads.length + ')', lines(result.leads),
     '## Doublons (' + result.duplicates.length + ')', lines(result.duplicates),
     '## État des sources',
-    result.sources.map(source => '- ' + source.name + ' · ' + source.count + ' vérifié(s) · <' + source.feed + '>\n'
-      + source.errors.map(error => '  - Indisponibilité : ' + clean(error)).join('\n')).join('\n'),
+    result.sources.map(source => '- ' + clean(source.name) + ' · ' + status[source.status] + ' · ' + source.count
+      + ' candidat(s), ' + source.leads + ' piste(s)' + (source.feed ? ' · <' + source.feed + '>' : '')
+      + (source.note ? ' · ' + clean(source.note) : '')
+      + source.errors.map(error => '\n  - Indisponibilité : ' + clean(error)).join('')).join('\n'),
     ...result.manualErrors.map(error => '- ' + error),
-    'Une candidature reste à vérifier et à sélectionner avant publication.',
   ].join('\n\n') + '\n';
 }

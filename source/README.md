@@ -40,7 +40,19 @@ Dans GitHub, ouvre **Actions → Découvrir des candidats → Run workflow**, s�
 
 En local, lance `npm ci` puis `npm run discover` depuis `source/`. Ouvre `.discovery/rapport.md` pour lire les nouveautés de la collecte, les doublons et les erreurs, ou `.discovery/candidats.json` pour récupérer les données et la provenance. « Nouveau candidat » désigne un lien absent du catalogue, quelle que soit l’ancienneté du contenu. Un rapport réel se trouve dans [editorial/exemple-rapport.md](editorial/exemple-rapport.md).
 
-Le registre [editorial/sources.json](editorial/sources.json) contient les liens et méthodes. NTS utilise les [données publiques de sa série Floating Points](https://www.nts.live/api/v2/shows/floating-points/episodes) et vérifie les fiches des épisodes. Le champ `date` correspond à la date de diffusion pour NTS. YouTube utilise les [flux Atom officiels](https://developers.google.com/youtube/data/guides/push_notifications), vérifie les fiches via oEmbed et enregistre la date de publication de la vidéo. Les filtres de titre ciblent des performances mais une vérification humaine reste nécessaire. Une source indisponible ou une vidéo invérifiable est signalée dans le rapport. Les sources manuelles s’ajoutent sans API ni identifiants Spotify.
+Le registre [editorial/sources.json](editorial/sources.json) permet d’ajouter des sources officielles par méthode, avec un identifiant stable, un fournisseur, le format principal, l’URL du flux et, pour les flux éditoriaux, le préfixe attendu des liens individuels.
+
+| Fournisseur | Couverture et limites |
+| --- | --- |
+| [Pitchfork](https://pitchfork.com/info/rss/) | RSS Album Reviews et Best New Albums. L’artiste vient des données structurées de la critique quand il y figure. `publishedAt` date la critique. Pour une date originale, vérifier une source primaire de l’artiste ou du label et ajouter un candidat validé avec `dateKind: release`. |
+| [FIP](https://www.radiofrance.fr/fip/podcasts/club-jazzafip) | RSS officiel de Club Jazzafip, avec fiches de replays. Les conditions [Open API de Radio France](https://developers.radiofrance.fr/doc/faq) limitent l’agrégation et la conservation des données. La programmation en direct nécessiterait une autorisation spécifique. |
+| [Radio Nova](https://www.nova.fr/podcasts/nova-club/) | RSS de Nova Club et liens d’épisodes individuels. La Belle Aventure reste en collecte manuelle tant qu’un flux public vérifié fait défaut. |
+| [NTS](https://www.nts.live/) | Floating Points, Moxie et Don’t Trip. Les fiches épisodes sont vérifiées et les liens de tracklist sont copiés seulement lorsqu’ils figurent dans les données NTS. `broadcastAt` date la diffusion. |
+| [YouTube](https://developers.google.com/youtube/v3/guides/push_notifications) | Atom des chaînes officielles, liens vérifiés via oEmbed. Les liens /shorts/ et les titres d’entretiens, clips ou extraits identifiables sont écartés. Le flux ne fournit pas la durée. Vérifier l’intégralité en relecture. Une chaîne d’artiste associée à un nom dans le registre peut être activée par le profil. |
+| [Bandcamp Notes](https://daily.bandcamp.com/features/introducing-bandcamp-notes) et labels | Les flux publiés par Bandcamp Notes, Rhymesayers et Mr Bongo produisent des pistes avec liens primaires quand disponibles. Un intitulé explicite de Bandcamp Notes peut donner un album à vérifier. Les liens Bandcamp orientent la vérification humaine. [La politique de Bandcamp](https://get.bandcamp.help/en/articles/15263124-bandcamp-s-acceptable-use-and-moderation-policy) exclut l’aspiration du site. |
+| [Spotify](https://developer.spotify.com/documentation/embeds/reference/oembed) | Les playlists officielles du registre, les liens issus de flux de labels et les playlists directement suivies sont vérifiés via oEmbed. Les profils de curateur suivis sont signalés avec une couverture limitée. Aucun accès au catalogue du curateur ou aux morceaux et aucun OAuth. |
+
+Les connecteurs en cours fonctionnent sans clé ni coût d’API. Les requêtes sont bornées par flux, limitées à une requête à la fois par hôte pour les en-têtes et suspendues pour l’hôte en cas de HTTP 429 jusqu’au prochain lancement. Les erreurs et les flux sans résultat sont signalés séparément. Un candidat `release-date-needed` est une piste à compléter avant de préparer une édition. Le rapport JSON sépare candidats, doublons, pistes éditoriales et couverture par format.
 
 ### 2. Vérifier
 
@@ -97,14 +109,16 @@ valide et normalise le format. Les connecteurs peuvent lire `favoriteArtists`,
 sources autorisées. Le classement peut aussi lire `explore`, `avoid` et
 `signals`. La fixture `editorial/taste-profile.example.json` est neutre.
 
-Le site statique n’a pas de synchronisation automatique. Pour les futures
-tâches planifiées, place l’export hors du dépôt sur la machine ou le runner
-privé qui exécute les tâches, par exemple dans
+Le site statique n’a pas de synchronisation automatique. Sur une machine ou
+un runner privé, place l’export hors du dépôt, par exemple dans
 `~/.config/bonnes-ondes/taste-profile.json` (répertoire en mode 700 et fichier
-en mode 600 sur Unix). Configure le futur lecteur avec un chemin privé, par
-exemple via `TASTE_PROFILE_PATH`, puis remplace ce fichier uniquement quand
-tu veux transmettre des changements. Le fichier reste lisible par la tâche
-sur cette machine, même navigateur fermé. Le lecteur planifié sera ajouté
-dans les phases suivantes. Les workflows publics doivent utiliser la fixture
-neutre. Garde les exports personnels et les résultats personnalisés hors
-des commits, builds statiques, journaux, artefacts et PR publics.
+en mode 600 sur Unix). Lance `TASTE_PROFILE_PATH=/chemin/privé/profil.json npm run discover`.
+Le fichier reste accessible au collecteur même navigateur fermé. Les sources
+connues que tu suis passent en priorité, les chaînes d’artistes correspondantes
+sont activées et les playlists suivies sont vérifiées. Le classement est prévu
+dans #11. Les rapports sont enregistrés hors du dépôt, dans un répertoire
+temporaire privé, et leur contenu reste hors de la sortie standard.
+
+GitHub Actions utilise la fixture neutre et refuse `TASTE_PROFILE_PATH`.
+Garde les exports et résultats personnels hors des commits, builds statiques,
+journaux, artefacts et PR publics.

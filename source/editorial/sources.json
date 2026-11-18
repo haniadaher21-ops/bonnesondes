@@ -1,14 +1,213 @@
 [
-  {"id":"nts-floating-points","name":"NTS · Floating Points","mode":"automatic","method":"nts-episodes","url":"https://www.nts.live/shows/floating-points","feed":"https://www.nts.live/api/v2/shows/floating-points/episodes"},
-  {"id":"fip","name":"FIP","mode":"manual","method":"Choisir un replay sur la page officielle.","url":"https://www.radiofrance.fr/fip"},
-  {"id":"nova","name":"Radio Nova","mode":"manual","method":"Vérifier la page individuelle du replay.","url":"https://www.nova.fr/podcasts/"},
-  {"id":"belle-aventure","name":"Radio La Belle Aventure","mode":"manual","method":"Relever un lien de replay publié par la radio.","url":"https://www.radiolabelleaventure.com/"},
-  {"id":"colors","name":"COLORS","mode":"automatic","method":"youtube-atom","url":"https://www.youtube.com/@COLORS","channelId":"UCTiOxjxmB4RRdbGinK43LrA","titleContains":"a colors show"},
-  {"id":"bbc-live-lounge","name":"BBC Radio 1 · Live Lounge","mode":"automatic","method":"youtube-atom","url":"https://www.youtube.com/@BBCRadio1","channelId":"UC-FQUIVQ-bZiefzBiQAa8Fw","titleContains":"live lounge"},
-  {"id":"basique","name":"Basique","mode":"manual","method":"Vérifier la vidéo et sa chaîne à partir de la fiche officielle.","url":"https://www.france.tv/spectacles-et-culture/basique/"},
-  {"id":"triple-j","name":"triple j · Like A Version","mode":"automatic","method":"youtube-atom","url":"https://www.youtube.com/@triplej","channelId":"UCd2KNtfphz8HvYzM4pwtHmg","titleContains":"like a version"},
-  {"id":"coup-de-main","name":"Coup De Main","mode":"manual","method":"Vérifier la playlist et le nom du curateur dans Spotify.","url":"https://open.spotify.com/playlist/7LXauPdOlnW55FQNDWPotY"},
-  {"id":"kasey-gelsomino","name":"Kasey Gelsomino","mode":"manual","method":"Vérifier la playlist et le nom du curateur dans Spotify.","url":"https://open.spotify.com/playlist/2IbPrDIVfPmxZF6akHnj8R"},
-  {"id":"bandcamp-daily","name":"Bandcamp Daily","mode":"manual","method":"Vérifier la date sur la fiche Bandcamp du label ou de l’artiste.","url":"https://daily.bandcamp.com/"},
-  {"id":"pitchfork","name":"Pitchfork","mode":"manual","method":"Vérifier la date originale auprès de l’artiste ou du label.","url":"https://pitchfork.com/reviews/albums/"}
+  {
+    "id": "pitchfork-reviews",
+    "name": "Pitchfork · Album Reviews",
+    "provider": "Pitchfork",
+    "format": "Album",
+    "mode": "automatic",
+    "method": "pitchfork-rss",
+    "url": "https://pitchfork.com/info/rss/",
+    "feed": "https://pitchfork.com/feed/feed-album-reviews/rss",
+    "itemPrefix": "/reviews/"
+  },
+  {
+    "id": "pitchfork-best",
+    "name": "Pitchfork · Best New Albums",
+    "provider": "Pitchfork",
+    "format": "Album",
+    "mode": "automatic",
+    "method": "pitchfork-rss",
+    "url": "https://pitchfork.com/info/rss/",
+    "feed": "https://pitchfork.com/feed/reviews/best/albums/rss",
+    "itemPrefix": "/reviews/"
+  },
+  {
+    "id": "fip-jazz",
+    "name": "FIP · Club Jazzafip",
+    "provider": "FIP",
+    "format": "Radio show",
+    "mode": "automatic",
+    "method": "podcast-rss",
+    "url": "https://www.radiofrance.fr/fip/podcasts/club-jazzafip",
+    "feed": "https://radiofrance-podcast.net/podcast09/podcast_13d4ef2f-2aca-4331-949b-bc8da638d670.xml",
+    "itemPrefix": "/fip/podcasts/club-jazzafip/"
+  },
+  {
+    "id": "nova-club",
+    "name": "Radio Nova · Nova Club",
+    "provider": "Radio Nova",
+    "format": "Radio show",
+    "mode": "automatic",
+    "method": "podcast-rss",
+    "url": "https://podcasts.nova.fr/radio-nova-nova-club",
+    "feed": "https://podcasts.nova.fr/radio-nova-nova-club/feed/rss/website.xml",
+    "itemPrefix": "/radio-nova-nova-club/"
+  },
+  {
+    "id": "nts-floating-points",
+    "name": "NTS · Floating Points",
+    "provider": "NTS",
+    "format": "Radio show",
+    "mode": "automatic",
+    "method": "nts-episodes",
+    "url": "https://www.nts.live/shows/floating-points",
+    "feed": "https://www.nts.live/api/v2/shows/floating-points/episodes"
+  },
+  {
+    "id": "nts-moxie",
+    "name": "NTS · Moxie",
+    "provider": "NTS",
+    "format": "Radio show",
+    "mode": "automatic",
+    "method": "nts-episodes",
+    "url": "https://www.nts.live/shows/moxie",
+    "feed": "https://www.nts.live/api/v2/shows/moxie/episodes"
+  },
+  {
+    "id": "nts-dont-trip",
+    "name": "NTS · Don't Trip",
+    "provider": "NTS",
+    "format": "Radio show",
+    "mode": "automatic",
+    "method": "nts-episodes",
+    "url": "https://www.nts.live/shows/dont-trip",
+    "feed": "https://www.nts.live/api/v2/shows/dont-trip/episodes"
+  },
+  {
+    "id": "colors",
+    "name": "COLORS",
+    "mode": "automatic",
+    "method": "youtube-atom",
+    "url": "https://www.youtube.com/@COLORS",
+    "channelId": "UCTiOxjxmB4RRdbGinK43LrA",
+    "titleContains": "a colors show",
+    "provider": "YouTube",
+    "format": "Live session"
+  },
+  {
+    "id": "bbc-live-lounge",
+    "name": "BBC Radio 1 · Live Lounge",
+    "mode": "automatic",
+    "method": "youtube-atom",
+    "url": "https://www.youtube.com/@BBCRadio1",
+    "channelId": "UC-FQUIVQ-bZiefzBiQAa8Fw",
+    "titleContains": "live lounge",
+    "provider": "YouTube",
+    "format": "Live session"
+  },
+  {
+    "id": "triple-j",
+    "name": "triple j · Like A Version",
+    "mode": "automatic",
+    "method": "youtube-atom",
+    "url": "https://www.youtube.com/@triplej",
+    "channelId": "UCd2KNtfphz8HvYzM4pwtHmg",
+    "titleContains": "like a version",
+    "provider": "YouTube",
+    "format": "Live session"
+  },
+  {
+    "id": "basique",
+    "name": "Basique",
+    "mode": "manual",
+    "method": "Vérifier la vidéo et sa chaîne à partir de la fiche officielle.",
+    "url": "https://www.france.tv/spectacles-et-culture/basique/",
+    "provider": "YouTube",
+    "format": "Live session"
+  },
+  {
+    "id": "bandcamp-notes",
+    "name": "Bandcamp Notes",
+    "provider": "Bandcamp",
+    "format": "Album",
+    "mode": "automatic",
+    "method": "bandcamp-notes",
+    "url": "https://bandcamp.substack.com/",
+    "feed": "https://bandcamp.substack.com/feed",
+    "itemPrefix": "/p/"
+  },
+  {
+    "id": "rhymesayers",
+    "name": "Rhymesayers Entertainment",
+    "provider": "Rhymesayers",
+    "format": "Album",
+    "mode": "automatic",
+    "method": "label-atom",
+    "url": "https://rhymesayers.com/blogs/news",
+    "feed": "https://rhymesayers.com/blogs/news.atom",
+    "itemPrefix": "/blogs/news/"
+  },
+  {
+    "id": "mr-bongo-news",
+    "name": "Mr Bongo · Actualités",
+    "provider": "Mr Bongo",
+    "format": "Album",
+    "mode": "automatic",
+    "method": "label-atom",
+    "url": "https://www.mrbongo.com/blogs/news",
+    "feed": "https://www.mrbongo.com/blogs/news.atom",
+    "itemPrefix": "/blogs/news/"
+  },
+  {
+    "id": "mr-bongo-spotify",
+    "name": "Mr Bongo · Sélection hebdomadaire",
+    "provider": "Mr Bongo",
+    "format": "Playlist",
+    "mode": "automatic",
+    "method": "spotify-playlist",
+    "url": "https://open.spotify.com/playlist/64WCJyxoGnhFHdDe6LYwNG",
+    "provenance": "https://www.mrbongo.com/index",
+    "curator": "Mr Bongo"
+  },
+  {
+    "id": "coup-de-main",
+    "name": "Coup De Main",
+    "mode": "automatic",
+    "method": "spotify-playlist",
+    "url": "https://open.spotify.com/playlist/7LXauPdOlnW55FQNDWPotY",
+    "provider": "Spotify",
+    "format": "Playlist",
+    "curator": "Coup De Main"
+  },
+  {
+    "id": "kasey-gelsomino",
+    "name": "Kasey Gelsomino",
+    "mode": "automatic",
+    "method": "spotify-playlist",
+    "url": "https://open.spotify.com/playlist/2IbPrDIVfPmxZF6akHnj8R",
+    "provider": "Spotify",
+    "format": "Playlist",
+    "curator": "Kasey Gelsomino"
+  },
+  {
+    "id": "belle-aventure",
+    "name": "Radio La Belle Aventure",
+    "mode": "limited",
+    "method": "Aucun flux public de replays individuels confirmé. Liens vérifiés ajoutés manuellement.",
+    "url": "https://www.radiolabelleaventure.com/",
+    "provider": "La Belle Aventure",
+    "format": "Radio show"
+  },
+  {
+    "id": "fip-programmation",
+    "name": "FIP",
+    "mode": "limited",
+    "method": "Le RSS couvre Club Jazzafip. La programmation Open API nécessite une autorisation adaptée à la conservation des résultats.",
+    "url": "https://www.radiofrance.fr/fip",
+    "provider": "FIP",
+    "format": "Radio show"
+  },
+  {
+    "id": "youtube-khruangbin",
+    "name": "Khruangbin · chaîne officielle",
+    "provider": "YouTube",
+    "artist": "Khruangbin",
+    "format": "Live session",
+    "mode": "automatic",
+    "method": "youtube-atom",
+    "url": "https://www.youtube.com/channel/UCZGBua-dvwfSdcF9AskDIgw",
+    "channelId": "UCZGBua-dvwfSdcF9AskDIgw",
+    "titleContains": "live",
+    "onlyWhenFollowed": true
+  }
 ]
