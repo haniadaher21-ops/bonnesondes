@@ -1,0 +1,142 @@
+{
+  "number": "002",
+  "startsOn": "2026-11-23",
+  "label": "23 novembre 2026",
+  "albumWindowStart": "2026-11-09",
+  "featuredId": "nts-floating-points-27th-july-2026",
+  "albums": [
+    {
+      "id": "spotify-6lcmqmRxudAKcMLdMEg1Oj",
+      "title": "Year Of The Snake",
+      "creator": "Nick Ward",
+      "format": "Album",
+      "source": "Spotify",
+      "url": "https://open.spotify.com/album/6lcmqmRxudAKcMLdMEg1Oj",
+      "sourceUrl": "https://www.nickwardandfriends.com/",
+      "date": "2026-11-13",
+      "artwork": "https://i.scdn.co/image/ab67616d0000b273248886de5c2711e46e5d5259",
+      "reason": "Commencer par « Piano », qui crédite Glenn Gould, puis écouter le duo avec Phoebe Go sur « Tell Me How You Are ».",
+      "embed": {
+        "provider": "spotify",
+        "id": "6lcmqmRxudAKcMLdMEg1Oj"
+      }
+    },
+    {
+      "id": "spotify-0Fta5KudJiX6HpDWApUu8y",
+      "title": "Trouble Mountain",
+      "creator": "Aesop Rock & Blockhead",
+      "format": "Album",
+      "source": "Spotify",
+      "url": "https://open.spotify.com/album/0Fta5KudJiX6HpDWApUu8y",
+      "sourceUrl": "https://aesoprock.bandcamp.com/album/trouble-mountain",
+      "date": "2026-11-13",
+      "artwork": "https://f4.bcbits.com/img/a0728012856_5.jpg",
+      "reason": "Entrer dans la station de vacances imaginaire par « TM Tours », avec Baby Dayliner, puis retrouver Open Mike Eagle sur « One Thing ».",
+      "embed": {
+        "provider": "spotify",
+        "id": "0Fta5KudJiX6HpDWApUu8y"
+      }
+    },
+    {
+      "id": "spotify-3wIzyVeIS8pJX21HO9CuuX",
+      "title": "OK by Me - A Life in Encores",
+      "creator": "Steven Osborne",
+      "format": "Album",
+      "source": "Spotify",
+      "url": "https://open.spotify.com/album/3wIzyVeIS8pJX21HO9CuuX",
+      "sourceUrl": "https://www.hyperion-records.co.uk/dc.asp?dc=D_CDA68483",
+      "date": "2026-11-13",
+      "artwork": "https://i.scdn.co/image/ab67616d0000b2738505a0c0d63ec70663a97c74",
+      "reason": "Passer de la miniature « The Music Box » de Liadov à l’improvisation d’Osborne sur le Vienna Concert de Keith Jarrett.",
+      "embed": {
+        "provider": "spotify",
+        "id": "3wIzyVeIS8pJX21HO9CuuX"
+      }
+    }
+  ],
+  "mixes": [
+    {
+      "id": "nts-floating-points-27th-july-2026",
+      "title": "Floating Points w/ Hikaru Utada",
+      "creator": "Floating Points et Hikaru Utada",
+      "format": "Radio show",
+      "source": "NTS",
+      "url": "https://www.nts.live/shows/floating-points/episodes/floating-points-27th-july-2026",
+      "sourceUrl": "https://www.nts.live/shows/floating-points/episodes/floating-points-27th-july-2026",
+      "date": "2026-07-27",
+      "artwork": "https://media.ntslive.co.uk/resize/400x400/21ef6bc0-fcba-428e-bd22-cd6653dd465e_1784678400.jpeg",
+      "reason": "Repérer l’enchaînement de This Mortal Coil à Marvin Gaye, puis « Kibunja Naino (Not In The Mood) » de Hikaru Utada en fin d’émission."
+    },
+    {
+      "id": "nova-hot-chip-disques-2026-11-11",
+      "title": "Hot Chip : les disques (classes) de leur vie",
+      "creator": "Joe Goddard et Owen Clarke",
+      "format": "Radio show",
+      "source": "Radio Nova",
+      "publisher": "Nova Club",
+      "url": "https://podcasts.nova.fr/radio-nova-nova-club/202611111700-hot-chip-les-disques-classes-de-leur-vie",
+      "sourceUrl": "https://podcasts.nova.fr/radio-nova-nova-club/202611111700-hot-chip-les-disques-classes-de-leur-vie",
+      "date": "2026-11-11",
+      "minutes": 64,
+      "artwork": "https://assets.voxeus.com/podcasts/assets/images/rs/episode/1200/97fc6857072b59da3058f34125f5daea0373f28a/4cdf8b9c-b6ae-4b4d-a922-5ee54eefe915/56b21556224074aba15c40469fbe25e3a0807060.png",
+      "reason": "Suivre Joe Goddard et Owen Clarke de Hot Chip dans les disques qui les ont marqués à différents âges, en commençant par leurs choix de jeunesse."
+    }
+  ],
+  "playlists": [
+    {
+      "id": "spotify-64WCJyxoGnhFHdDe6LYwNG",
+      "title": "Mr Bongo Weekly Selections",
+      "creator": "Mr Bongo",
+      "format": "Playlist",
+      "source": "Spotify",
+      "url": "https://open.spotify.com/playlist/64WCJyxoGnhFHdDe6LYwNG",
+      "sourceUrl": "https://www.mrbongo.com/index",
+      "artwork": "https://image-cdn-fa.spotifycdn.com/image/ab67706c0000da84f4d09842ad7b5bb3a94d2f29",
+      "reason": "Fouiller chaque semaine dans les arrivages du disquaire indépendant Mr Bongo. La sélection suit les entrées en stock, ce qui permet aussi de tomber sur des disques plus anciens.",
+      "embed": {
+        "provider": "spotify",
+        "id": "64WCJyxoGnhFHdDe6LYwNG"
+      }
+    }
+  ],
+  "live": [
+    {
+      "id": "youtube-Ji7g_Bks7Xc",
+      "title": "WILLOW in the Radio 1 Live Lounge",
+      "creator": "WILLOW",
+      "format": "Live session",
+      "source": "BBC Radio 1",
+      "url": "https://www.youtube.com/watch?v=Ji7g_Bks7Xc",
+      "sourceUrl": "https://www.youtube.com/watch?v=Ji7g_Bks7Xc",
+      "date": "2026-11-17",
+      "minutes": 16,
+      "artwork": "https://i.ytimg.com/vi/Ji7g_Bks7Xc/hqdefault.jpg",
+      "reason": "Écouter « Circles » et « Unconditional » dans la même session que sa reprise de « 1 Thing » d’Amerie.",
+      "officialVideo": true,
+      "videoSourceUrl": "https://www.youtube.com/watch?v=Ji7g_Bks7Xc",
+      "embed": {
+        "provider": "youtube",
+        "id": "Ji7g_Bks7Xc"
+      }
+    },
+    {
+      "id": "youtube-R03Hzewk_yk",
+      "title": "Somebody That I Used to Know (reprise de Gotye)",
+      "creator": "Sly Withers",
+      "format": "Live session",
+      "source": "triple j",
+      "url": "https://www.youtube.com/watch?v=R03Hzewk_yk",
+      "sourceUrl": "https://www.abc.net.au/triplej/like-a-version/sly-withers-cover-gotye-for-like-a-version/107165518",
+      "date": "2026-11-12",
+      "minutes": 4,
+      "artwork": "https://i.ytimg.com/vi/R03Hzewk_yk/hqdefault.jpg",
+      "reason": "Retrouver la mélodie de Gotye au milieu des guitares saturées de Sly Withers et écouter ce que le groupe change dans les lignes de chant.",
+      "officialVideo": true,
+      "videoSourceUrl": "https://www.youtube.com/watch?v=R03Hzewk_yk",
+      "embed": {
+        "provider": "youtube",
+        "id": "R03Hzewk_yk"
+      }
+    }
+  ]
+}
