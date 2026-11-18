@@ -1,6 +1,8 @@
 import { canonicalUrl, isoDate, sourceUrl } from '../editorial/edition.mjs';
 import { editorialFeed, parseFeed, reviewedArtist, spotifyCandidate, text } from './discovery-feeds.mjs';
 
+import { linkedReleaseSources } from './weekly-evidence.mjs';
+
 const formats = ['Album', 'Radio show', 'Playlist', 'Live session'];
 const label = value => text(value).normalize('NFC').toLowerCase();
 const excludedVideo = /\b(?:shorts?|interview|behind the scenes|behind (?:the|.+ like a) version|teaser|trailer|sneak peek|official music video|preview|highlight(?:s)?|extrait)\b/i;
@@ -132,7 +134,7 @@ async function verifyCandidate(item, source, request) {
       || iframe?.origin !== 'https://open.spotify.com' || iframe.pathname !== '/embed/playlist/' + item.embed.id) {
       throw new Error('Destination de playlist non confirmée.');
     }
-    return { ...item, title: text(metadata.title), creator: source.curator, source: 'Spotify' };
+    return { ...item, title: text(metadata.title), creator: source.curator, source: 'Spotify', provider: source.provider, playlistOrigin: source.method === 'spotify-playlist' ? (source.priority === 2 ? 'followed' : 'configured') : 'publisher-discovered' };
   }
   if (source.method === 'youtube-atom') {
     const metadata = await (await request('https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent(item.url))).json();
@@ -149,7 +151,8 @@ async function verifyCandidate(item, source, request) {
       await response.body?.cancel();
       throw new Error('Critique redirigée hors de Pitchfork.');
     }
-    return { ...item, creator: reviewedArtist(await response.text(), item.title) };
+    const html = await response.text();
+    return { ...item, creator: reviewedArtist(html, item.title), primaryReleaseUrls: linkedReleaseSources(html) };
   }
   return item;
 }
@@ -171,6 +174,18 @@ async function collect(source, request, collectedAt) {
       case 'nts-episodes': items = ntsCandidates(await (await request(feed)).json()); break;
       case 'youtube-atom': items = youtubeCandidates(await (await request(feed)).text(), source); break;
       case 'spotify-playlist': items = [spotifyCandidate(source.url, source.provenance ?? feed)].filter(Boolean); break;
+      case 'curator-page': {
+        const response = await request(feed);
+        if (response.url && new URL(response.url).origin !== new URL(feed).origin) {
+          await response.body?.cancel();
+          throw new Error('Page de curateur redirigée hors de sa source.');
+        }
+        const html = await response.text();
+        const captures = html.matchAll(/(?:href|src)\s*=\s*["'](https:\/\/open\.spotify\.com\/(?:embed\/)?playlist\/[a-zA-Z0-9]{22})(?=[?/#"'])/gi);
+        items = [...new Set([...captures].map(match => match[1].replace('/embed/playlist/', '/playlist/')))]
+          .slice(0, 8).map(url => spotifyCandidate(url, feed)).filter(Boolean);
+        break;
+      }
       case 'podcast-rss':
       case 'pitchfork-rss':
       case 'label-atom':
@@ -193,7 +208,7 @@ async function collect(source, request, collectedAt) {
         if (source.method !== 'pitchfork-rss') continue;
       }
       outcome.items.push({
-        source: source.name, ...verified, sourceId, sourceUrl: verified.sourceUrl ?? feed, collectedAt,
+        source: source.name, ...verified, provider: verified.provider ?? source.provider, sourceId, sourceUrl: verified.sourceUrl ?? feed, collectedAt,
         verificationStatus: verified.verificationStatus ?? 'source-verified',
       });
     }
