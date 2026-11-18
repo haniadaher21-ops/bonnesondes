@@ -7,6 +7,7 @@
     "build": "next build",
     "typecheck": "tsc --noEmit",
     "discover": "node scripts/discover.mjs",
+    "weekly": "node scripts/weekly.mjs",
     "edition": "node scripts/prepare-edition.mjs",
     "test": "node --test"
   },

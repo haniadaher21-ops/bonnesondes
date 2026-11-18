@@ -209,5 +209,25 @@
     "channelId": "UCZGBua-dvwfSdcF9AskDIgw",
     "titleContains": "live",
     "onlyWhenFollowed": true
+  },
+  {
+    "id": "kexp-selections",
+    "name": "KEXP · Sélections musicales",
+    "provider": "KEXP",
+    "curator": "KEXP",
+    "format": "Playlist",
+    "mode": "automatic",
+    "method": "curator-page",
+    "url": "https://kexp.org/about/submission-guidelines/"
+  },
+  {
+    "id": "kexp-headphones",
+    "name": "KEXP · In Our Headphones",
+    "provider": "KEXP",
+    "curator": "KEXP",
+    "format": "Playlist",
+    "mode": "automatic",
+    "method": "curator-page",
+    "url": "https://kexp.org/podcasts/in-our-headphones/"
   }
 ]

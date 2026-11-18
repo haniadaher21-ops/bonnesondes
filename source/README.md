@@ -122,3 +122,55 @@ temporaire privé, et leur contenu reste hors de la sortie standard.
 GitHub Actions utilise la fixture neutre et refuse `TASTE_PROFILE_PATH`.
 Garde les exports et résultats personnels hors des commits, builds statiques,
 journaux, artefacts et PR publics.
+
+### Préparer le brouillon hebdomadaire
+
+Depuis source/, lance npm run weekly. La date proposée est le prochain
+dimanche à Paris, ou le jour même si la commande est lancée un dimanche.
+Une date ISO peut être passée avec npm run weekly -- AAAA-MM-JJ.
+Dans .discovery/weekly/, retrouve shortlist.md, shortlist.json et
+edition-draft.json. Le rapport indique le résultat du validateur éditorial et
+les quotas manquants. Pour vérifier un brouillon complet, utilise npm run
+edition -- .discovery/weekly/edition-draft.json. Cette commande de vérification
+ne publie rien.
+
+Le classement utilise l’affinité avec les artistes, les sources, les genres,
+les ambiances et les réactions explicitement enregistrés. TASTE_WEIGHT ajuste
+le poids de ces signaux entre 0 et 1, avec 0,7 comme réglage initial du moteur.
+Les raisons des choix s’appuient sur les preuves disponibles et les signaux
+effectivement trouvés. Les replays anciens sont indiqués comme archives.
+Le choix hebdomadaire limite les répétitions d’artistes, de performances et
+de sources.
+
+Pour les albums, le collecteur suit au plus douze liens de labels autorisés
+issus des critiques et vérifie aussi les fiches dans editorial/album-sources.json.
+Les dates viennent de données MusicAlbum qui correspondent au titre et à
+l’artiste, ou d’une mention explicite sur une fiche Rhymesayers. Les fiches
+bloquées ou ambiguës et les sorties à venir restent hors du brouillon.
+Un lien d’album Spotify correspondant est également requis.
+
+Les playlists découvertes sur les pages publiques des curateurs sont
+vérifiées via oEmbed. « Inédite » signifie inconnue du catalogue et de
+l’index disponible. La date de création Spotify reste inconnue. Les pages
+officielles de KEXP complètent les flux de labels.
+
+La variable YOUTUBE_DATA_API_KEY active le contrôle de
+[YouTube Data API](https://developers.google.com/youtube/data/reference/rest/v3/videos/list).
+Elle se règle comme secret de l’action ou variable d’environnement locale.
+Une requête groupée par 50 vidéos coûte une unité de quota. Le filtre vérifie
+la chaîne, le caractère public, l’intégrabilité et une durée de plus de trois
+minutes en plus des règles de série et de titre. La relecture reste utile
+pour repérer un long extrait mal étiqueté. Sans clé, les lives restent à
+vérifier et le quota correspondant est signalé.
+
+Le workflow « Préparer le brouillon hebdomadaire » est déclenchable manuellement
+et prévu chaque dimanche à 06 h 30 UTC. Il produit un artefact de relecture avec
+un profil neutre et des permissions GitHub en lecture seule. Sur un runner privé,
+TASTE_PROFILE_PATH active ton profil et DISCOVERY_INDEX_PATH peut pointer vers
+un fichier d’index privé hors du dépôt. L’index retient pendant 90 jours les URL
+de candidats de sources publiques, sans réactions ni playlists suivies issues
+du profil. Il signale les candidats déjà vus hors catalogue. Le contenu des
+rapports personnalisés et de l’index privé reste hors des artefacts Actions.
+
+Un [essai sur les fournisseurs réels](editorial/exemple-selection-hebdomadaire.md)
+documente les résultats et les places restées vacantes.

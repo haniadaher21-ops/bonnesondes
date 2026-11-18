@@ -1,0 +1,38 @@
+name: Préparer le brouillon hebdomadaire
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 6 * * 0'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bonnes-ondes-weekly
+  cancel-in-progress: false
+
+jobs:
+  shortlist:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: source
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - run: npm ci
+      - run: npm run weekly
+        env:
+          YOUTUBE_DATA_API_KEY: ${{ secrets.YOUTUBE_DATA_API_KEY }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bonnes-ondes-brouillon-hebdomadaire
+          path: source/.discovery/weekly/
+          include-hidden-files: true
+          if-no-files-found: error
