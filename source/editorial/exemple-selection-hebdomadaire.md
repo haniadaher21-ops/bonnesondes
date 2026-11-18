@@ -1,6 +1,8 @@
-# Essai de sélection hebdomadaire du 22 novembre 2026
+# Essai de sélection hebdomadaire du lundi 23 novembre 2026
 
-Collecte réelle du 18 novembre 2026 avec le profil neutre. Le rapport propose
+Collecte réelle du 18 novembre 2026 avec le profil neutre. Le cycle prévoit
+une préparation le dimanche 22 et une prise d’effet le lundi 23 à 00 h
+Europe/Paris. La fenêtre des albums commence le 9 novembre. Le rapport propose
 quatre choix et signale deux albums et un live manquants. Le test automatisé
 produit aussi un brouillon conforme lorsque les preuves couvrent les quotas.
 

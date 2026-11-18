@@ -13,9 +13,10 @@ const groups = [
   { name: 'live', count: 1, max: 2, match: item => item.format === 'Live session' },
 ];
 
-export function nextSunday(now) {
+export function nextEditionMonday(now) {
   const date = parisDate(now);
-  return addDays(date, (7 - new Date(date + 'T12:00:00Z').getUTCDay()) % 7);
+  const weekday = new Date(date + 'T00:00:00Z').getUTCDay();
+  return addDays(date, ((7 - weekday) % 7) + 1);
 }
 
 const matchingValue = (needles, fields) => needles.find(needle =>

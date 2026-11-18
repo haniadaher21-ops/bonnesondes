@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { emptyTasteProfile } from '../editorial/taste-profile.mjs';
+import { selectEdition } from '../editorial/edition.mjs';
+import manualDraft from '../editorial/drafts/002-selection.json' with { type: 'json' };
 import { legacyEdition } from '../scripts/editorial-files.mjs';
 import { discover } from '../scripts/discovery.mjs';
 import { linkedReleaseSources, primaryReleaseDate, verifyAlbums, verifyLives } from '../scripts/weekly-evidence.mjs';
-import { nextSunday, weeklyShortlist } from '../scripts/weekly-ranking.mjs';
+import { nextEditionMonday, weeklyShortlist } from '../scripts/weekly-ranking.mjs';
 
 const albumId = '0Fta5KudJiX6HpDWApUu8y';
 const labelUrl = 'https://www.subpop.com/releases/artist/record';
@@ -68,7 +70,7 @@ const item = (id, format, options = {}) => ({
 const album = (id, options = {}) => item(id, 'Album', { releaseDate: '2026-11-13', verificationStatus: 'primary-verified', ...options });
 const radio = (id, provider) => item(id, 'Radio show', {provider});
 const readyOptions = {
-  sources: [], earlier: [legacyEdition], catalog: [], startsOn: '2026-11-22', now: new Date('2026-11-18T19:00:00Z'),
+  sources: [], earlier: [legacyEdition], catalog: [], startsOn: nextEditionMonday(new Date('2026-11-18T19:00:00Z')), now: new Date('2026-11-18T19:00:00Z'),
 };
 const completeCandidates = [
   album('Alpha'), album('Beta'), album('Gamma', {source: 'Autre label'}),
@@ -95,6 +97,10 @@ test('complete verified inputs give a valid draft and tastes change the radio an
   assert.equal(fip.draft.albums[0].id, 'Beta');
   assert.equal(nova.draft.albums[0].id, 'Alpha');
   assert.equal(fip.draft.albums[0].date, '2026-11-13');
+  assert.equal(fip.draft.number, manualDraft.number);
+  assert.equal(fip.draft.startsOn, manualDraft.startsOn);
+  assert.equal(fip.draft.albumWindowStart, '2026-11-09');
+  assert.equal(fip.draft.albumWindowStart, manualDraft.albumWindowStart);
   assert.match(fip.draft.mixes[0].reason, /archive/);
   assert.deepEqual(fip.rejected.map(row => row.id), ['Old', 'Future', 'Review', 'Unchecked']);
 });
@@ -115,5 +121,35 @@ test('feedback, duplicate artists, previously seen links and missing quotas are 
   assert.equal(result.selected.otherRadio[0].item.id, 'Jazzafip');
   assert.match(result.selected.otherRadio[0].reason, /Coup de cœur/);
   assert.ok(result.rankings.find(row => row.item.id === 'Beta').previouslySeen);
-  assert.equal(nextSunday(new Date('2026-11-21T23:30:00Z')), '2026-11-22');
+});
+
+test('midweek and late Sunday preparation target the same Monday in Paris', () => {
+  assert.equal(nextEditionMonday(new Date('2026-11-18T12:00:00Z')), '2026-11-23');
+  assert.equal(nextEditionMonday(new Date('2026-11-22T20:00:00Z')), '2026-11-23');
+});
+
+test('Monday editions become visible at Paris midnight in winter and summer', () => {
+  const previousEdition = { startsOn: '2026-01-05' };
+  for (const [startsOn, midnight] of [
+    ['2026-11-23', '2026-11-22T23:00:00Z'],
+    ['2026-03-30', '2026-03-29T22:00:00Z'],
+    ['2026-10-26', '2026-10-25T23:00:00Z'],
+  ]) {
+    const edition = { startsOn };
+    const beforeMidnight = new Date(Date.parse(midnight) - 1);
+    assert.equal(nextEditionMonday(beforeMidnight), startsOn);
+    assert.equal(selectEdition([previousEdition, edition], beforeMidnight), previousEdition);
+    assert.equal(selectEdition([previousEdition, edition], new Date(midnight)), edition);
+    assert.notEqual(nextEditionMonday(new Date(midnight)), startsOn);
+  }
+});
+
+test('the album window includes Monday two weeks before the edition', () => {
+  const report = weeklyShortlist({ ...readyOptions, profile: emptyTasteProfile(), candidates: [
+    album('Inside', { releaseDate: '2026-11-09' }),
+    album('Outside', { releaseDate: '2026-11-08' }),
+  ] });
+  assert.equal(report.draft.albumWindowStart, '2026-11-09');
+  assert.deepEqual(report.draft.albums.map(item => item.id), ['Inside']);
+  assert.equal(report.rejected[0].id, 'Outside');
 });

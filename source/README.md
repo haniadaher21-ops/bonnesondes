@@ -125,8 +125,12 @@ journaux, artefacts et PR publics.
 
 ### Préparer le brouillon hebdomadaire
 
-Depuis source/, lance npm run weekly. La date proposée est le prochain
-dimanche à Paris, ou le jour même si la commande est lancée un dimanche.
+Depuis source/, lance npm run weekly. La préparation du dimanche propose le lundi suivant comme date de début.
+Le site sélectionne cette édition à 00 h le lundi en Europe/Paris, une fois
+qu’elle a été approuvée et que les données ont été mises en ligne. Minuit à
+Paris correspond à 23 h UTC le dimanche en hiver et à 22 h UTC en été.
+Sur déclenchement manuel, la date proposée est le prochain lundi, y compris
+si la préparation a lieu le dimanche soir.
 Une date ISO peut être passée avec npm run weekly -- AAAA-MM-JJ.
 Dans .discovery/weekly/, retrouve shortlist.md, shortlist.json et
 edition-draft.json. Le rapport indique le résultat du validateur éditorial et
@@ -164,7 +168,8 @@ pour repérer un long extrait mal étiqueté. Sans clé, les lives restent à
 vérifier et le quota correspondant est signalé.
 
 Le workflow « Préparer le brouillon hebdomadaire » est déclenchable manuellement
-et prévu chaque dimanche à 06 h 30 UTC. Il produit un artefact de relecture avec
+et prévu chaque dimanche à 06 h 30 UTC, soit 07 h 30 à Paris en hiver et
+08 h 30 en été. Il produit un artefact de relecture avec
 un profil neutre et des permissions GitHub en lecture seule. Sur un runner privé,
 TASTE_PROFILE_PATH active ton profil et DISCOVERY_INDEX_PATH peut pointer vers
 un fichier d’index privé hors du dépôt. L’index retient pendant 90 jours les URL

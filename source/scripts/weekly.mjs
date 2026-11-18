@@ -7,7 +7,7 @@ import { parseTasteProfile } from '../editorial/taste-profile.mjs';
 import { discover } from './discovery.mjs';
 import { editionItems, legacyEdition, legacyItems, publishedFile, readJson } from './editorial-files.mjs';
 import { normalized, verifyAlbums, verifyLives } from './weekly-evidence.mjs';
-import { nextSunday, weeklyShortlist } from './weekly-ranking.mjs';
+import { nextEditionMonday, weeklyShortlist } from './weekly-ranking.mjs';
 
 const profilePath = process.env.TASTE_PROFILE_PATH;
 const indexPath = process.env.DISCOVERY_INDEX_PATH;
@@ -21,7 +21,7 @@ try {
 }
 
 const now = new Date();
-const startsOn = process.argv[2] ?? nextSunday(now);
+const startsOn = process.argv[2] ?? nextEditionMonday(now);
 if (!isoDate(startsOn)) throw new Error('Date de début invalide.');
 const sources = readJson(new URL('../editorial/sources.json', import.meta.url));
 const earlier = [legacyEdition, ...readJson(publishedFile)];
