@@ -184,8 +184,11 @@ documente les résultats et les places restées vacantes.
 
 La configuration par étapes, les comptes requis, les coûts et les procédures
 de révocation sont décrits dans [le guide d’automatisation](docs/automation-setup.md).
-La publication et la collecte privées restent désactivées tant que leurs
-variables d’activation ne sont pas explicitement configurées.
+Le brouillon hebdomadaire est programmé le dimanche à 17 h 30 (Europe/Paris),
+avec collecte et vérification privées, sans publication. Pour le suspendre,
+règle la variable Actions `WEEKLY_DRAFT_PAUSED` à `true`. Les collectes
+quotidiennes (`COLLECTION_ENABLED`) et la publication automatique
+(`AUTO_PUBLISH_ENABLED`) restent désactivées.
 ### Release de l’interface
 
 Le [guide de première connexion](docs/interface-release.md) décrit la préparation
