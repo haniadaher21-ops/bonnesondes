@@ -28,7 +28,7 @@ export function bandcampAlbum(html, url, label) {
   for(const node of records) {
     if(![node?.['@type']].flat().includes('MusicAlbum') || node.albumReleaseType!=='AlbumRelease')continue;
     const title=node.name?.trim(),creator=node.byArtist?.name?.trim();
-    if(!title||!creator||reissue.test(title)||!isoDate(releaseDate) || normalized(title)!==normalized(tralbum.current?.title)
+    if(!title||!creator||!Number.isSafeInteger(node.numTracks)||node.numTracks<5||reissue.test(title)||!isoDate(releaseDate) || normalized(title)!==normalized(tralbum.current?.title)
       || normalized(creator)!==normalized(tralbum.artist))continue;
     const jsonDate=new Date(node.datePublished);
     if(!Number.isFinite(+jsonDate) || jsonDate.toISOString().slice(0,10)!==releaseDate)continue;

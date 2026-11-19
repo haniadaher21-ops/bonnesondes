@@ -1,4 +1,5 @@
 import { canonicalUrl, isoDate, sourceUrl } from '../editorial/edition.mjs';
+import {bandcampAlbum} from './bandcamp-albums.mjs';
 import {listeningResolver} from './album-links.mjs';
 import { text } from './discovery-feeds.mjs';
 
@@ -40,13 +41,13 @@ export async function verifyAlbums(records, fetcher = fetch) {
       const structuredDate = primaryReleaseDate(html, record);
       if (record.releaseDate && structuredDate && record.releaseDate !== structuredDate) throw new Error();
       const releaseDate = record.releaseDate ?? structuredDate;
-      if(record.method==='bandcamp-album' && !structuredDate)throw new Error();
+      if(record.method==='bandcamp-album' && (!structuredDate || !bandcampAlbum(html,primary.href,record.label)))throw new Error();
       if (/\b(reissue|remaster(?:ed)?|anniversary|deluxe|expanded)\b/i.test(record.title)) throw new Error();
       if (!releaseDate) throw new Error();
       verifiedReleaseDate = releaseDate;
       failure = 'Lien Spotify de cet album non confirmé';
       const links = new Set([...html.matchAll(/href\s*=\s*["'](https:\/\/open\.spotify\.com\/album\/[a-zA-Z0-9]{22})(?=[?/#"'])/gi)].map(match => match[1]));
-      const listening=record.url ? {url:record.url,proof:primary.href} : await resolveListening({...record,evidenceHtml:html});
+      const listening=record.url ? {url:record.url,proof:record.listeningProofUrl??primary.href} : await resolveListening({...record,evidenceHtml:html});
       failure=listening.reason ?? failure;
       const spotify = sourceUrl(listening.url ?? albumListeningLink(html) ?? (links.size === 1 ? [...links][0] : undefined));
       const albumId = spotify?.origin === 'https://open.spotify.com' && spotify.pathname.match(/^\/album\/([a-zA-Z0-9]{22})$/)?.[1];

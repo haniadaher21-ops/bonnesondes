@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { canonicalUrl, editionItems, parisDate } from '../editorial/edition.mjs';
-import { normalizeTasteProfile } from '../editorial/taste-profile.mjs';
+import { emptyTasteProfile, normalizeTasteProfile } from '../editorial/taste-profile.mjs';
 import { readRunnerProfile, syncRpc } from '../private-sync/client.mjs';
 import { collectAlbumCatalogues, readPublicPage } from './album-catalogues.mjs';
 import { discover } from './discovery.mjs';
@@ -33,11 +33,21 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   if (mode === 'publish' && already) return {status:'noop',reason:'Édition déjà enregistrée'};
   const sources = readJson(new URL('../editorial/sources.json',import.meta.url));
   const known = [...legacyItems,...earlier.flatMap(editionItems)];
+  const catalogueConfig=readJson(new URL('../editorial/album-catalogues.json',import.meta.url));
+  const catalogueFingerprint=createHash('sha256').update(JSON.stringify(catalogueConfig)+await readFile(new URL('./bandcamp-albums.mjs',import.meta.url),'utf8')+await readFile(new URL('./album-catalogues.mjs',import.meta.url),'utf8')).digest('hex');
+  const snapshot=state.albumCatalogueSnapshot;
+  const cached=snapshot?.fingerprint===catalogueFingerprint && snapshot?.startsOn===startsOn
+    && Number.isFinite(Date.parse(snapshot.at)) && now.getTime()-Date.parse(snapshot.at)>=0
+    && now.getTime()-Date.parse(snapshot.at)<6*3600000 && Array.isArray(snapshot.records) && Array.isArray(snapshot.status)
+    && snapshot.status.every(row=>['ok','empty'].includes(row.status));
   const [collection,catalogues] = await Promise.all([
     discover({sources,profile,existing:known,now,fetcher}),
-    collectAlbumCatalogues({startsOn,today:parisDate(now),fetcher,catalogues:readJson(new URL('../editorial/album-catalogues.json',import.meta.url))}),
+    cached ? Promise.resolve({records:snapshot.records,status:snapshot.status.map(row=>({...row,cachedAt:snapshot.at}))})
+      : collectAlbumCatalogues({startsOn,today:parisDate(now),fetcher,catalogues:catalogueConfig}),
   ]);
   const date = now.toISOString();
+  if(!cached)state.albumCatalogueSnapshot={at:date,startsOn,fingerprint:catalogueFingerprint,
+    records:catalogues.records.map(({evidenceHtml,...record})=>record),status:catalogues.status};
   const previous = rollCandidates(state.candidates,collection.candidates,now);
   const registered = readJson(new URL('../editorial/album-sources.json',import.meta.url));
   const linked = previous.filter(item => item.format === 'Album' && item.creator)
@@ -48,10 +58,23 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     title:item.title,creator:item.creator,label:item.source,sourceUrl:item.sourceUrl,url:item.url,
     method:item.sourceUrl.includes('.bandcamp.com/')?'bandcamp-album':undefined,
   }));
-  const records=[...catalogues.records,...registered,...linked,...priorAlbums];
-  const uniqueRecords=[...new Map(records.map(item=>[item.sourceUrl,item])).values()];
-  // Prefer fresh catalogue evidence when a previously saved album is seen again.
-  for(const record of catalogues.records) uniqueRecords.splice(uniqueRecords.findIndex(item=>item.sourceUrl===record.sourceUrl),1,record);
+  const bySource=new Map();
+  for(const record of [...linked,...priorAlbums,...registered,...catalogues.records]) {
+    bySource.set(record.sourceUrl,{...(bySource.get(record.sourceUrl)??{}),
+      ...Object.fromEntries(Object.entries(record).filter(([,value])=>value!==undefined))});
+  }
+  const uniqueRecords=[...bySource.values()];
+  const preferredSources=[...profile.favoritePublications,...profile.favoriteRadios,...profile.spotify.map(row=>row.name).filter(Boolean)].map(normalized);
+  const preferredArtists=profile.favoriteArtists.map(normalized);
+  const priority=record=>38*Number(preferredArtists.includes(normalized(record.creator)))
+    +32*Number(preferredSources.includes(normalized(record.label)))
+    +22*Number((record.tags??[]).some(tag=>profile.explore.map(normalized).includes(normalized(tag))));
+  uniqueRecords.sort((a,b)=>priority(b)-priority(a)||a.sourceUrl.localeCompare(b.sourceUrl));
+  for(const record of uniqueRecords) {
+    const prior=previous.find(item=>item.releaseProofUrl && item.sourceUrl===record.sourceUrl
+      && normalized(item.creator)===normalized(record.creator) && normalized(item.title)===normalized(record.title));
+    if(prior && !record.url){record.url=prior.url;record.listeningProofUrl=prior.listeningProofUrl;}
+  }
   const evidence = await verifyAlbums(uniqueRecords,fetcher);
   const dates = new Map();
   for (const row of evidence) if (row.candidate) {
@@ -72,6 +95,7 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   const headers = {'x-bo-runner':env.BONNES_ONDES_RUNNER_TOKEN};
   const beforeKeys=new Set(state.candidates.map(item=>canonicalUrl(item.url)));
   const incremental={before:state.candidates.length,after:candidates.length,new:candidates.filter(item=>!beforeKeys.has(canonicalUrl(item.url))).length,
+    catalogueCache:cached,
     retained:candidates.filter(item=>beforeKeys.has(canonicalUrl(item.url))).length};
   const profileSignalCounts=Object.fromEntries(['favoriteArtists','favoriteRadios','favoritePublications','spotify','explore','avoid'].map(key=>[key,profile[key].length]));
   profileSignalCounts.reactions=profile.signals.items.length;
@@ -101,9 +125,16 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     candidates:candidates.map(item => liveById.get(item.id) ?? item), sources:collection.sources,
     profile,earlier,catalog:legacyItems,startsOn,now,seen:Object.fromEntries(previous.map(item=>[canonicalUrl(item.url),item.firstSeenAt])),
   });
+  const neutral=weeklyShortlist({candidates:candidates.map(item=>liveById.get(item.id)??item),sources:collection.sources,
+    profile:emptyTasteProfile(),earlier,catalog:legacyItems,startsOn,now,
+    seen:Object.fromEntries(previous.map(item=>[canonicalUrl(item.url),item.firstSeenAt]))});
+  const comparison=Object.fromEntries(Object.entries(report.selected).map(([section,rows])=>[section,{
+    personalized:rows.map(row=>row.item.title),neutral:neutral.selected[section].map(row=>row.item.title),
+    changed:rows.map(row=>row.item.id).join('|')!==neutral.selected[section].map(row=>row.item.id).join('|'),
+  }]));
   async function writeReport(build='not-run') {
     const result=observationReport(report,{profileRevision:remote.revision,profileUpdatedAt:remote.profileUpdatedAt,
-      profileSignalCounts,incremental,albumEvidence:evidence,catalogues:catalogues.status,sources:collection.sources,liveStatus:lives.status,build});
+      profileSignalCounts,comparison,incremental,albumEvidence:evidence,catalogues:catalogues.status,sources:collection.sources,liveStatus:lives.status,build});
     if(env.BONNES_ONDES_OBSERVATION_DIR) {
       await mkdir(env.BONNES_ONDES_OBSERVATION_DIR,{recursive:true});
       await writeFile(join(env.BONNES_ONDES_OBSERVATION_DIR,'recommendations.json'),JSON.stringify(result,null,2)+'\n',{mode:0o600});
@@ -118,9 +149,13 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     evidence:await readFile(new URL('./weekly-evidence.mjs',import.meta.url),'utf8'),
     catalogues:await readFile(new URL('./album-catalogues.mjs',import.meta.url),'utf8'),
     cycle:await readFile(new URL('./private-cycle.mjs',import.meta.url),'utf8'),
+    links:await readFile(new URL('./album-links.mjs',import.meta.url),'utf8'),
+    bandcamp:await readFile(new URL('./bandcamp-albums.mjs',import.meta.url),'utf8'),
+    releaseMetadata:await readFile(new URL('./release-metadata.mjs',import.meta.url),'utf8'),
+    discovery:await readFile(new URL('./discovery.mjs',import.meta.url),'utf8'),
     policy:await readFile(new URL('./automation-policy.mjs',import.meta.url),'utf8'),
   })).digest('hex');
-  const status = {status:'blocked',gaps:report.gaps,albums:albums.length,live:lives.items.length,
+  const status = {status:'blocked',incremental,gaps:report.gaps,albums:albums.length,live:lives.items.length,
     albumRejections:evidence.filter(row=>!row.candidate).map(row=>({sourceUrl:row.sourceUrl,reason:row.reason})),
     catalogues:catalogues.status, liveStatus:lives.status, profileRevision:remote.revision};
   if (!report.complete) {

@@ -6,16 +6,17 @@ import {bandcampAlbum,bandcampLinks} from '../scripts/bandcamp-albums.mjs';
 import {observationReport} from '../scripts/observation-report.mjs';
 import {emptyTasteProfile} from '../editorial/taste-profile.mjs';
 import {primaryReleaseDate} from '../scripts/release-metadata.mjs';
+import {verifyAlbums} from '../scripts/weekly-evidence.mjs';
 import {listeningResolver} from '../scripts/album-links.mjs';
 const now=new Date('2026-11-19T12:00:00Z');
 const album={artist:'Artist',current:{title:'Album',about:''},album_release_date:'13 Nov 2026 00:00:00 GMT'};
-const structured={'@type':'MusicAlbum','@id':'https://label.bandcamp.com/album/album',name:'Album',byArtist:{name:'Artist'},datePublished:'13 Nov 2026 00:00:00 GMT',albumReleaseType:'AlbumRelease'};
+const structured={'@type':'MusicAlbum','@id':'https://label.bandcamp.com/album/album',name:'Album',byArtist:{name:'Artist'},datePublished:'13 Nov 2026 00:00:00 GMT',albumReleaseType:'AlbumRelease',numTracks:8};
 const page=(tralbum=album,json=structured)=>'<div data-tralbum="'+JSON.stringify(tralbum).replaceAll('"','&quot;')+'" >x</div><script type="application/ld+json">'+JSON.stringify(json)+'</script>';
 
 test('Bandcamp original album date requires matching independent identity, date and release type fields',()=>{
  const html=page();const record=bandcampAlbum(html,structured['@id'],'Label');
  assert.equal(record.releaseDate,'2026-11-13');assert.equal(primaryReleaseDate(html,record),'2026-11-13');
- for(const json of [{...structured,albumReleaseType:'SingleRelease'},{...structured,datePublished:'14 Nov 2026 00:00:00 GMT'},{...structured,byArtist:{name:'Other'}},{...structured,'@id':'https://other.test/album'}]) assert.equal(bandcampAlbum(page(album,json),structured['@id'],'Label'),undefined);
+ for(const json of [{...structured,numTracks:2},{...structured,albumReleaseType:'SingleRelease'},{...structured,datePublished:'14 Nov 2026 00:00:00 GMT'},{...structured,byArtist:{name:'Other'}},{...structured,'@id':'https://other.test/album'}]) assert.equal(bandcampAlbum(page(album,json),structured['@id'],'Label'),undefined);
  assert.equal(bandcampAlbum(page({...album,current:{title:'Album',about:'Originally released in 1990'}}),structured['@id'],'Label'),undefined);
  assert.equal(primaryReleaseDate(page(),{...record,creator:'Wrong artist'}),undefined);
  assert.deepEqual(bandcampLinks('<a href="/album/a?label=123">a</a><a href="https://artist.bandcamp.com/album/b">b</a><a href="https://evil.test/album/c">c</a>', 'https://label.bandcamp.com/music'),['https://label.bandcamp.com/album/a','https://artist.bandcamp.com/album/b']);
@@ -60,4 +61,10 @@ test('Spotify resolver follows only explicit smart links and canonicalizes inter
  const resolve=listeningResolver(async url=>{called=true;assert.equal(url,'https://label.lnk.to/record');return new Response('<a href="https://open.spotify.com/intl-fr/album/1234567890123456789012">Spotify</a>');},async()=>{});
  const result=await resolve({title:'Record',creator:'Artist',sourceUrl:'https://label.test/record',evidenceHtml:'<a href="https://label.lnk.to/record">Listen</a>'});
  assert.equal(called,true);assert.equal(result.url,'https://open.spotify.com/album/1234567890123456789012');
+});
+
+test('two-track Bandcamp singles never enter album verification even when the link resolves',async()=>{
+ const html=page(album,{...structured,numTracks:2});
+ const result=await verifyAlbums([{title:'Album',creator:'Artist',label:'Label',method:'bandcamp-album',sourceUrl:structured['@id'],releaseDate:'2026-11-13',evidenceHtml:html,url:'https://open.spotify.com/album/1234567890123456789012'}],()=>assert.fail('No Spotify call may validate a single as an album'));
+ assert.equal(result[0].candidate,undefined);
 });

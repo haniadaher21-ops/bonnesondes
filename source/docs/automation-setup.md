@@ -30,7 +30,7 @@ Le navigateur utilise une clé publique de projet et une session du propriétair
 Le runner utilise un jeton distinct qui peut lire le profil et conserver son
 index, mais ne peut pas modifier les préférences.
 
-1. Crée un projet dans [Supabase](https://supabase.com/dashboard). Choisis la région et le plan en connaissance de ses quotas. Dans Authentication, invite ton propre compte puis désactive les inscriptions publiques. Dans le modèle Email « Magic Link », affiche le code OTP avec la variable de modèle Token, conformément au guide Supabase. Le formulaire Bonnes Ondes demande ce code.
+1. Crée un projet dans [Supabase](https://supabase.com/dashboard). Choisis la région et le plan en connaissance de ses quotas. Dans Authentication, invite ton propre compte puis désactive les inscriptions publiques. Conserve le modèle de courriel par défaut et configure Site URL et Redirect URLs à https://haniadaher21-ops.github.io/bonnesondes/ ; le site utilise désormais un lien de connexion PKCE. Voir [le guide](magic-link-auth.md).
 2. Exécute source/private-sync/schema.sql dans le SQL Editor du projet. Dans Authentication → Users, copie ton UUID, puis insère une ligne dans bonnes_ondes_private.owners avec cet UUID. Le profil est inaccessible à tout autre compte, même connecté. Aucun rôle de service privilégié n’est utilisé par le site.
 3. Génère un jeton aléatoire de 32 octets pour le runner. Conserve le jeton brut comme secret Actions BONNES_ONDES_RUNNER_TOKEN. Insère uniquement son SHA-256 dans bonnes_ondes_private.runner.token_hash, avec ton UUID. Le jeton peut être produit par encode(extensions.gen_random_bytes(32),'hex') dans une session SQL privée. Le hachage stocké est extensions.digest(jeton,'sha256'). Garde cette opération hors du dépôt et des logs publics.
 
@@ -64,7 +64,7 @@ modifier ses tarifs. Configure les limites de dépense et notifications dans
 Supabase avant toute souscription.
 [Tarifs Supabase](https://supabase.com/pricing),
 [clés publiques et privées](https://supabase.com/docs/guides/getting-started/api-keys),
-[connexion email OTP](https://supabase.com/docs/guides/auth/auth-email-passwordless).
+[connexion par lien email](https://supabase.com/docs/guides/auth/auth-email-passwordless).
 
 ## 3. Observation avant activation
 
@@ -135,3 +135,20 @@ La création des comptes, les clés et l’exécution sur le Supabase du propri�
 exigent sa configuration externe. Un test simulé de transport n’est pas une
 validation des autorisations d’un serveur déployé. Les essais de bout en bout
 avec YouTube et le stockage privé restent requis avant activation.
+
+
+## Collecte incrémentale et revue des recommandations
+
+Les workflows quotidiens et hebdomadaires passent par `private-cycle.mjs`, qui lit à chaque exécution la dernière révision consentie dans Supabase. Aucun profil neutre de fixture ne remplace le profil du propriétaire. Les artistes, radios, médias, noms de curateurs et tags publics confirmés influencent l’ordre et les scores ; aucune analyse d’écoute Spotify ni modèle ML n’est ajouté. Un curateur renseigné uniquement par URL, sans connecteur public vérifié, reste une limite explicite.
+
+L’index roulant reste dans la table privée du runner. Il conserve les découvertes non retenues, leur premier repérage, la dernière collecte et les traces des 90 collectes précédentes. Les favoris et le profil du propriétaire ne sont jamais modifiés par le runner. Une lecture après écriture confirme la persistance ; la concurrence des workflows privés est sérialisée. Une révocation ou modification de profil pendant la collecte interrompt le cycle. L’absence de source ne supprime plus la découverte ; elle retire sa vérification courante jusqu’à nouvelle preuve.
+
+Les catalogues primaires sont configurés dans `editorial/album-catalogues.json`. Le snapshot conserve uniquement des métadonnées publiques, jamais le HTML intégral. Sa durée de cache maximale est de six heures ; un changement de code/configuration, de semaine ou une source en erreur force une nouvelle collecte. Les pages des albums sont de nouveau vérifiées avant sélection. Les correspondances Spotify déjà confirmées sont réutilisées puis recontrôlées par oEmbed, pour ne pas dépendre d’un nouvel appel MusicBrainz à chaque passage.
+
+Bandcamp doit confirmer identité artiste/titre, `album_release_date`, date du MusicAlbum et type AlbumRelease. Les titres marqués réédition/remaster/EP, mentions d’édition originale antérieure et sorties de moins de cinq pistes sont exclus. Cette règle prudente écarte aussi certains albums légitimes courts : ils ne sont pas assimilés automatiquement à des singles, mais ne peuvent remplir le quota sans un adaptateur primaire plus précis. Les doubles singles rencontrés pendant la collecte réelle ne remplissent donc pas les places albums.
+
+Les liens Spotify viennent d’un lien d’album explicite, d’une page de diffusion officielle reliée par le label, ou d’une relation MusicBrainz avec correspondance exacte artiste+titre. MusicBrainz n’est jamais la preuve de date originale. Le connecteur s’identifie, respecte au moins 1,1 seconde entre requêtes, limite les recherches à huit albums par exécution et réessaie une fois les erreurs transitoires. Une ambiguïté ou indisponibilité est rapportée, jamais transformée en résultat vérifié. Documentation : https://musicbrainz.org/doc/MusicBrainz_API et https://musicbrainz.org/doc/MusicBrainz_API/Rate_Limiting. Aucun compte ni paiement supplémentaire n’est activé.
+
+L’action « Observer les recommandations privées » exécute une collecte puis deux observations avec le profil synchronisé. Elle refuse des opt-ins activés et n’a que des permissions GitHub en lecture. Elle peut écrire l’index public-métadonnées dans le stockage privé existant, mais pas modifier les goûts, les éditions ou Pages. L’artefact de sept jours contient les recommandations sélectionnées, leurs preuves, scores et manques. Il ne contient ni profil brut, réactions détaillées, playlists suivies privées, jetons ni cache intégral. Le propriétaire a explicitement demandé la revue de ces recommandations. Les catégories de signaux et leur nombre sont agrégés.
+
+Un statut bloqué conserve ses recommandations partielles pour examen, mais ne valide pas une simulation complète. Les essais successifs le même jour prouvent la persistance et le fonctionnement courant, pas la stabilité sur plusieurs semaines. L’autopublication reste à false jusqu’à une nouvelle décision explicite du propriétaire.

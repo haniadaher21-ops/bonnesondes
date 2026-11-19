@@ -111,7 +111,7 @@ function requester(fetcher) {
 function prioritize(sources, profile) {
   if (!profile) return sources.filter(source => !source.onlyWhenFollowed);
   const preferences = new Set([
-    ...profile.favoriteArtists, ...profile.favoriteRadios, ...profile.favoritePublications,
+    ...profile.favoriteArtists, ...profile.favoriteRadios, ...profile.favoritePublications, ...profile.spotify.map(entry=>entry.name).filter(Boolean),
   ].map(label));
   const follows = profile.spotify.slice(0, 12).map((item, index) => ({
     id: 'spotify-follow-' + (index + 1), name: item.name ?? 'Spotify · lien suivi',
@@ -121,7 +121,7 @@ function prioritize(sources, profile) {
   }));
   const enabled = sources.filter(source => !source.onlyWhenFollowed || preferences.has(label(source.artist)));
   return [...enabled, ...follows].sort((a, b) => {
-    const score = item => item.priority ?? Number([item.provider, item.name, item.artist].some(name => preferences.has(label(name))));
+    const score = item => item.priority ?? Number([item.provider, item.name, item.artist, item.curator].some(name => preferences.has(label(name))));
     return score(b) - score(a);
   });
 }

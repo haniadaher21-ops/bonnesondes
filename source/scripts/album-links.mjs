@@ -10,13 +10,21 @@ const spotifyAlbum=url=>{
 };
 export function listeningResolver(fetcher=fetch, wait=pause) {
   let next=0,queries=0;
-  const cache=new Map();
+  const cache=new Map(),websites=new Map();
   async function musicbrainz(path) {
     await wait(Math.max(0,next-Date.now()));
     next=Date.now()+1100;
-    const response=await fetcher('https://musicbrainz.org/ws/2/'+path,{headers:{'User-Agent':userAgent},redirect:'error',signal:AbortSignal.timeout(12000)});
-    if(!response.ok)throw new Error('MusicBrainz HTTP '+response.status);
-    return response.json();
+    for(let attempt=0;attempt<2;attempt++) {
+      const response=await fetcher('https://musicbrainz.org/ws/2/'+path,{headers:{'User-Agent':userAgent},redirect:'error',signal:AbortSignal.timeout(12000)});
+      if(response.ok)return response.json();
+      await response.body?.cancel();
+      if(attempt===0 && [429,502,503,504].includes(response.status)) {
+        await wait(Math.max(1100,Math.min(5000,Number(response.headers.get('retry-after')??2)*1000 || 2000)));
+        next=Date.now()+1100;
+        continue;
+      }
+      throw new Error('MusicBrainz HTTP '+response.status);
+    }
   }
   return async record=>{
     const key=normalized(record.creator)+':'+normalized(record.title);
@@ -26,7 +34,25 @@ export function listeningResolver(fetcher=fetch, wait=pause) {
       const direct=albumListeningLink(html);
       if(direct)return {url:direct,proof:record.sourceUrl};
       // Follow only explicit official release landing links, never guess a Spotify ID or URL.
-      const links=[...new Set([...html.matchAll(/href=["'](https:\/\/[^"'\s<>]+)["']/gi)].map(x=>x[1].replaceAll('&amp;','&')))];
+      let landingHtml=html;
+      if(record.labelWebsite) {
+        try {
+          if(!websites.has(record.labelWebsite))websites.set(record.labelWebsite,readPublicPage(record.labelWebsite,fetcher));
+          const website=await websites.get(record.labelWebsite);
+          for(const match of website.matchAll(/href=["']([^"']+)["']/gi)) {
+            const link=new URL(match[1].replaceAll('&amp;','&'),record.labelWebsite);
+            if(link.origin!==new URL(record.labelWebsite).origin || !normalized(link.pathname).includes(normalized(record.title)))continue;
+            const page=await readPublicPage(link.href,fetcher);
+            const visible=normalized(page.replace(/<[^>]*>/g,' '));
+            if(!visible.includes(normalized(record.title))||!visible.includes(normalized(record.creator)))continue;
+            const target=albumListeningLink(page);
+            if(target)return {url:target,proof:link.href};
+            landingHtml+='\n'+page;
+            break;
+          }
+        }catch{/* A label website outage does not authorize guessing a destination. */}
+      }
+      const links=[...new Set([...landingHtml.matchAll(/href=["'](https:\/\/[^"'\s<>]+)["']/gi)].map(x=>x[1].replaceAll('&amp;','&')))];
       for(const url of links.filter(value=>{
         const parsed=sourceUrl(value);return parsed && /(?:^|\.)(?:lnk\.to|ffm\.to|band\.link)$/.test(parsed.hostname);
       }).slice(0,3)) {

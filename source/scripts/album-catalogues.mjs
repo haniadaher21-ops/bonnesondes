@@ -140,7 +140,7 @@ export async function collectAlbumCatalogues({startsOn, today, fetcher = fetch, 
             const record=bandcampAlbum(html,url,source.name);
             if(!record)return;
             parsed++;
-            if(record.releaseDate>=windowStart && record.releaseDate<=today){records.push(record);checked++;}
+            if(record.releaseDate>=windowStart && record.releaseDate<=today){records.push({...record,labelWebsite:source.website});checked++;}
           }catch(error){failures.push({url,reason:error.message});}
         }));
       }
