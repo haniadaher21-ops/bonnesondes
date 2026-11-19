@@ -22,14 +22,12 @@ musical ». Les favoris existants restent dans off-frequency.library.v1.
 
 ## Première connexion du propriétaire
 
-1. Enregistre tes préférences dans le formulaire. Dans « Synchronisation privée », saisis l’adresse de ton compte Supabase, clique sur « Recevoir un code », puis saisis le code reçu pour te connecter.
+1. Enregistre tes préférences dans le formulaire. Dans « Synchronisation privée », saisis l’adresse de ton compte Supabase, clique sur « Recevoir un lien de connexion », puis ouvre le dernier lien reçu dans le même navigateur et sur le même appareil (un nouvel onglet convient).
 2. Clique sur « Synchroniser les préférences de ce navigateur » pour consentir à l’envoi du profil et des réactions de Bonnes Ondes. Attends « Préférences et réactions synchronisées ».
 3. Ferme cet onglet puis indique que la sauvegarde est faite. Le contrôle Actions de la PR #17 vérifiera la lecture du profil par le runner, indépendamment du navigateur.
 
 Ton compte doit déjà exister dans Supabase Auth et être autorisé dans
-bonnes_ondes_private.owners. Le modèle d’email Supabase doit afficher le code
-OTP. Une invitation reçue avant cette configuration peut nécessiter un nouveau
-code. Garde le code de connexion dans le formulaire du site.
+bonnes_ondes_private.owners. Le modèle d’email Supabase par défaut convient : aucune personnalisation ni fournisseur SMTP payant ne sont nécessaires. Les anciens liens doivent être remplacés par une nouvelle demande. Voir [la configuration des liens](magic-link-auth.md).
 
 La déconnexion arrête les envois suivants et conserve le dernier profil sur
 le serveur. Le bouton d’effacement supprime ce profil distant et révoque

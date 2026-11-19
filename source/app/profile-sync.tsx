@@ -4,9 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import { emptyTasteProfile, parseTasteProfile, tasteProfileForExport, tasteProfileKey } from '../editorial/taste-profile.mjs';
 import { projectOrigin, syncRpc } from '../private-sync/client.mjs';
 import type { Recommendation } from './content';
+import { authRequest, consumeMagicLink, pendingKey, sendMagicLink, sessionFromResponse, sessionKey } from '../private-sync/auth.mjs';
 
 const config = {url: process.env.NEXT_PUBLIC_SUPABASE_URL ?? '', publicKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? ''};
-const sessionKey = 'off-frequency.sync-session.v1';
+// Share the exchange across React Strict Mode effect replays. No callback is exchanged twice.
+let callbackCompletion: Promise<Session> | null = null;
 type Session = { access_token: string; refresh_token: string; expires_at: number };
 type Library = Parameters<typeof tasteProfileForExport>[1];
 type Remote = {revision:number; document: ReturnType<typeof emptyTasteProfile> | null};
@@ -16,7 +18,6 @@ export default function ProfileSync({ library, recommendations, ready, visible }
 }) {
   const [session, setSession] = useState<Session | null>(null);
   const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -31,6 +32,19 @@ export default function ProfileSync({ library, recommendations, ready, visible }
 
   useEffect(() => {
     if (!config.url || !config.publicKey) return;
+    let cancelled = false;
+    callbackCompletion ??= consumeMagicLink(config, window.location.href, localStorage, (url: string) => {
+      window.history.replaceState(null, '', url);
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+    if (callbackCompletion) {
+      setBusy(true);
+      callbackCompletion.then(value => {
+        if (!cancelled) { setSession(value); setMessage('Connexion réussie. Choisis le profil à synchroniser.'); }
+      }).catch(() => {
+        if (!cancelled) setMessage('Lien invalide ou expiré. Demande un nouveau lien et ouvre-le dans le même navigateur.');
+      }).finally(() => { if (!cancelled) { setBusy(false); callbackCompletion = null; } });
+    }
     try {
       const value = JSON.parse(localStorage.getItem(sessionKey) ?? 'null');
       if (value?.access_token && value?.refresh_token) setSession(value);
@@ -40,6 +54,7 @@ export default function ProfileSync({ library, recommendations, ready, visible }
     window.addEventListener('taste-profile-changed', changed);
     window.addEventListener('online', changed);
     return () => {
+      cancelled = true;
       clearInterval(interval);
       window.removeEventListener('taste-profile-changed', changed);
       window.removeEventListener('online', changed);
@@ -47,16 +62,11 @@ export default function ProfileSync({ library, recommendations, ready, visible }
   }, []);
 
   async function auth(path: string, body: unknown) {
-    const response = await fetch(projectOrigin(config.url) + '/auth/v1/' + path, {
-      method: 'POST', headers: {apikey: config.publicKey, 'Content-Type':'application/json'},
-      body: JSON.stringify(body), signal: AbortSignal.timeout(15000), redirect: 'error',
-    });
-    if (!response.ok) throw new Error('Connexion impossible. Vérifie ton code ou renouvelle-le.');
-    return response.json();
+    return authRequest(config, path, body);
   }
 
   function remember(value: {access_token:string;refresh_token:string;expires_in:number}) {
-    const next = {access_token:value.access_token, refresh_token:value.refresh_token, expires_at:Date.now() + value.expires_in*1000};
+    const next = sessionFromResponse(value);
     localStorage.setItem(sessionKey, JSON.stringify(next));
     setSession(next);
     return next;
@@ -138,23 +148,17 @@ export default function ProfileSync({ library, recommendations, ready, visible }
       if (busy) return;
       setBusy(true);
       try {
-        if (!sent) {
-          await auth('otp', {email, create_user:false});
-          setSent(true);
-          setMessage('Saisis le code reçu par courriel.');
-        } else {
-          remember(await auth('verify', {email, token:code, type:'email'}));
-          setCode('');
-        }
+        await sendMagicLink(config, email, localStorage);
+        setSent(true);
+        setMessage('Ouvre le lien reçu par courriel dans ce navigateur, sur cet appareil. Seul le dernier lien demandé fonctionne.');
       } catch(error) { setMessage(error instanceof Error ? error.message : 'Connexion indisponible.'); }
       finally { setBusy(false); }
     }}>
       <label>Adresse du compte<input type="email" required readOnly={sent} value={email} onChange={event => setEmail(event.target.value)} /></label>
-      {sent && <label>Code reçu<input required autoComplete="one-time-code" value={code} onChange={event => setCode(event.target.value)} /></label>}
-      <button type="submit" className="primary" disabled={busy}>{sent ? 'Se connecter' : 'Recevoir un code'}</button>
+      <button type="submit" className="primary" disabled={busy}>{sent ? 'Renvoyer un lien de connexion' : 'Recevoir un lien de connexion'}</button>
       {sent && <button type="button" className="text-link" disabled={busy} onClick={() => {
-        setSent(false); setCode(''); setMessage('');
-      }}>Recevoir un nouveau code ou changer d’adresse</button>}
+        setSent(false); setMessage('');
+      }}>Changer d’adresse</button>}
     </form> : <>
       {!enabled && remote && <>
         <p>Choisis le profil à utiliser avant de démarrer la synchronisation.</p>
@@ -173,7 +177,7 @@ export default function ProfileSync({ library, recommendations, ready, visible }
       <button className="text-link" onClick={async () => {
         stop();
         const old = session;
-        localStorage.removeItem(sessionKey); setSession(null); setRemote(null); setSent(false); setCode('');
+        localStorage.removeItem(sessionKey); setSession(null); setRemote(null); setSent(false); localStorage.removeItem(pendingKey);
         setMessage('Déconnecté. Le dernier profil synchronisé reste sur le serveur.');
         await fetch(projectOrigin(config.url) + '/auth/v1/logout', {method:'POST',
           headers:{apikey:config.publicKey, Authorization:'Bearer ' + old.access_token}}).catch(() => {});

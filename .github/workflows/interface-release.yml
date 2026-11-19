@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   build-interface:
-    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'codex/interface-pages-release')
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && contains(fromJSON('["codex/interface-pages-release","codex/magic-link-sign-in"]'), github.event.pull_request.head.ref))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
