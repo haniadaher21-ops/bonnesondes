@@ -11,20 +11,24 @@ import { readRunnerProfile, syncRpc } from '../private-sync/client.mjs';
 import { collectAlbumCatalogues, readPublicPage } from './album-catalogues.mjs';
 import { discover } from './discovery.mjs';
 import { legacyEdition, legacyItems, publishedFile, readJson } from './editorial-files.mjs';
+import {filterConflictingDates} from './release-metadata.mjs';
 import { verifyAlbums, verifyLives, normalized } from './weekly-evidence.mjs';
 import { weeklyShortlist } from './weekly-ranking.mjs';
+import {publicProviderFetcher} from './provider-policy.mjs';
 import {observationReport,renderObservation} from './observation-report.mjs';
 import { editionForCycle, publicationDecision, publicEdition, rollCandidates } from './automation-policy.mjs';
 
 const root = fileURLToPath(new URL('../',import.meta.url));
 
-export async function privateCycle({mode = 'observe', env = process.env, now = new Date(), fetcher = fetch} = {}) {
+export async function privateCycle({mode = 'observe', env = process.env, now = new Date(), fetcher = fetch, providerWait} = {}) {
   if (!['collect','observe','publish'].includes(mode)) throw new Error('Mode inconnu.');
   const config = {url:env.SUPABASE_URL ?? '',publicKey:env.SUPABASE_PUBLISHABLE_KEY ?? ''};
   if (!env.BONNES_ONDES_RUNNER_TOKEN) throw new Error('Accès privé non configuré.');
   const remote = await readRunnerProfile(config,env.BONNES_ONDES_RUNNER_TOKEN,fetcher);
   const profile = normalizeTasteProfile(remote.profile);
   const state = remote.state;
+  state.providerBackoff ??= {};
+  fetcher=publicProviderFetcher(fetcher,{now,backoff:state.providerBackoff,wait:providerWait});
   if (state?.version !== 1 || !Array.isArray(state.candidates) || !Array.isArray(state.dryRuns)) throw new Error('Index privé invalide.');
   const editions = readJson(publishedFile);
   const earlier = [legacyEdition,...editions];
@@ -34,12 +38,12 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   const sources = readJson(new URL('../editorial/sources.json',import.meta.url));
   const known = [...legacyItems,...earlier.flatMap(editionItems)];
   const catalogueConfig=readJson(new URL('../editorial/album-catalogues.json',import.meta.url));
-  const catalogueFingerprint=createHash('sha256').update(JSON.stringify(catalogueConfig)+await readFile(new URL('./bandcamp-albums.mjs',import.meta.url),'utf8')+await readFile(new URL('./album-catalogues.mjs',import.meta.url),'utf8')).digest('hex');
+  const catalogueFingerprint=createHash('sha256').update(JSON.stringify(catalogueConfig)+await readFile(new URL('./bandcamp-albums.mjs',import.meta.url),'utf8')+await readFile(new URL('./album-catalogues.mjs',import.meta.url),'utf8')+await readFile(new URL('./label-news.mjs',import.meta.url),'utf8')).digest('hex');
   const snapshot=state.albumCatalogueSnapshot;
   const cached=snapshot?.fingerprint===catalogueFingerprint && snapshot?.startsOn===startsOn
     && Number.isFinite(Date.parse(snapshot.at)) && now.getTime()-Date.parse(snapshot.at)>=0
-    && now.getTime()-Date.parse(snapshot.at)<6*3600000 && Array.isArray(snapshot.records) && Array.isArray(snapshot.status)
-    && snapshot.status.every(row=>['ok','empty'].includes(row.status));
+    && now.getTime()-Date.parse(snapshot.at)<(snapshot.status.some(row=>!['ok','empty'].includes(row.status))?3600000:6*3600000) && Array.isArray(snapshot.records) && Array.isArray(snapshot.status)
+;
   const [collection,catalogues] = await Promise.all([
     discover({sources,profile,existing:known,now,fetcher}),
     cached ? Promise.resolve({records:snapshot.records,status:snapshot.status.map(row=>({...row,cachedAt:snapshot.at}))})
@@ -71,22 +75,13 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     +22*Number((record.tags??[]).some(tag=>profile.explore.map(normalized).includes(normalized(tag))));
   uniqueRecords.sort((a,b)=>priority(b)-priority(a)||a.sourceUrl.localeCompare(b.sourceUrl));
   for(const record of uniqueRecords) {
-    const prior=previous.find(item=>item.releaseProofUrl && item.sourceUrl===record.sourceUrl
+    const prior=previous.find(item=>item.releaseProofUrl && (item.sourceUrl===record.sourceUrl || (record.releaseDate && item.releaseDate===record.releaseDate))
       && normalized(item.creator)===normalized(record.creator) && normalized(item.title)===normalized(record.title));
-    if(prior && !record.url){record.url=prior.url;record.listeningProofUrl=prior.listeningProofUrl;}
+    if(prior){record.tags ??= prior.tags; if(!record.url){record.url=prior.url;record.listeningProofUrl=prior.listeningProofUrl;}}
   }
-  const evidence = await verifyAlbums(uniqueRecords,fetcher);
-  const dates = new Map();
-  for (const row of evidence) if (row.candidate) {
-    const key = normalized(row.candidate.creator)+':'+normalized(row.candidate.title);
-    if (!dates.has(key)) dates.set(key,new Set());
-    dates.get(key).add(row.candidate.releaseDate);
-  }
-  const albums = evidence.flatMap(row => {
-    const candidate = row.candidate;
-    return candidate && dates.get(normalized(candidate.creator)+':'+normalized(candidate.title)).size === 1
-      ? [{...candidate,collectedAt:date,discoverySource:previous.find(item=>normalized(item.title)===normalized(candidate.title) && normalized(item.creator)===normalized(candidate.creator))?.provider}] : [];
-  });
+  const evidence = filterConflictingDates(await verifyAlbums(uniqueRecords,fetcher));
+  const albums=evidence.flatMap(row=>row.candidate?[{...row.candidate,collectedAt:date,
+    discoverySource:previous.find(item=>normalized(item.title)===normalized(row.candidate.title) && normalized(item.creator)===normalized(row.candidate.creator))?.provider}]:[]);
   const albumKeys = new Set(albums.map(item => canonicalUrl(item.url)));
   // Never carry a past verification into this run if its primary source is unavailable.
   const base = previous.filter(item => !albumKeys.has(canonicalUrl(item.url))).map(item=>
@@ -151,6 +146,8 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     cycle:await readFile(new URL('./private-cycle.mjs',import.meta.url),'utf8'),
     links:await readFile(new URL('./album-links.mjs',import.meta.url),'utf8'),
     bandcamp:await readFile(new URL('./bandcamp-albums.mjs',import.meta.url),'utf8'),
+    news:await readFile(new URL('./label-news.mjs',import.meta.url),'utf8'),
+    providerPolicy:await readFile(new URL('./provider-policy.mjs',import.meta.url),'utf8'),
     releaseMetadata:await readFile(new URL('./release-metadata.mjs',import.meta.url),'utf8'),
     discovery:await readFile(new URL('./discovery.mjs',import.meta.url),'utf8'),
     policy:await readFile(new URL('./automation-policy.mjs',import.meta.url),'utf8'),

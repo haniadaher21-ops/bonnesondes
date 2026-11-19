@@ -1,5 +1,11 @@
 [
   {
+    "name": "Brownswood \u00b7 jours de sortie",
+    "url": "https://brownswoodrecordings.com/",
+    "method": "release-day-news",
+    "label": "Brownswood Recordings"
+  },
+  {
     "name": "International Anthem",
     "url": "https://intlanthem.bandcamp.com/music",
     "method": "bandcamp"

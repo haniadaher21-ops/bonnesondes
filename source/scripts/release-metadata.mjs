@@ -1,4 +1,5 @@
 import { isoDate } from '../editorial/edition.mjs';
+import {releaseDayArticle} from './label-news.mjs';
 import { text } from './discovery-feeds.mjs';
 
 export const normalized = value => text(value).normalize('NFKD').replace(/\p{M}/gu, '')
@@ -6,6 +7,11 @@ export const normalized = value => text(value).normalize('NFKD').replace(/\p{M}/
 
 export function primaryReleaseDate(html, record) {
   const dates = new Set();
+  if(record.method==='label-release-day') {
+    const parsed=releaseDayArticle(html,record.sourceUrl,record.label);
+    if(parsed && normalized(parsed.title)===normalized(record.title) && normalized(parsed.creator)===normalized(record.creator))return parsed.releaseDate;
+    return;
+  }
   if (record.method === 'bandcamp-album') {
     // Bandcamp's explicit album_release_date must agree with its album JSON-LD, never the upload date.
     try {
@@ -33,9 +39,9 @@ export function primaryReleaseDate(html, record) {
     const visible = html.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, '').replace(/<[^>]+>/g, ' ');
     const heading = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1]?.replace(/<[^>]+>/g, ' ');
     const identity = normalized(heading);
-    if (identity.includes(normalized(record.title)) && identity.includes('aesop rock') && identity.includes('blockhead')
-      && /\bnew album from Aesop Rock and Blockhead\b/i.test(visible)) {
-      for (const match of visible.matchAll(/\bReleases\s+([A-Z][a-z]+ \d{1,2}, \d{4})\./g)) {
+    if (identity.includes(normalized(record.title)) && record.creator.split(/\s+(?:x|and)\s+|\s*&\s*/i).every(artist=>identity.includes(normalized(artist)))
+      && /\b(?:new|debut|collaborative) album\b/i.test(visible)) {
+      for (const match of visible.matchAll(/\b(?:Releases|Release Date:)\s+([A-Z][a-z]+ \d{1,2}, \d{4})/g)) {
         const timestamp = Date.parse(match[1] + ' UTC');
         if (Number.isFinite(timestamp)) dates.add(new Date(timestamp).toISOString().slice(0, 10));
       }
@@ -44,3 +50,15 @@ export function primaryReleaseDate(html, record) {
   return dates.size === 1 ? [...dates][0] : undefined;
 }
 
+// Conflicting primary dates block the album even when one source cannot resolve its Spotify link.
+export function filterConflictingDates(evidence) {
+  const dates=new Map();
+  const key=row=>normalized(row.creator)+':'+normalized(row.title);
+  for(const row of evidence) {
+    if(!isoDate(row.verifiedReleaseDate))continue;
+    if(!dates.has(key(row)))dates.set(key(row),new Set());
+    dates.get(key(row)).add(row.verifiedReleaseDate);
+  }
+  return evidence.map(row=>dates.get(key(row))?.size>1
+    ? {...row,candidate:undefined,reason:'Dates originales contradictoires'} : row);
+}

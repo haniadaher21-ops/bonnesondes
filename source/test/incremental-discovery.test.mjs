@@ -5,7 +5,7 @@ import {rollCandidates} from '../scripts/automation-policy.mjs';
 import {bandcampAlbum,bandcampLinks} from '../scripts/bandcamp-albums.mjs';
 import {observationReport} from '../scripts/observation-report.mjs';
 import {emptyTasteProfile} from '../editorial/taste-profile.mjs';
-import {primaryReleaseDate} from '../scripts/release-metadata.mjs';
+import {primaryReleaseDate,filterConflictingDates} from '../scripts/release-metadata.mjs';
 import {verifyAlbums} from '../scripts/weekly-evidence.mjs';
 import {listeningResolver} from '../scripts/album-links.mjs';
 const now=new Date('2026-11-19T12:00:00Z');
@@ -38,7 +38,7 @@ test('daily cycles use the remotely synchronized profile, preserve candidates an
  };
  const env={SUPABASE_URL:'https://example.supabase.co',SUPABASE_PUBLISHABLE_KEY:'public',BONNES_ONDES_RUNNER_TOKEN:'test-runner',AUTO_PUBLISH_ENABLED:'false'};
  for(let i=0;i<2;i++) {
-   const result=await privateCycle({mode:'collect',env,now:new Date(+now+i*1000),fetcher});
+   const result=await privateCycle({mode:'collect',env,now:new Date(+now+i*1000),fetcher,providerWait:async()=>{}});
    assert.equal(result.profileRevision,7);assert.equal(result.incremental.retained,1);assert.equal(result.incremental.new,0);
  }
  assert.equal(followed,true);assert.equal(writes,2);assert.equal(stored.state.collections.length,2);
@@ -67,4 +67,28 @@ test('two-track Bandcamp singles never enter album verification even when the li
  const html=page(album,{...structured,numTracks:2});
  const result=await verifyAlbums([{title:'Album',creator:'Artist',label:'Label',method:'bandcamp-album',sourceUrl:structured['@id'],releaseDate:'2026-11-13',evidenceHtml:html,url:'https://open.spotify.com/album/1234567890123456789012'}],()=>assert.fail('No Spotify call may validate a single as an album'));
  assert.equal(result[0].candidate,undefined);
+});
+
+
+test('different primary release dates block an album even if one listening-link lookup failed',()=>{
+ const rows=filterConflictingDates([{creator:'Artist',title:'Album',verifiedReleaseDate:'2026-11-13',candidate:{id:'verified'}},
+   {creator:'Artist',title:'Album',verifiedReleaseDate:'2025-11-13',reason:'No Spotify link'}]);
+ assert.ok(rows.every(row=>!row.candidate && row.reason==='Dates originales contradictoires'));
+});
+test('Bandcamp cooldown spans subdomains and survives the next run without making requests',async()=>{
+ const {publicProviderFetcher}=await import('../scripts/provider-policy.mjs');
+ const backoff={};let calls=0;
+ const fetcher=publicProviderFetcher(async()=>{calls++;return new Response('',{status:429});},{now,backoff,wait:async()=>{}});
+ assert.equal((await fetcher('https://one.bandcamp.com/music')).status,429);
+ assert.equal((await fetcher('https://two.bandcamp.com/music')).status,429);
+ const next=publicProviderFetcher(()=>assert.fail('Cooldown must suppress network requests'),{now:new Date(+now+60000),backoff,wait:async()=>{}});
+ assert.equal((await next('https://three.bandcamp.com/music')).status,429);assert.equal(calls,1);
+});
+test('an article publication date is release evidence only with an explicit release-day assertion and album identity',async()=>{
+ const {releaseDayArticle}=await import('../scripts/label-news.mjs');
+ const html='<meta property="article:published_time" content="2026-11-11T10:00:00Z"><h1>Artist &#8211; &#8216;Album&#8217;</h1><p>Today marks the release of Album, the debut album from Artist.</p>';
+ const record=releaseDayArticle(html,'https://label.test/news/album/','Label');
+ assert.equal(record.releaseDate,'2026-11-11');assert.equal(primaryReleaseDate(html,record),'2026-11-11');
+ assert.equal(releaseDayArticle(html.replace('Today marks the release of','Coming soon:'),'https://label.test/news/album/','Label'),undefined);
+ assert.equal(primaryReleaseDate(html,{...record,title:'Wrong'}),undefined);
 });

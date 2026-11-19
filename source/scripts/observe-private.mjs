@@ -6,7 +6,7 @@ if(!directory)throw new Error('Dossier de rapport requis.');
 if(process.env.AUTO_PUBLISH_ENABLED!=='false')throw new Error('Observation exclusivement non publiante.');
 await mkdir(directory,{recursive:true});
 const results=[];
-for(const [index,mode] of ['collect','observe','observe'].entries()) {
+for(const [index,mode] of ['collect','observe','observe','observe'].entries()) {
   const result=await privateCycle({mode,env:{...process.env,BONNES_ONDES_OBSERVATION_DIR:join(directory,'run-'+(index+1)),GITHUB_RUN_ID:process.env.GITHUB_RUN_ID+'-'+index}});
   results.push(result);
   console.log(JSON.stringify({run:index+1,mode,status:result.status,complete:result.complete??false,gaps:result.gaps,

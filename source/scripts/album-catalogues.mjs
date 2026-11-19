@@ -1,4 +1,5 @@
 import { isoDate, sourceUrl } from '../editorial/edition.mjs';
+import {releaseDayArticle} from './label-news.mjs';
 import {bandcampAlbum, bandcampLinks} from './bandcamp-albums.mjs';
 import { normalized, primaryReleaseDate } from './release-metadata.mjs';
 
@@ -127,6 +128,23 @@ export async function collectAlbumCatalogues({startsOn, today, fetcher = fetch, 
     status.push({source:'ECM',albums:0,eligibleVerified:0,status:'unavailable',reason:error.message});
   }
   for (const source of catalogues) {
+    if (source.method === 'release-day-news') {
+      try {
+        const html=await readPublicPage(source.url,fetcher);
+        const origin=new URL(source.url).origin;
+        const urls=[...new Set([...html.matchAll(/href=["']([^"']+)["']/g)].flatMap(match=>{
+          try {const url=new URL(match[1],source.url);return url.origin===origin && /^\/news\/[^/]+\/$/.test(url.pathname)?[url.href]:[];}catch{return [];}
+        }))].slice(0,10);
+        let parsed=0,checked=0;
+        for(const url of urls) {
+          try {const record=releaseDayArticle(await readPublicPage(url,fetcher),url,source.label??source.name);
+            if(record){parsed++;if(record.releaseDate>=windowStart && record.releaseDate<=today){records.push(record);checked++;}}}
+          catch{/* Do not substitute article publication dates for missing release evidence. */}
+        }
+        status.push({source:source.name,albums:parsed,pages:urls.length,eligibleVerified:checked,status:parsed?'ok':'empty'});
+      }catch(error){status.push({source:source.name,status:'unavailable',reason:error.message,albums:0,eligibleVerified:0});}
+      continue;
+    }
     if (source.method !== 'bandcamp') continue;
     try {
       const urls = bandcampLinks(await readPublicPage(source.url,fetcher),source.url).slice(0,16);

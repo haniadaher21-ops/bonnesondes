@@ -36,7 +36,7 @@ jobs:
           node --input-type=module -e 'for(const name of ["COLLECTION_ENABLED","AUTO_PUBLISH_ENABLED"]) if(!["","false"].includes(process.env[name]??"")) throw new Error("Automatisation activée : revue requise"); console.log("Collecte planifiée et publication désactivées.")'
       - run: npm ci
       - run: npm test && npm run typecheck
-      - name: Collecter puis observer deux cycles avec le profil synchronisé
+      - name: Collecter puis observer trois cycles avec le profil synchronisé
         run: node scripts/observe-private.mjs
         env:
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
