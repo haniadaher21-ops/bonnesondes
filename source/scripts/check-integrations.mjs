@@ -31,6 +31,19 @@ async function privateSyncCheck() {
         ? 'Runner RPC missing or database schema unavailable'
         : 'Invalid runner credential was not denied as expected'};
     }
+    const authenticated=await request('bo_runner_read',{'x-bo-runner':process.env.BONNES_ONDES_RUNNER_TOKEN});
+    if (!authenticated.ok) {
+      const error=await authenticated.json().catch(()=>({}));
+      const detail=error.message==='Access denied'
+        ? 'Runner token rejected: check its SHA-256 mapping and owner allowlist in Supabase'
+        : 'Runner database function failed: check schema installation and permissions';
+      return {ok:false,detail,anonymousDenied:true,invalidTokenDenied:true};
+    }
+    const stored=await authenticated.json();
+    if (!stored?.profile) {
+      return {ok:false,detail:'Runner authenticated, but no owner profile has been saved on the server',
+        runnerAuthenticated:true,anonymousDenied:true,invalidTokenDenied:true};
+    }
     const value=await readRunnerProfile(config,process.env.BONNES_ONDES_RUNNER_TOKEN);
     if (!value.state || value.state.version!==1 || !Array.isArray(value.state.candidates)
       || !Array.isArray(value.state.dryRuns)) {
