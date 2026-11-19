@@ -7,6 +7,7 @@ import { archive, catalog, issues, live, parsePlaylist, personalPlaylist, playli
 import { selectEdition } from '../editorial/edition.mjs';
 import { editionShelf } from '../editorial/shelves.mjs';
 import RadioTrack, { type OnAir } from './radio-track';
+import ProfileSync from './profile-sync';
 import TastePreferences from './taste-preferences';
 
 const pages = [
@@ -97,7 +98,10 @@ export default function Journal() {
     };
     readHash();
     window.addEventListener('hashchange', readHash);
-    setIssue(selectEdition(issues) ?? issues[0]);
+    const updateEdition = () => setIssue(selectEdition(issues) ?? issues[0]);
+    updateEdition();
+    const editionTimer = setInterval(updateEdition, 1000);
+    window.addEventListener('focus', updateEdition);
     try {
       const raw = localStorage.getItem(storageKey);
       if (raw) setLibrary({ ...emptyLibrary, ...JSON.parse(raw) });
@@ -105,7 +109,11 @@ export default function Journal() {
       setStorageMessage('Impossible de lire ta collection dans ce navigateur.');
     }
     setReady(true);
-    return () => window.removeEventListener('hashchange', readHash);
+    return () => {
+      window.removeEventListener('hashchange', readHash);
+      window.removeEventListener('focus', updateEdition);
+      clearInterval(editionTimer);
+    };
   }, []);
 
   useEffect(() => {
@@ -255,7 +263,7 @@ export default function Journal() {
             <a className="text-link" href="#essential-albums">Voir la sélection <ArrowDown size={15} /></a></div>
         </header>
         <article className="feature">
-          <div className="feature-art"><img src="/art/disques.jpg" alt="Une personne porte une pile de disques vinyles sous le bras" /></div>
+          <div className="feature-art"><img src={(process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/art/disques.jpg'} alt="Une personne porte une pile de disques vinyles sous le bras" /></div>
           <div className="feature-copy">
             <p className="eyebrow"><span className="signal-dot" /> Mix de la semaine</p>
             <h2>{featured.title}</h2>
@@ -349,6 +357,7 @@ export default function Journal() {
       </>}
     </main>
 
+    <div className="shell"><ProfileSync library={library} recommendations={all} ready={ready} visible={page === 'preferences'} /></div>
     <footer className="shell footer"><a className="brand" href="#rotation"><Disc3 size={19} /> Bonnes Ondes<span className="brand-dot">.</span></a><span>JOURNAL MUSICAL INDÉPENDANT</span></footer>
 
     <aside className="radio-dock" aria-label="Lecteur radio">
