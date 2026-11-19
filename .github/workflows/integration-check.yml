@@ -1,0 +1,43 @@
+name: Validate private sync and YouTube
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/integration-check.yml'
+      - 'source/scripts/check-integrations.mjs'
+      - 'source/private-sync/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  read-only-integrations:
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'codex/autonomy-stages')
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: source
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - name: Read-only live integration checks
+        run: node scripts/check-integrations.mjs
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          BONNES_ONDES_RUNNER_TOKEN: ${{ secrets.BONNES_ONDES_RUNNER_TOKEN }}
+          YOUTUBE_DATA_API_KEY: ${{ secrets.YOUTUBE_DATA_API_KEY }}
+          AUTO_PUBLISH_ENABLED: 'false'
