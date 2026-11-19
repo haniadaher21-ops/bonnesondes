@@ -37,3 +37,27 @@ privé. La disponibilité de trois albums vérifiés chaque semaine reste un
 blocage à résoudre avant l’activation. Les opérations de publication, de
 déploiement Pages et de rollback sont proposées pour revue et restent à
 tester sur l’environnement externe.
+
+## Validation en GitHub Actions après configuration des secrets
+
+Le contrôle d’intégration de la PR a utilisé les variables du dépôt et les
+secrets Actions. Les appels YouTube Data API ont confirmé trois vidéos
+officielles, publiques, intégrables et de plus de trois minutes. Les flux des
+chaînes contrôlées ont répondu pendant ce test.
+
+- Rachel Chinouriri — Pretty Girls, BBC Radio 1, 225 secondes.
+- WILLOW — Radio 1 Live Lounge, 935 secondes.
+- Sly Withers — reprise de Gotye pour triple j, 216 secondes.
+
+Le runner a été authentifié par Supabase. Les lectures anonymes et un jeton
+runner invalide ont été refusés. Le serveur ne contient encore aucun profil
+propriétaire enregistré. La vérification de synchronisation complète reste
+bloquée jusqu’à la première connexion et sauvegarde consentie du propriétaire. Le workflow de vérification utilise des permissions
+de dépôt en lecture seule et les secrets restent dans Actions.
+
+Le [contrôle Actions du 19 novembre](https://github.com/haniadaher21-ops/bonnesondes/actions/runs/44542903480)
+a exécuté les 36 tests avec succès, puis le contrôle réel des deux services.
+Le contrôle YouTube a réussi. Le contrôle Supabase a signalé le profil absent.
+Le job complet est donc en échec, ce qui maintient ce prérequis visible.
+La validation est limitée aux lectures privées et aux refus d’accès. Les
+écritures de profil par le propriétaire restent à tester dans le navigateur.
