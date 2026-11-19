@@ -1,0 +1,149 @@
+{
+  "startsOn": "2026-11-23",
+  "observedAt": "2026-11-19T17:48:13.344Z",
+  "sourceRun": 44580161622,
+  "sourceCommit": "ddf0149f22ac14dd05f41642486d3e08d97999f2",
+  "complete": true,
+  "gaps": {},
+  "build": "passed",
+  "selected": {
+    "albums": [
+      {
+        "id": "spotify-6H6497odidXH5VRnynYQnV",
+        "title": "Mek Do & Mend",
+        "creator": "Wonky Logic",
+        "source": "Brownswood Recordings",
+        "url": "https://open.spotify.com/album/6H6497odidXH5VRnynYQnV",
+        "sourceUrl": "https://brownswoodrecordings.com/news/wonky-logic-mek-do-mend/",
+        "releaseDate": "2026-11-11",
+        "date": "2026-11-11",
+        "score": 58.4,
+        "publicReason": "Date de sortie originale v\u00e9rifi\u00e9e aupr\u00e8s de la source primaire (2026-11-11)."
+      },
+      {
+        "id": "spotify-0Fta5KudJiX6HpDWApUu8y",
+        "title": "Trouble Mountain",
+        "creator": "Aesop Rock & Blockhead",
+        "source": "Rhymesayers Entertainment",
+        "url": "https://open.spotify.com/album/0Fta5KudJiX6HpDWApUu8y",
+        "sourceUrl": "https://rhymesayers.com/products/aesop-rock-x-blockhead-trouble-mountain-cd",
+        "releaseDate": "2026-11-13",
+        "date": "2026-11-13",
+        "score": 45,
+        "publicReason": "Date de sortie originale v\u00e9rifi\u00e9e aupr\u00e8s de la source primaire (2026-11-13)."
+      },
+      {
+        "id": "spotify-1eG7wpa0IAoDx3LhLR1xwR",
+        "title": "Traces in the Sand",
+        "creator": "Stephan Micus",
+        "source": "ECM",
+        "url": "https://open.spotify.com/album/1eG7wpa0IAoDx3LhLR1xwR",
+        "sourceUrl": "https://ecmrecords.com/product/traces-in-the-sand-stephan-micus/",
+        "releaseDate": "2026-11-13",
+        "date": "2026-11-13",
+        "score": 45,
+        "publicReason": "Date de sortie originale v\u00e9rifi\u00e9e aupr\u00e8s de la source primaire (2026-11-13)."
+      }
+    ],
+    "nts": [
+      {
+        "id": "nts-dont-trip-13th-november-2026",
+        "title": "Don't Trip w/ Margarita",
+        "source": "NTS Radio",
+        "url": "https://www.nts.live/shows/dont-trip/episodes/dont-trip-13th-november-2026",
+        "sourceUrl": "https://www.nts.live/api/v2/shows/dont-trip/episodes",
+        "date": "2026-11-13",
+        "score": 66.4,
+        "publicReason": "Replay individuel du 2026-11-13 sur NTS."
+      }
+    ],
+    "otherRadio": [
+      {
+        "id": "fip-jazz:/fip/podcasts/club-jazzafip/club-jazzafip-du-mercredi-18-novembre-2026-2933932",
+        "title": "Club Jazzafip du mercredi 18 novembre 2026",
+        "source": "FIP \u00b7 Club Jazzafip",
+        "url": "https://www.radiofrance.fr/fip/podcasts/club-jazzafip/club-jazzafip-du-mercredi-18-novembre-2026-2933932",
+        "sourceUrl": "https://radiofrance-podcast.net/podcast09/podcast_13d4ef2f-2aca-4331-949b-bc8da638d670.xml",
+        "date": "2026-11-18",
+        "score": 67.4,
+        "publicReason": "Replay individuel du 2026-11-18 sur FIP."
+      }
+    ],
+    "playlists": [
+      {
+        "id": "spotify-60VayqPuLXaftoj2Wrqpti",
+        "title": "New This Week",
+        "creator": "KEXP",
+        "source": "Spotify",
+        "url": "https://open.spotify.com/playlist/60VayqPuLXaftoj2Wrqpti",
+        "sourceUrl": "https://kexp.org/about/submission-guidelines/",
+        "score": 39,
+        "publicReason": "Lien v\u00e9rifi\u00e9 et publi\u00e9 par KEXP."
+      }
+    ],
+    "live": [
+      {
+        "id": "youtube-sWJbOWJMJQ0",
+        "title": "Rachel Chinouriri - Pretty Girls in the Radio 1 Live Lounge",
+        "source": "BBC Radio 1 \u00b7 Live Lounge",
+        "url": "https://www.youtube.com/watch?v=sWJbOWJMJQ0",
+        "sourceUrl": "https://www.youtube.com/feeds/videos.xml?channel_id=UC-FQUIVQ-bZiefzBiQAa8Fw",
+        "date": "2026-11-18",
+        "minutes": 3.75,
+        "score": 45,
+        "publicReason": "Performance publi\u00e9e par une cha\u00eene officielle, vid\u00e9o int\u00e9grable de 225 secondes."
+      }
+    ]
+  },
+  "comparisonToNeutral": {
+    "albums": {
+      "personalized": [
+        "Mek Do & Mend",
+        "Trouble Mountain",
+        "Traces in the Sand"
+      ],
+      "neutral": [
+        "Trouble Mountain",
+        "Traces in the Sand",
+        "Mek Do & Mend"
+      ],
+      "changed": true
+    },
+    "nts": {
+      "personalized": [
+        "Don't Trip w/ Margarita"
+      ],
+      "neutral": [
+        "Don't Trip w/ Margarita"
+      ],
+      "changed": false
+    },
+    "otherRadio": {
+      "personalized": [
+        "Club Jazzafip du mercredi 18 novembre 2026"
+      ],
+      "neutral": [
+        "Club Jazzafip du mercredi 18 novembre 2026"
+      ],
+      "changed": false
+    },
+    "playlists": {
+      "personalized": [
+        "New This Week"
+      ],
+      "neutral": [
+        "New This Week"
+      ],
+      "changed": false
+    },
+    "live": {
+      "personalized": [
+        "Rachel Chinouriri - Pretty Girls in the Radio 1 Live Lounge"
+      ],
+      "neutral": [
+        "Rachel Chinouriri - Pretty Girls in the Radio 1 Live Lounge"
+      ],
+      "changed": false
+    }
+  }
+}

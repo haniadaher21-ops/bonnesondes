@@ -31,16 +31,16 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
     affinity += points;
     signals.push(reason);
   }
-  const artist = matchingValue(profile.favoriteArtists, [item.creator]);
-  const source = matchingValue([...profile.favoriteRadios, ...profile.favoritePublications], [item.source, item.provider, item.publisher]);
-  const attributes = [item.genre, item.mood];
+  const artist = matchingValue(profile.favoriteArtists, [item.creator,...(item.artistCredits ?? [])]);
+  const source = matchingValue([...profile.favoriteRadios, ...profile.favoritePublications, ...profile.spotify.map(entry=>entry.name).filter(Boolean)], [item.source, item.provider, item.publisher, item.discoverySource]);
+  const attributes = [item.genre, item.mood, ...(item.tags ?? [])];
   signal(artist, 38, 'Artiste parmi tes favoris');
   signal(source, 32, 'Source parmi tes préférées');
   signal(matchingValue(profile.explore, attributes), 22, 'Genre ou ambiance à explorer');
   signal(matchingValue(profile.avoid, attributes), -40, 'Genre ou ambiance que tu préfères éviter');
   const followsPlaylist = profile.spotify.some(entry => entry.kind === 'playlist' && canonicalUrl(entry.url) === canonicalUrl(item.url));
   signal(followsPlaylist, 24, 'Playlist suivie dans ton profil');
-  signal(item.format === 'Playlist' && matchingValue(profile.signals.curators, [item.creator]), 28, 'Curateur parmi tes favoris');
+  signal(item.format === 'Playlist' && matchingValue([...profile.signals.curators,...profile.spotify.filter(entry=>entry.kind==='curator').map(entry=>entry.name).filter(Boolean)], [item.creator]), 28, 'Curateur parmi tes favoris');
   const feedback = profile.signals.items.find(entry => entry.id === item.id);
   signal(feedback?.saved, 12, 'Déjà enregistré dans Ma collection');
   signal(feedback?.reaction, feedbackWeight[feedback?.reaction] ?? 0, feedback?.reaction ? 'Réaction dans Bonnes Ondes « ' + ({
@@ -61,7 +61,7 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
     Playlist: item.playlistOrigin === 'publisher-discovered' ? 'Lien vérifié et publié par ' + (item.creator ?? item.provider ?? 'le média source') : 'Playlist vérifiée sur Spotify',
     'Live session': 'Performance publiée par une chaîne officielle, vidéo intégrable de ' + Math.round(item.minutes * 60) + ' secondes',
   }[item.format];
-  return { item, score, reason: [evidence, ...signals].join('. ') + '.', signals, age };
+  return { item, score, publicReason: evidence + '.', reason: [evidence, ...signals].join('. ') + '.', signals, age };
 }
 
 function exclusion(item, windowStart, today) {

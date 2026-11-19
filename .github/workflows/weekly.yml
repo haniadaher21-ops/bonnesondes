@@ -9,13 +9,14 @@ permissions:
   contents: read
 
 concurrency:
-  group: bonnes-ondes-weekly
+  group: bonnes-ondes-private-cycle
   cancel-in-progress: false
 
 jobs:
   shortlist:
+    if: github.event_name == 'workflow_dispatch' || vars.COLLECTION_ENABLED == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: source
@@ -27,10 +28,18 @@ jobs:
           cache: npm
           cache-dependency-path: source/package-lock.json
       - run: npm ci
-      - run: npm run weekly
+      - run: node scripts/private-cycle.mjs observe
         env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          BONNES_ONDES_RUNNER_TOKEN: ${{ secrets.BONNES_ONDES_RUNNER_TOKEN }}
+          AUTO_PUBLISH_ENABLED: 'false'
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          BONNES_ONDES_OBSERVATION_DIR: .discovery/weekly
           YOUTUBE_DATA_API_KEY: ${{ secrets.YOUTUBE_DATA_API_KEY }}
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: bonnes-ondes-brouillon-hebdomadaire
           path: source/.discovery/weekly/

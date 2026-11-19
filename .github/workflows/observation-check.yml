@@ -1,0 +1,62 @@
+name: Observer les recommandations privées
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/observation-check.yml'
+      - 'source/scripts/**'
+      - 'source/editorial/album-catalogues.json'
+      - 'source/test/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: bonnes-ondes-private-cycle
+  cancel-in-progress: false
+jobs:
+  observe:
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'codex/autonomy-stages')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: source
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - name: Confirmer les automatisations désactivées
+        env:
+          COLLECTION_ENABLED: ${{ vars.COLLECTION_ENABLED }}
+          AUTO_PUBLISH_ENABLED: ${{ vars.AUTO_PUBLISH_ENABLED }}
+        run: |
+          node --input-type=module -e 'for(const name of ["COLLECTION_ENABLED","AUTO_PUBLISH_ENABLED"]) if(!["","false"].includes(process.env[name]??"")) throw new Error("Automatisation activée : revue requise"); console.log("Collecte planifiée et publication désactivées.")'
+      - run: npm ci
+      - run: npm test && npm run typecheck
+      - name: Collecter puis observer trois cycles avec le profil synchronisé
+        run: node scripts/observe-private.mjs
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          BONNES_ONDES_RUNNER_TOKEN: ${{ secrets.BONNES_ONDES_RUNNER_TOKEN }}
+          YOUTUBE_DATA_API_KEY: ${{ secrets.YOUTUBE_DATA_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          AUTO_PUBLISH_ENABLED: 'false'
+          BONNES_ONDES_OBSERVATION_DIR: ${{ runner.temp }}/bonnes-ondes-observations
+      - name: Construire le site source sans publication
+        if: always()
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bonnes-ondes-observations
+          path: ${{ runner.temp }}/bonnes-ondes-observations/
+          if-no-files-found: warn
+          retention-days: 7

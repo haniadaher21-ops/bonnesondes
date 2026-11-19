@@ -1,0 +1,74 @@
+[
+  {
+    "name": "Brownswood \u00b7 jours de sortie",
+    "url": "https://brownswoodrecordings.com/",
+    "method": "release-day-news",
+    "label": "Brownswood Recordings"
+  },
+  {
+    "name": "International Anthem",
+    "url": "https://intlanthem.bandcamp.com/music",
+    "method": "bandcamp"
+  },
+  {
+    "name": "Gondwana Records",
+    "url": "https://gondwanarecords.bandcamp.com/music",
+    "method": "bandcamp"
+  },
+  {
+    "name": "Brainfeeder",
+    "url": "https://brainfeeder.bandcamp.com/music",
+    "method": "bandcamp"
+  },
+  {
+    "name": "Brownswood Recordings",
+    "url": "https://brownswoodrecordings.bandcamp.com/music",
+    "method": "bandcamp",
+    "website": "https://brownswoodrecordings.com/"
+  },
+  {
+    "name": "Stones Throw",
+    "url": "https://stonesthrow.bandcamp.com/music",
+    "method": "bandcamp"
+  },
+  {
+    "name": "Domino Recording Co",
+    "url": "https://dominorecordco.bandcamp.com/music",
+    "method": "bandcamp"
+  },
+  {
+    "name": "Ghostly International",
+    "url": "https://ghostly.bandcamp.com/music",
+    "method": "bandcamp"
+  },
+  {
+    "name": "Mr Bongo",
+    "url": "https://mrbongo.bandcamp.com/music",
+    "method": "bandcamp"
+  },
+  {
+    "name": "Far Out Recordings",
+    "url": "https://faroutrecordings.bandcamp.com/music",
+    "method": "bandcamp"
+  },
+  {
+    "name": "Soundway Records",
+    "url": "https://soundwayrecords.bandcamp.com/music",
+    "method": "bandcamp"
+  },
+  {
+    "name": "Strut Records",
+    "url": "https://strut.bandcamp.com/music",
+    "method": "bandcamp"
+  },
+  {
+    "name": "Tru Thoughts",
+    "url": "https://tru-thoughts.bandcamp.com/music",
+    "method": "bandcamp"
+  },
+  {
+    "name": "Jazz re:freshed",
+    "url": "https://jazzrefreshed.bandcamp.com/music",
+    "method": "bandcamp"
+  }
+]

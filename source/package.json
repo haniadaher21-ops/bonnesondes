@@ -8,6 +8,8 @@
     "typecheck": "tsc --noEmit",
     "discover": "node scripts/discover.mjs",
     "weekly": "node scripts/weekly.mjs",
+    "automation": "node scripts/private-cycle.mjs",
+    "observe:public": "node scripts/observation.mjs",
     "edition": "node scripts/prepare-edition.mjs",
     "test": "node --test"
   },
