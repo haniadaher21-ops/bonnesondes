@@ -92,3 +92,17 @@ test('an article publication date is release evidence only with an explicit rele
  assert.equal(releaseDayArticle(html.replace('Today marks the release of','Coming soon:'),'https://label.test/news/album/','Label'),undefined);
  assert.equal(primaryReleaseDate(html,{...record,title:'Wrong'}),undefined);
 });
+
+
+test('provider backoff respects an HTTP-date Retry-After as well as numeric delays',async()=>{
+ const {publicProviderFetcher}=await import('../scripts/provider-policy.mjs');
+ const backoff={};const until=new Date(+now+86400000);
+ const fetcher=publicProviderFetcher(async()=>new Response('',{status:429,headers:{'retry-after':until.toUTCString()}}),{now,backoff,wait:async()=>{}});
+ await fetcher('https://label.bandcamp.com/music');assert.equal(backoff.bandcamp,until.toISOString());
+});
+test('release-day assertions must refer to the named album and preserve the label calendar date',async()=>{
+ const {releaseDayArticle}=await import('../scripts/label-news.mjs');
+ const html='<meta property="article:published_time" content="2026-11-11T00:00:00+01:00"><h1>Artist – Album</h1><p>Today marks the release of Album, a new album by Artist.</p>';
+ assert.equal(releaseDayArticle(html,'https://label.test/album','Label').releaseDate,'2026-11-11');
+ assert.equal(releaseDayArticle(html.replace('release of Album','release of Something Else'),'https://label.test/album','Label'),undefined);
+});

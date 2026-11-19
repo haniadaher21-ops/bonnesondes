@@ -7,8 +7,8 @@ export function releaseDayArticle(html,url,label) {
   if(parts.length!==2)return;
   const creator=parts[0].trim(),title=parts[1].replace(/^[‘’“”'"]+|[‘’“”'"]+$/g,'').trim();
   const visible=normalized(decodeHtml(html.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi,'').replace(/<[^>]+>/g,' ')));
-  if(!creator||!title||!visible.includes(normalized(title))||!visible.includes('today marks the release of')
-    || !/\b(?:debut|new) album\b/.test(visible)||/\b(reissue|remastered|anniversary)\b/.test(normalized(title)))return;
+  if(!creator||!title||!visible.includes(normalized(title))||!visible.includes('today marks the release of '+normalized(title))
+    || !/\b(?:debut|new) album\b/.test(visible.split('today marks the release of '+normalized(title))[1]?.slice(0,180)??'')||/\b(reissue|remastered|anniversary)\b/.test(normalized(title)))return;
   const date=html.match(/<meta\b[^>]*property=["']article:published_time["'][^>]*content=["']([^"']+)/i)?.[1];
   if(!date || !Number.isFinite(Date.parse(date)) || !isoDate(date.slice(0,10)))return;
   return {title,creator,label,releaseDate:date.slice(0,10),sourceUrl:url,dateProofUrl:url,

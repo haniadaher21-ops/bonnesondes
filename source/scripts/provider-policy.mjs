@@ -11,7 +11,8 @@ export function publicProviderFetcher(fetcher,{now=new Date(),backoff={},wait=pa
       const response=await fetcher(url,options);
       if(response.status===429) {
         const seconds=Number(response.headers.get('retry-after'));
-        backoff.bandcamp=new Date(+now+Math.max(3600,Number.isFinite(seconds)?seconds:0)*1000).toISOString();
+        const retryAt=Date.parse(response.headers.get('retry-after')??'');
+        backoff.bandcamp=new Date(Math.max(+now+3600000,Number.isFinite(seconds)?+now+seconds*1000:0,Number.isFinite(retryAt)?retryAt:0)).toISOString();
       }
       return response;
     });

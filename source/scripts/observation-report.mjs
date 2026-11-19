@@ -10,7 +10,7 @@ export function observationReport(report, diagnostics) {
     selected:Object.fromEntries(Object.entries(report.selected).map(([section,rows])=>[section,rows.map(row=>({
       id:row.item.id,title:row.item.title,creator:row.item.creator,source:row.item.source,provider:row.item.provider,
       url:row.item.url,sourceUrl:row.item.sourceUrl,releaseDate:row.item.releaseDate,
-      releaseProofUrl:row.item.releaseProofUrl,listeningProofUrl:row.item.listeningProofUrl,
+      releaseProofUrl:row.item.releaseProofUrl,listeningProofUrl:row.item.listeningProofUrl,listeningMappingUrl:row.item.listeningMappingUrl,
       date:row.item.date,minutes:row.item.minutes,score:row.score,
       affinityApplied:row.signals.length>0,publicReason:row.publicReason,
     }))])),

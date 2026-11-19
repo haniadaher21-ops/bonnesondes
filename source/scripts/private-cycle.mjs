@@ -59,7 +59,7 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
       title:item.title,creator:item.creator,label:new URL(sourceUrl).hostname,sourceUrl,
     }))).slice(0,24);
   const priorAlbums=previous.filter(item=>item.format==='Album' && item.releaseProofUrl).map(item=>({
-    title:item.title,creator:item.creator,label:item.source,sourceUrl:item.sourceUrl,url:item.url,
+    title:item.title,creator:item.creator,label:item.source,sourceUrl:item.sourceUrl,url:item.url,listeningMappingUrl:item.listeningMappingUrl,
     method:item.sourceUrl.includes('.bandcamp.com/')?'bandcamp-album':undefined,
   }));
   const bySource=new Map();
@@ -77,7 +77,7 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   for(const record of uniqueRecords) {
     const prior=previous.find(item=>item.releaseProofUrl && (item.sourceUrl===record.sourceUrl || (record.releaseDate && item.releaseDate===record.releaseDate))
       && normalized(item.creator)===normalized(record.creator) && normalized(item.title)===normalized(record.title));
-    if(prior){record.tags ??= prior.tags; if(!record.url){record.url=prior.url;record.listeningProofUrl=prior.listeningProofUrl;}}
+    if(prior){record.tags ??= prior.tags; if(!record.url){record.url=prior.url;record.listeningProofUrl=prior.listeningProofUrl;record.listeningMappingUrl=prior.listeningMappingUrl;}}
   }
   const evidence = filterConflictingDates(await verifyAlbums(uniqueRecords,fetcher));
   const albums=evidence.flatMap(row=>row.candidate?[{...row.candidate,collectedAt:date,

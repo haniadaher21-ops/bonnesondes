@@ -52,7 +52,8 @@ export async function verifyAlbums(records, fetcher = fetch) {
       const spotify = sourceUrl(listening.url ?? albumListeningLink(html) ?? (links.size === 1 ? [...links][0] : undefined));
       const albumId = spotify?.origin === 'https://open.spotify.com' && spotify.pathname.match(/^\/album\/([a-zA-Z0-9]{22})$/)?.[1];
       if (!albumId) throw new Error();
-      const embed = await fetcher('https://open.spotify.com/oembed?url=' + encodeURIComponent(spotify.href),
+      const oembedUrl='https://open.spotify.com/oembed?url=' + encodeURIComponent(spotify.href);
+      const embed = await fetcher(oembedUrl,
         { signal: AbortSignal.timeout(10_000), redirect: 'error' });
       if (!embed.ok) throw new Error();
       const metadata = await embed.json();
@@ -63,7 +64,7 @@ export async function verifyAlbums(records, fetcher = fetch) {
         id: 'spotify-' + albumId, title: record.title, creator: record.creator, source: record.label,
         provider: record.label, format: 'Album', url: spotify.href, sourceUrl: primary.href,
         releaseDate, releaseProofUrl: record.dateProofUrl ?? primary.href, date: releaseDate, dateKind: 'release', verificationStatus: 'primary-verified',
-        embed: { provider: 'spotify', id: albumId }, listeningProofUrl:listening.proof, tags:record.tags ?? [],
+        embed: { provider: 'spotify', id: albumId }, listeningProofUrl:oembedUrl,listeningMappingUrl:record.url?record.listeningMappingUrl:listening.proof, tags:record.tags ?? [],
       };
     } catch { /* A blocked or ambiguous source cannot confirm an original release. */ }
     results.push({ title: record.title, creator:record.creator, sourceUrl: record.sourceUrl, candidate, verifiedReleaseDate, ...(!candidate && {reason: failure}) });
