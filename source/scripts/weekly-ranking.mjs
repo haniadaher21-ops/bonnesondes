@@ -31,9 +31,9 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
     affinity += points;
     signals.push(reason);
   }
-  const artist = matchingValue(profile.favoriteArtists, [item.creator]);
-  const source = matchingValue([...profile.favoriteRadios, ...profile.favoritePublications], [item.source, item.provider, item.publisher]);
-  const attributes = [item.genre, item.mood];
+  const artist = matchingValue(profile.favoriteArtists, [item.creator,...(item.artistCredits ?? [])]);
+  const source = matchingValue([...profile.favoriteRadios, ...profile.favoritePublications], [item.source, item.provider, item.publisher, item.discoverySource]);
+  const attributes = [item.genre, item.mood, ...(item.tags ?? [])];
   signal(artist, 38, 'Artiste parmi tes favoris');
   signal(source, 32, 'Source parmi tes préférées');
   signal(matchingValue(profile.explore, attributes), 22, 'Genre ou ambiance à explorer');

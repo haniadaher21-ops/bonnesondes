@@ -51,7 +51,8 @@
     "mode": "automatic",
     "method": "nts-episodes",
     "url": "https://www.nts.live/shows/floating-points",
-    "feed": "https://www.nts.live/api/v2/shows/floating-points/episodes"
+    "feed": "https://www.nts.live/api/v2/shows/floating-points/episodes",
+    "curator": "Floating Points"
   },
   {
     "id": "nts-moxie",
@@ -61,7 +62,8 @@
     "mode": "automatic",
     "method": "nts-episodes",
     "url": "https://www.nts.live/shows/moxie",
-    "feed": "https://www.nts.live/api/v2/shows/moxie/episodes"
+    "feed": "https://www.nts.live/api/v2/shows/moxie/episodes",
+    "curator": "Moxie"
   },
   {
     "id": "nts-dont-trip",

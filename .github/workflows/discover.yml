@@ -3,13 +3,18 @@ name: Découvrir des candidats
 on:
   workflow_dispatch:
 
+concurrency:
+  group: bonnes-ondes-private-cycle
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
 jobs:
   discover:
+    if: github.event_name == 'workflow_dispatch' || vars.COLLECTION_ENABLED == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: source
@@ -21,10 +26,9 @@ jobs:
           cache: npm
           cache-dependency-path: source/package-lock.json
       - run: npm ci
-      - run: npm run discover
-      - uses: actions/upload-artifact@v4
-        with:
-          name: candidats-bonnes-ondes
-          path: source/.discovery/
-          include-hidden-files: true
-          if-no-files-found: error
+      - run: node scripts/private-cycle.mjs collect
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          BONNES_ONDES_RUNNER_TOKEN: ${{ secrets.BONNES_ONDES_RUNNER_TOKEN }}
+          AUTO_PUBLISH_ENABLED: 'false'

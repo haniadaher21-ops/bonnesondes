@@ -74,7 +74,7 @@ jobs:
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
           cp "$RELEASE_DIR/editions.json" source/editorial/editions.json
           rm -f "$RELEASE_DIR/editions.json"
-          rm -rf _next
+          # Retain previous hashed assets for cached pages.
           cp -R "$RELEASE_DIR"/. .
           touch .nojekyll
           git add source/editorial/editions.json index.html index.txt __next*.txt _next art .nojekyll

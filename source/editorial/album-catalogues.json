@@ -1,0 +1,10 @@
+[
+  {"name":"International Anthem","url":"https://intlanthem.bandcamp.com/music","method":"bandcamp"},
+  {"name":"Gondwana Records","url":"https://gondwanarecords.bandcamp.com/music","method":"bandcamp"},
+  {"name":"Brainfeeder","url":"https://brainfeeder.bandcamp.com/music","method":"bandcamp"},
+  {"name":"Brownswood Recordings","url":"https://brownswoodrecordings.bandcamp.com/music","method":"bandcamp"},
+  {"name":"Stones Throw","url":"https://stonesthrow.bandcamp.com/music","method":"bandcamp"},
+  {"name":"Domino Recording Co","url":"https://dominorecordco.bandcamp.com/music","method":"bandcamp"},
+  {"name":"4AD","url":"https://4ad.bandcamp.com/music","method":"bandcamp"},
+  {"name":"Ghostly International","url":"https://ghostly.bandcamp.com/music","method":"bandcamp"}
+]

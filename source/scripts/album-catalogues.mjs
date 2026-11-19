@@ -1,4 +1,5 @@
 import { isoDate, sourceUrl } from '../editorial/edition.mjs';
+import {bandcampAlbum, bandcampLinks} from './bandcamp-albums.mjs';
 import { normalized, primaryReleaseDate } from './release-metadata.mjs';
 
 export const plain = value => value.replace(/<[^>]*>/g, ' ').replace(/&amp;/g, '&').replace(/&#39;/g, "'")
@@ -75,7 +76,7 @@ export function ecmRelease(html, sourceUrl) {
   return {title,creator,label:'ECM',releaseDate,sourceUrl,dateProofUrl:sourceUrl,evidenceHtml:html};
 }
 
-export async function collectAlbumCatalogues({startsOn, today, fetcher = fetch}) {
+export async function collectAlbumCatalogues({startsOn, today, fetcher = fetch, catalogues = []}) {
   const windowStart = new Date(Date.parse(startsOn) - 14 * 86400000).toISOString().slice(0, 10);
   const sources = [
     {name: 'Ninja Tune', url: 'https://old.ninjatune.net/widget/releases/catalogue/page%3A1/view%3Alist/type%3Arecord', parse: ninjaCatalogue},
@@ -125,10 +126,33 @@ export async function collectAlbumCatalogues({startsOn, today, fetcher = fetch})
   } catch(error) {
     status.push({source:'ECM',albums:0,eligibleVerified:0,status:'unavailable',reason:error.message});
   }
+  for (const source of catalogues) {
+    if (source.method !== 'bandcamp') continue;
+    try {
+      const urls = bandcampLinks(await readPublicPage(source.url,fetcher),source.url).slice(0,16);
+      let checked=0, parsed=0;
+      const failures=[];
+      // Bounded batches avoid overwhelming a label, even when its artists have separate subdomains.
+      for(let offset=0;offset<urls.length;offset+=3) {
+        await Promise.all(urls.slice(offset,offset+3).map(async url=>{
+          try {
+            const html=await readPublicPage(url,fetcher);
+            const record=bandcampAlbum(html,url,source.name);
+            if(!record)return;
+            parsed++;
+            if(record.releaseDate>=windowStart && record.releaseDate<=today){records.push(record);checked++;}
+          }catch(error){failures.push({url,reason:error.message});}
+        }));
+      }
+      status.push({source:source.name,albums:parsed,pages:urls.length,eligibleVerified:checked,status:failures.length?'partial':parsed?'ok':'empty',failures});
+    }catch(error){status.push({source:source.name,status:'unavailable',reason:error.message,albums:0,eligibleVerified:0});}
+  }
+  records.sort((a,b)=>a.sourceUrl.localeCompare(b.sourceUrl));
   return {records, status};
 }
 
 export function albumListeningLink(html) {
   const links = [...new Set([...html.matchAll(/https:\/\/open\.spotify\.com\/(?:intl-[a-z]+\/)?album\/[a-zA-Z0-9]{22}/g)].map(match => match[0]))];
-  return links.length === 1 ? links[0] : undefined;
+  const canonical=[...new Set(links.map(link=>link.replace(/\/intl-[a-z]+\//,'/')))];
+  return canonical.length === 1 ? canonical[0] : undefined;
 }

@@ -1,4 +1,5 @@
 import { canonicalUrl, isoDate, sourceUrl } from '../editorial/edition.mjs';
+import {listeningResolver} from './album-links.mjs';
 import { text } from './discovery-feeds.mjs';
 
 import { readPublicPage, albumListeningLink } from './album-catalogues.mjs';
@@ -26,6 +27,7 @@ export function linkedReleaseSources(html) {
 
 export async function verifyAlbums(records, fetcher = fetch) {
   const results = [];
+  const resolveListening=listeningResolver(fetcher);
   for (const record of records) {
     const primary = sourceUrl(record.sourceUrl);
     let candidate;
@@ -38,12 +40,15 @@ export async function verifyAlbums(records, fetcher = fetch) {
       const structuredDate = primaryReleaseDate(html, record);
       if (record.releaseDate && structuredDate && record.releaseDate !== structuredDate) throw new Error();
       const releaseDate = record.releaseDate ?? structuredDate;
+      if(record.method==='bandcamp-album' && !structuredDate)throw new Error();
       if (/\b(reissue|remaster(?:ed)?|anniversary|deluxe|expanded)\b/i.test(record.title)) throw new Error();
       if (!releaseDate) throw new Error();
       verifiedReleaseDate = releaseDate;
       failure = 'Lien Spotify de cet album non confirmé';
       const links = new Set([...html.matchAll(/href\s*=\s*["'](https:\/\/open\.spotify\.com\/album\/[a-zA-Z0-9]{22})(?=[?/#"'])/gi)].map(match => match[1]));
-      const spotify = sourceUrl(record.url ?? albumListeningLink(html) ?? (links.size === 1 ? [...links][0] : undefined));
+      const listening=record.url ? {url:record.url,proof:primary.href} : await resolveListening({...record,evidenceHtml:html});
+      failure=listening.reason ?? failure;
+      const spotify = sourceUrl(listening.url ?? albumListeningLink(html) ?? (links.size === 1 ? [...links][0] : undefined));
       const albumId = spotify?.origin === 'https://open.spotify.com' && spotify.pathname.match(/^\/album\/([a-zA-Z0-9]{22})$/)?.[1];
       if (!albumId) throw new Error();
       const embed = await fetcher('https://open.spotify.com/oembed?url=' + encodeURIComponent(spotify.href),
@@ -57,10 +62,10 @@ export async function verifyAlbums(records, fetcher = fetch) {
         id: 'spotify-' + albumId, title: record.title, creator: record.creator, source: record.label,
         provider: record.label, format: 'Album', url: spotify.href, sourceUrl: primary.href,
         releaseDate, releaseProofUrl: record.dateProofUrl ?? primary.href, date: releaseDate, dateKind: 'release', verificationStatus: 'primary-verified',
-        embed: { provider: 'spotify', id: albumId },
+        embed: { provider: 'spotify', id: albumId }, listeningProofUrl:listening.proof, tags:record.tags ?? [],
       };
     } catch { /* A blocked or ambiguous source cannot confirm an original release. */ }
-    results.push({ title: record.title, sourceUrl: record.sourceUrl, candidate, verifiedReleaseDate, ...(!candidate && {reason: failure}) });
+    results.push({ title: record.title, creator:record.creator, sourceUrl: record.sourceUrl, candidate, verifiedReleaseDate, ...(!candidate && {reason: failure}) });
   }
   return results;
 }

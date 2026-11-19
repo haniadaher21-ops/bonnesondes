@@ -39,7 +39,7 @@ export function rollCandidates(previous, fresh, now) {
       || item.playlistOrigin === 'followed') continue;
     const older = rows.get(key);
     if (older && (older.id !== item.id || older.format !== item.format)) continue;
-    rows.set(key,{...item,firstSeenAt:older?.firstSeenAt ?? item.collectedAt});
+    rows.set(key,{...(older??{}),...item,firstSeenAt:older?.firstSeenAt ?? item.firstSeenAt ?? item.collectedAt});
   }
   return [...rows.values()].slice(-1500);
 }

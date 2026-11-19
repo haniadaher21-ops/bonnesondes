@@ -6,6 +6,16 @@ export const normalized = value => text(value).normalize('NFKD').replace(/\p{M}/
 
 export function primaryReleaseDate(html, record) {
   const dates = new Set();
+  if (record.method === 'bandcamp-album') {
+    // Bandcamp's explicit album_release_date must agree with its album JSON-LD, never the upload date.
+    try {
+      const raw=html.match(/data-tralbum=["']([\s\S]*?)["']\s/i)?.[1];
+      const tralbum=JSON.parse(raw.replace(/&quot;/g,'"').replace(/&#0?39;/g,"'").replace(/&amp;/g,'&'));
+      if(normalized(tralbum.artist)!==normalized(record.creator)||normalized(tralbum.current?.title)!==normalized(record.title))return;
+      const date=new Date(tralbum.album_release_date);
+      if(Number.isFinite(+date))dates.add(date.toISOString().slice(0,10));
+    }catch{return;}
+  }
   for (const script of html.matchAll(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
     try {
       const data = JSON.parse(script[1]);
@@ -15,6 +25,7 @@ export function primaryReleaseDate(html, record) {
           || ![node.byArtist].flat().some(artist => normalized(artist?.name) === normalized(record.creator))) continue;
         const date = node.datePublished;
         if (isoDate(date)) dates.add(date);
+        else if(record.method==='bandcamp-album' && Number.isFinite(Date.parse(date))) dates.add(new Date(date).toISOString().slice(0,10));
       }
     } catch { /* Individual structured data blocks can be malformed. */ }
   }

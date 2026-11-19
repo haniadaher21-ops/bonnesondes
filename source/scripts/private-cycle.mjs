@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { constants, cpSync } from 'node:fs';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,6 +13,7 @@ import { discover } from './discovery.mjs';
 import { legacyEdition, legacyItems, publishedFile, readJson } from './editorial-files.mjs';
 import { verifyAlbums, verifyLives, normalized } from './weekly-evidence.mjs';
 import { weeklyShortlist } from './weekly-ranking.mjs';
+import {observationReport,renderObservation} from './observation-report.mjs';
 import { editionForCycle, publicationDecision, publicEdition, rollCandidates } from './automation-policy.mjs';
 
 const root = fileURLToPath(new URL('../',import.meta.url));
@@ -34,7 +35,7 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   const known = [...legacyItems,...earlier.flatMap(editionItems)];
   const [collection,catalogues] = await Promise.all([
     discover({sources,profile,existing:known,now,fetcher}),
-    collectAlbumCatalogues({startsOn,today:parisDate(now),fetcher}),
+    collectAlbumCatalogues({startsOn,today:parisDate(now),fetcher,catalogues:readJson(new URL('../editorial/album-catalogues.json',import.meta.url))}),
   ]);
   const date = now.toISOString();
   const previous = rollCandidates(state.candidates,collection.candidates,now);
@@ -43,7 +44,15 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     .flatMap(item => (item.primaryReleaseUrls ?? []).map(sourceUrl => ({
       title:item.title,creator:item.creator,label:new URL(sourceUrl).hostname,sourceUrl,
     }))).slice(0,24);
-  const evidence = await verifyAlbums([...catalogues.records,...registered,...linked],fetcher);
+  const priorAlbums=previous.filter(item=>item.format==='Album' && item.releaseProofUrl).map(item=>({
+    title:item.title,creator:item.creator,label:item.source,sourceUrl:item.sourceUrl,url:item.url,
+    method:item.sourceUrl.includes('.bandcamp.com/')?'bandcamp-album':undefined,
+  }));
+  const records=[...catalogues.records,...registered,...linked,...priorAlbums];
+  const uniqueRecords=[...new Map(records.map(item=>[item.sourceUrl,item])).values()];
+  // Prefer fresh catalogue evidence when a previously saved album is seen again.
+  for(const record of catalogues.records) uniqueRecords.splice(uniqueRecords.findIndex(item=>item.sourceUrl===record.sourceUrl),1,record);
+  const evidence = await verifyAlbums(uniqueRecords,fetcher);
   const dates = new Map();
   for (const row of evidence) if (row.candidate) {
     const key = normalized(row.candidate.creator)+':'+normalized(row.candidate.title);
@@ -53,17 +62,29 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   const albums = evidence.flatMap(row => {
     const candidate = row.candidate;
     return candidate && dates.get(normalized(candidate.creator)+':'+normalized(candidate.title)).size === 1
-      ? [{...candidate,collectedAt:date}] : [];
+      ? [{...candidate,collectedAt:date,discoverySource:previous.find(item=>normalized(item.title)===normalized(candidate.title) && normalized(item.creator)===normalized(candidate.creator))?.provider}] : [];
   });
   const albumKeys = new Set(albums.map(item => canonicalUrl(item.url)));
   // Never carry a past verification into this run if its primary source is unavailable.
-  const base = previous.filter(item => item.verificationStatus !== 'primary-verified' && !albumKeys.has(canonicalUrl(item.url)));
+  const base = previous.filter(item => !albumKeys.has(canonicalUrl(item.url))).map(item=>
+    item.format==='Album' && item.verificationStatus==='primary-verified' ? {...item,verificationStatus:'release-date-needed'} : item);
   const candidates = rollCandidates(base,[...collection.candidates,...albums],now);
   const headers = {'x-bo-runner':env.BONNES_ONDES_RUNNER_TOKEN};
+  const beforeKeys=new Set(state.candidates.map(item=>canonicalUrl(item.url)));
+  const incremental={before:state.candidates.length,after:candidates.length,new:candidates.filter(item=>!beforeKeys.has(canonicalUrl(item.url))).length,
+    retained:candidates.filter(item=>beforeKeys.has(canonicalUrl(item.url))).length};
+  const profileSignalCounts=Object.fromEntries(['favoriteArtists','favoriteRadios','favoritePublications','spotify','explore','avoid'].map(key=>[key,profile[key].length]));
+  profileSignalCounts.reactions=profile.signals.items.length;
   async function saveState() {
+    // A consent revocation or profile edit during a long collection invalidates this observation.
+    const latest=await readRunnerProfile(config,env.BONNES_ONDES_RUNNER_TOKEN,fetcher);
+    if(latest.revision!==remote.revision)throw new Error('Profil modifié pendant la collecte.');
     await syncRpc(config,'bo_runner_state_save',{document:state},headers,fetcher);
+    const saved=await readRunnerProfile(config,env.BONNES_ONDES_RUNNER_TOKEN,fetcher);
+    if(saved.state.candidates.length!==state.candidates.length || saved.state.collections?.at(-1)?.at!==date)throw new Error('Index privé non confirmé.');
   }
   state.candidates = candidates;
+  state.collections=[...(state.collections??[]),{at:date,profileRevision:remote.revision,...incremental}].slice(-90);
   state.history = [
     ...editions.map(edition=>({startsOn:edition.startsOn,number:edition.number,status:'published',
       ids:editionItems(edition).map(item=>item.id)})),
@@ -71,7 +92,7 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   state.dryRuns = state.dryRuns.filter(run => Date.parse(run.at) >= now.getTime()-14*86400000).slice(-30);
   if (mode === 'collect') {
     await saveState();
-    return {status:'collected', candidates:candidates.length, albums:albums.length, catalogues:catalogues.status};
+    return {status:'collected', candidates:candidates.length, albums:albums.length,incremental,profileRevision:remote.revision, catalogues:catalogues.status};
   }
 
   const lives = await verifyLives(candidates,sources,env.YOUTUBE_DATA_API_KEY,fetcher);
@@ -80,8 +101,19 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     candidates:candidates.map(item => liveById.get(item.id) ?? item), sources:collection.sources,
     profile,earlier,catalog:legacyItems,startsOn,now,seen:Object.fromEntries(previous.map(item=>[canonicalUrl(item.url),item.firstSeenAt])),
   });
+  async function writeReport(build='not-run') {
+    const result=observationReport(report,{profileRevision:remote.revision,profileUpdatedAt:remote.profileUpdatedAt,
+      profileSignalCounts,incremental,albumEvidence:evidence,catalogues:catalogues.status,sources:collection.sources,liveStatus:lives.status,build});
+    if(env.BONNES_ONDES_OBSERVATION_DIR) {
+      await mkdir(env.BONNES_ONDES_OBSERVATION_DIR,{recursive:true});
+      await writeFile(join(env.BONNES_ONDES_OBSERVATION_DIR,'recommendations.json'),JSON.stringify(result,null,2)+'\n',{mode:0o600});
+      await writeFile(join(env.BONNES_ONDES_OBSERVATION_DIR,'recommendations.md'),renderObservation(result),{mode:0o600});
+    }
+    return result;
+  }
+  await writeReport();
   const fingerprint = createHash('sha256').update(JSON.stringify({
-    sources,albums:registered,profileRevision:remote.revision,
+    sources,albumCatalogues:readJson(new URL('../editorial/album-catalogues.json',import.meta.url)),albums:registered,profileRevision:remote.revision,
     ranking:await readFile(new URL('./weekly-ranking.mjs',import.meta.url),'utf8'),
     evidence:await readFile(new URL('./weekly-evidence.mjs',import.meta.url),'utf8'),
     catalogues:await readFile(new URL('./album-catalogues.mjs',import.meta.url),'utf8'),
@@ -116,7 +148,7 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
       cpSync(join(root,path),join(staging,path),{recursive:true,verbatimSymlinks:true,mode:constants.COPYFILE_FICLONE});
     }
     await writeFile(join(staging,'editorial/editions.json'),JSON.stringify([...editions,draft],null,2)+'\n');
-    await writeFile(join(staging,'next.config.ts'),"export default { output:'export', trailingSlash:true, basePath:'/bonnesondes' };\n");
+    // Preserve the reviewed Next configuration, including public Supabase auth configuration.
     const build = spawnSync(process.execPath,['node_modules/next/dist/bin/next','build'], {
       cwd:staging,env:{...env,NEXT_PUBLIC_BASE_PATH:'/bonnesondes'},encoding:'utf8',
     });
@@ -126,12 +158,13 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     }
     const html = await readFile(join(staging,'out/index.html'),'utf8');
     if (!html.includes('/bonnesondes/_next/')) throw new Error('Chemins statiques invalides.');
+    await writeReport('passed');
     const decision = publicationDecision({at:now,startsOn,editions,complete:true,
       enabled:mode === 'publish' ? env.AUTO_PUBLISH_ENABLED : 'false',observations:state.dryRuns,fingerprint});
     if (mode === 'observe') {
       state.dryRuns.push({id:env.GITHUB_RUN_ID ?? date,at:date,complete:true,fingerprint});
       await saveState();
-      return {status:'observe',complete:true,startsOn};
+      return {status:'observe',complete:true,startsOn,profileRevision:remote.revision,incremental};
     }
     await saveState();
     if (decision.status !== 'publish') return decision;

@@ -7,7 +7,7 @@ const formats = ['Album', 'Radio show', 'Playlist', 'Live session'];
 const label = value => text(value).normalize('NFC').toLowerCase();
 const excludedVideo = /\b(?:shorts?|interview|behind the scenes|behind (?:the|.+ like a) version|teaser|trailer|sneak peek|official music video|preview|highlight(?:s)?|extrait)\b/i;
 
-function ntsCandidates(payload) {
+function ntsCandidates(payload, source) {
   const episodes = payload?.results;
   if (!Array.isArray(episodes)) throw new Error('Liste des épisodes NTS absente.');
   return episodes.filter(episode => episode?.status === 'published').slice(0, 8).flatMap(episode => {
@@ -21,7 +21,7 @@ function ntsCandidates(payload) {
     const tracklistPath = '/api/v2/shows/' + show + '/episodes/' + alias + '/tracklist';
     return {
       ...(tracklist?.origin === 'https://www.nts.live' && tracklist.pathname === tracklistPath && { tracklistUrl: tracklist.href }),
-      id: 'nts-' + alias, title, format: 'Radio show', source: 'NTS Radio', date,
+      id: 'nts-' + alias, title, creator:source.curator, format: 'Radio show', source: 'NTS Radio', date,
       dateKind: 'broadcast', broadcastAt: text(episode.broadcast),
       url: 'https://www.nts.live/shows/' + show + '/episodes/' + alias,
       artwork: sourceUrl(episode.media?.picture_medium)?.href,
@@ -171,7 +171,7 @@ async function collect(source, request, collectedAt) {
   try {
     let items;
     switch (source.method) {
-      case 'nts-episodes': items = ntsCandidates(await (await request(feed)).json()); break;
+      case 'nts-episodes': items = ntsCandidates(await (await request(feed)).json(), source); break;
       case 'youtube-atom': items = youtubeCandidates(await (await request(feed)).text(), source); break;
       case 'spotify-playlist': items = [spotifyCandidate(source.url, source.provenance ?? feed)].filter(Boolean); break;
       case 'curator-page': {

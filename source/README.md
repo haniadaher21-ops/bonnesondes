@@ -186,3 +186,8 @@ La configuration par étapes, les comptes requis, les coûts et les procédures
 de révocation sont décrits dans [le guide d’automatisation](docs/automation-setup.md).
 La publication et la collecte privées restent désactivées tant que leurs
 variables d’activation ne sont pas explicitement configurées.
+### Release de l’interface
+
+Le [guide de première connexion](docs/interface-release.md) décrit la préparation
+des fichiers GitHub Pages, l’approbation de la release et la sauvegarde privée
+du profil. Le site local se trouve sous /bonnesondes/ avec cette configuration.

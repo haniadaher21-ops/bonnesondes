@@ -1,0 +1,76 @@
+name: Préparer les fichiers GitHub Pages
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/interface-release.yml'
+      - 'index.html'
+      - 'index.txt'
+      - '404.html'
+      - '404/**'
+      - '_next/**'
+      - '_not-found/**'
+      - '__next.*'
+      - 'source/test/**'
+      - 'source/docs/pages-release.json'
+      - 'source/app/**'
+      - 'source/private-sync/**'
+      - 'source/next.config.ts'
+      - 'source/package.json'
+      - 'source/package-lock.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-interface:
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && contains(fromJSON('["codex/interface-pages-release","codex/magic-link-sign-in"]'), github.event.pull_request.head.ref))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: source
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - name: Vérifier les opt-ins et la configuration publique
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          COLLECTION_ENABLED: ${{ vars.COLLECTION_ENABLED }}
+          AUTO_PUBLISH_ENABLED: ${{ vars.AUTO_PUBLISH_ENABLED }}
+        run: |
+          node --input-type=module <<'JS'
+          import { projectOrigin } from './private-sync/client.mjs';
+          const url=projectOrigin(process.env.SUPABASE_URL ?? '');
+          if (url!=='https://nzgmncknivttoskakbvp.supabase.co') throw new Error('Projet Supabase inattendu.');
+          for (const name of ['COLLECTION_ENABLED','AUTO_PUBLISH_ENABLED']) {
+            if (!['','false'].includes(process.env[name] ?? '')) throw new Error('Une automatisation est activée. Revue requise.');
+          }
+          const key=process.env.SUPABASE_PUBLISHABLE_KEY ?? '';
+          let publicKey=key.startsWith('sb_publishable_');
+          if (key.split('.').length===3) {
+            try { publicKey=JSON.parse(Buffer.from(key.split('.')[1],'base64url').toString()).role==='anon'; }
+            catch { publicKey=false; }
+          }
+          if (!publicKey) throw new Error('Une clé Supabase publique est requise.');
+          console.log('Configuration publique validée. Automatisations désactivées.');
+          JS
+      - run: npm ci
+      - run: npm test && npm run typecheck
+      - name: Recompiler le site
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bonnes-ondes-pages-interface
+          path: source/out/
+          include-hidden-files: true
+          if-no-files-found: error
