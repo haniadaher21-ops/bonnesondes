@@ -61,7 +61,7 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
     Playlist: item.playlistOrigin === 'publisher-discovered' ? 'Lien vérifié et publié par ' + (item.creator ?? item.provider ?? 'le média source') : 'Playlist vérifiée sur Spotify',
     'Live session': 'Performance publiée par une chaîne officielle, vidéo intégrable de ' + Math.round(item.minutes * 60) + ' secondes',
   }[item.format];
-  return { item, score, reason: [evidence, ...signals].join('. ') + '.', signals, age };
+  return { item, score, publicReason: evidence + '.', reason: [evidence, ...signals].join('. ') + '.', signals, age };
 }
 
 function exclusion(item, windowStart, today) {

@@ -179,3 +179,10 @@ rapports personnalisés et de l’index privé reste hors des artefacts Actions.
 
 Un [essai sur les fournisseurs réels](editorial/exemple-selection-hebdomadaire.md)
 documente les résultats et les places restées vacantes.
+
+### Automatisation et synchronisation privée
+
+La configuration par étapes, les comptes requis, les coûts et les procédures
+de révocation sont décrits dans [le guide d’automatisation](docs/automation-setup.md).
+La publication et la collecte privées restent désactivées tant que leurs
+variables d’activation ne sont pas explicitement configurées.

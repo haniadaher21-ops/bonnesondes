@@ -1,0 +1,99 @@
+name: Bonnes Ondes · Observation et publication
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Mode du cycle
+        type: choice
+        options: [observe, collect, publish]
+        default: observe
+  schedule:
+    - cron: '17 9 * * *'
+      timezone: Europe/Paris
+    - cron: '0 18 * * 0'
+      timezone: Europe/Paris
+permissions:
+  contents: read
+concurrency:
+  group: bonnes-ondes-private-cycle
+  cancel-in-progress: false
+jobs:
+  cycle:
+    if: github.event_name == 'workflow_dispatch' || vars.COLLECTION_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - run: npm ci
+        working-directory: source
+      - name: Tests
+        run: npm test && npm run typecheck
+        working-directory: source
+      - name: Collecter, observer ou préparer la release
+        id: prepare
+        working-directory: source
+        env:
+          REQUEST_MODE: ${{ inputs.mode }}
+          EVENT_NAME: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          BONNES_ONDES_RUNNER_TOKEN: ${{ secrets.BONNES_ONDES_RUNNER_TOKEN }}
+          YOUTUBE_DATA_API_KEY: ${{ secrets.YOUTUBE_DATA_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          AUTO_PUBLISH_ENABLED: ${{ vars.AUTO_PUBLISH_ENABLED }}
+          BONNES_ONDES_RELEASE_DIR: ${{ runner.temp }}/bonnes-ondes-release
+        shell: bash
+        run: |
+          set -euo pipefail
+          mode="$REQUEST_MODE"
+          if [ -z "$mode" ]; then mode=observe; fi
+          if [ "$EVENT_NAME" = schedule ]; then
+            mode=collect
+            if [ "$SCHEDULE" = '0 18 * * 0' ]; then mode=publish; fi
+          fi
+          node scripts/private-cycle.mjs "$mode"
+      - name: Enregistrer la release complète
+        if: steps.prepare.outputs.status == 'ready' && vars.AUTO_PUBLISH_ENABLED == 'true' && github.ref == 'refs/heads/main'
+        env:
+          RELEASE_DIR: ${{ runner.temp }}/bonnes-ondes-release
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
+          cp "$RELEASE_DIR/editions.json" source/editorial/editions.json
+          rm -f "$RELEASE_DIR/editions.json"
+          rm -rf _next
+          cp -R "$RELEASE_DIR"/. .
+          touch .nojekyll
+          git add source/editorial/editions.json index.html index.txt __next*.txt _next art .nojekyll
+          git add 404.html 404 _not-found
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name 'Bonnes Ondes'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m 'Publier la prochaine édition Bonnes Ondes'
+          git push origin HEAD:main
+      - name: Déclencher Pages pour le commit de release
+        if: steps.prepare.outputs.status == 'ready' && vars.AUTO_PUBLISH_ENABLED == 'true' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --output /dev/null -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/pages/builds"
+      - name: Signaler une erreur
+        if: failure()
+        run: |
+          echo "::error::Cycle Bonnes Ondes bloqué. La sélection, les sources, la synchronisation ou le build doivent être vérifiés."
