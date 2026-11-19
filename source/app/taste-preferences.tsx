@@ -35,12 +35,22 @@ export default function TastePreferences({ library, recommendations, libraryRead
       setError('Impossible de lire le profil enregistré dans ce navigateur.');
     }
     setReady(true);
+    const reload = () => {
+      try {
+        const value = localStorage.getItem(tasteProfileKey);
+        if (value) setProfile(parseTasteProfile(value));
+        setFormRevision(revision => revision + 1);
+      } catch { setError('Profil synchronisé invalide.'); }
+    };
+    window.addEventListener('taste-profile-changed', reload);
+    return () => window.removeEventListener('taste-profile-changed', reload);
   }, []);
 
   function persist(next: TasteProfile, message: string) {
     try {
       localStorage.setItem(tasteProfileKey, JSON.stringify(next));
       setProfile(next);
+      window.dispatchEvent(new Event('taste-profile-changed'));
       setFormRevision(revision => revision + 1);
       setStatus(message);
     } catch {
