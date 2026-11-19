@@ -89,7 +89,33 @@ résumé indique le manque. Les observations réelles et leurs résultats figure
 dans le rapport de cette PR. Un changement de préférence influence le score
 avec des signaux explicites, sans historique personnel issu de Spotify.
 
-## 4. Activation après validation du propriétaire
+## Brouillon hebdomadaire planifié (accord du 19 novembre 2026)
+
+Le workflow « Préparer le brouillon hebdomadaire » a reçu un opt-in du propriétaire
+le 19 novembre 2026. Il s'exécute désormais **chaque dimanche à 17 h 30,
+Europe/Paris**, y compris quand `COLLECTION_ENABLED` vaut false. Il appelle
+uniquement `private-cycle.mjs observe` : ce mode collecte les découvertes,
+conserve l'index public-métadonnées dans Supabase privé, vérifie la sélection et
+construit un brouillon. L'artefact « bonnes-ondes-brouillon-hebdomadaire »
+contient le rapport éditorial expurgé des préférences brutes, jetons et
+playlists suivies privées ; il est conservé sept jours.
+
+Le workflow hebdomadaire dispose seulement de `contents: read` dans GitHub.
+Il force `AUTO_PUBLISH_ENABLED: 'false'`. Il ne commite aucune édition et ne
+déclenche pas GitHub Pages. Les collectes quotidiennes et le cycle de
+publication du dimanche restent **désactivés** tant que
+`COLLECTION_ENABLED` n'est pas activé. L'édition 002 n'est pas approuvée.
+
+Pour **mettre en pause le brouillon hebdomadaire**, définir la variable Actions
+`WEEKLY_DRAFT_PAUSED` à `true` dans les paramètres du dépôt (ou désactiver
+le workflow). Remettre cette variable à `false` ou la retirer pour reprendre.
+Cette variable concerne seulement le déclenchement planifié : une exécution
+manuelle reste possible. Une révocation Supabase arrête aussi le runner,
+qui échoue sans profil autorisé. Un échec peut produire un brouillon partiel,
+jamais une publication. Vérifier le premier lancement planifié et sa durée
+sur l'onglet Actions, car le calendrier n'a pas encore été observé en réel.
+
+## 4. Activation des collectes quotidiennes et de la publication
 
 Avec accord explicite, règle COLLECTION_ENABLED à true pour les collectes
 quotidiennes de 09 h 17 Europe/Paris et le cycle du dimanche à 18 h. Règle
@@ -117,7 +143,8 @@ les règles de protection de main avant activation. La configuration Pages
 doit rester celle qui sert main à la racine.
 
 Pour arrêter, remets AUTO_PUBLISH_ENABLED à false. Pour arrêter aussi la
-collecte, remets COLLECTION_ENABLED à false. Pour revenir à une release stable,
+collecte quotidienne, remets COLLECTION_ENABLED à false. Pour arrêter le
+brouillon du dimanche, règle WEEKLY_DRAFT_PAUSED à true. Pour revenir à une release stable,
 revert le commit de contenu de la semaine via une PR. Si le commit a réussi mais
 Pages a échoué, relance uniquement le build Pages depuis le commit de release.
 
