@@ -1,37 +1,10 @@
 import { canonicalUrl, isoDate, sourceUrl } from '../editorial/edition.mjs';
 import { text } from './discovery-feeds.mjs';
 
-export const normalized = value => text(value).normalize('NFKD').replace(/\p{M}/gu, '')
-  .toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+import { readPublicPage, albumListeningLink } from './album-catalogues.mjs';
 
-export function primaryReleaseDate(html, record) {
-  const dates = new Set();
-  for (const script of html.matchAll(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
-    try {
-      const data = JSON.parse(script[1]);
-      for (const node of [data, data?.['@graph'] ?? []].flat(2)) {
-        if (![node?.['@type']].flat().includes('MusicAlbum')
-          || normalized(node.name) !== normalized(record.title)
-          || ![node.byArtist].flat().some(artist => normalized(artist?.name) === normalized(record.creator))) continue;
-        const date = node.datePublished;
-        if (isoDate(date)) dates.add(date);
-      }
-    } catch { /* Individual structured data blocks can be malformed. */ }
-  }
-  if (record.method === 'rhymesayers-release') {
-    const visible = html.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, '').replace(/<[^>]+>/g, ' ');
-    const heading = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1]?.replace(/<[^>]+>/g, ' ');
-    const identity = normalized(heading);
-    if (identity.includes(normalized(record.title)) && identity.includes('aesop rock') && identity.includes('blockhead')
-      && /\bnew album from Aesop Rock and Blockhead\b/i.test(visible)) {
-      for (const match of visible.matchAll(/\bReleases\s+([A-Z][a-z]+ \d{1,2}, \d{4})\./g)) {
-        const timestamp = Date.parse(match[1] + ' UTC');
-        if (Number.isFinite(timestamp)) dates.add(new Date(timestamp).toISOString().slice(0, 10));
-      }
-    }
-  }
-  return dates.size === 1 ? [...dates][0] : undefined;
-}
+import { normalized, primaryReleaseDate } from './release-metadata.mjs';
+export { normalized, primaryReleaseDate } from './release-metadata.mjs';
 
 // Allowed hosts publish releases directly. Editorial and retail sites are not release evidence.
 const primaryPaths = new Map([
@@ -56,15 +29,21 @@ export async function verifyAlbums(records, fetcher = fetch) {
   for (const record of records) {
     const primary = sourceUrl(record.sourceUrl);
     let candidate;
+    let verifiedReleaseDate;
+    let failure = 'Source primaire inaccessible';
     try {
       if (!primary || !text(record.title) || !text(record.creator)) throw new Error();
-      const page = await fetcher(primary.href, { signal: AbortSignal.timeout(10_000), redirect: 'error' });
-      if (!page.ok) throw new Error();
-      const html = await page.text();
-      const releaseDate = primaryReleaseDate(html, record);
+      const html = record.evidenceHtml ?? await readPublicPage(primary.href, fetcher);
+      failure = 'Date originale ou identité non confirmée';
+      const structuredDate = primaryReleaseDate(html, record);
+      if (record.releaseDate && structuredDate && record.releaseDate !== structuredDate) throw new Error();
+      const releaseDate = record.releaseDate ?? structuredDate;
+      if (/\b(reissue|remaster(?:ed)?|anniversary|deluxe|expanded)\b/i.test(record.title)) throw new Error();
       if (!releaseDate) throw new Error();
+      verifiedReleaseDate = releaseDate;
+      failure = 'Lien Spotify de cet album non confirmé';
       const links = new Set([...html.matchAll(/href\s*=\s*["'](https:\/\/open\.spotify\.com\/album\/[a-zA-Z0-9]{22})(?=[?/#"'])/gi)].map(match => match[1]));
-      const spotify = sourceUrl(record.url ?? (links.size === 1 ? [...links][0] : undefined));
+      const spotify = sourceUrl(record.url ?? albumListeningLink(html) ?? (links.size === 1 ? [...links][0] : undefined));
       const albumId = spotify?.origin === 'https://open.spotify.com' && spotify.pathname.match(/^\/album\/([a-zA-Z0-9]{22})$/)?.[1];
       if (!albumId) throw new Error();
       const embed = await fetcher('https://open.spotify.com/oembed?url=' + encodeURIComponent(spotify.href),
@@ -72,15 +51,16 @@ export async function verifyAlbums(records, fetcher = fetch) {
       if (!embed.ok) throw new Error();
       const metadata = await embed.json();
       if (normalized(metadata.title) !== normalized(record.title)
+        || metadata.provider_name && metadata.provider_name !== 'Spotify'
         || canonicalUrl(metadata.iframe_url) !== 'https://open.spotify.com/embed/album/' + albumId) throw new Error();
       candidate = {
         id: 'spotify-' + albumId, title: record.title, creator: record.creator, source: record.label,
         provider: record.label, format: 'Album', url: spotify.href, sourceUrl: primary.href,
-        releaseDate, date: releaseDate, dateKind: 'release', verificationStatus: 'primary-verified',
+        releaseDate, releaseProofUrl: record.dateProofUrl ?? primary.href, date: releaseDate, dateKind: 'release', verificationStatus: 'primary-verified',
         embed: { provider: 'spotify', id: albumId },
       };
     } catch { /* A blocked or ambiguous source cannot confirm an original release. */ }
-    results.push({ title: record.title, sourceUrl: record.sourceUrl, candidate });
+    results.push({ title: record.title, sourceUrl: record.sourceUrl, candidate, verifiedReleaseDate, ...(!candidate && {reason: failure}) });
   }
   return results;
 }
@@ -98,12 +78,13 @@ export async function verifyLives(candidates, sources, key, fetcher = fetch) {
     && canonicalUrl(item.url) === 'https://www.youtube.com/watch?v=' + item.embed.id).map(item => [item.embed.id, item]));
   const items = [];
   const ids = [...byId.keys()];
+  let failure = 'Métadonnées YouTube invalides';
   try {
     for (let offset = 0; offset < ids.length; offset += 50) {
       const query = new URLSearchParams({ part: 'contentDetails,status,snippet', id: ids.slice(offset, offset + 50).join(',') });
       const response = await fetcher('https://www.googleapis.com/youtube/v3/videos?' + query,
         { headers: { 'x-goog-api-key': key }, signal: AbortSignal.timeout(10_000), redirect: 'error' });
-      if (!response.ok) throw new Error();
+      if (!response.ok) { failure = 'YouTube Data API HTTP ' + response.status; throw new Error(); }
       for (const video of (await response.json()).items) {
         const item = byId.get(video.id);
         const duration = seconds(video.contentDetails?.duration);
@@ -115,7 +96,7 @@ export async function verifyLives(candidates, sources, key, fetcher = fetch) {
       }
     }
   } catch {
-    return { items, status: 'Métadonnées YouTube incomplètes. Les vidéos sans preuve restent à vérifier.' };
+    return { items, status: failure + '. Les vidéos sans preuve restent à vérifier.' };
   }
   return { items, status: items.length + ' vidéo(s) publique(s) intégrable(s), de plus de trois minutes, sur une chaîne officielle.' };
 }
