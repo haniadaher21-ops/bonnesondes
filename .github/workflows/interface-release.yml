@@ -4,6 +4,15 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/interface-release.yml'
+      - 'index.html'
+      - 'index.txt'
+      - '404.html'
+      - '404/**'
+      - '_next/**'
+      - '_not-found/**'
+      - '__next.*'
+      - 'source/test/**'
+      - 'source/docs/pages-release.json'
       - 'source/app/**'
       - 'source/private-sync/**'
       - 'source/next.config.ts'

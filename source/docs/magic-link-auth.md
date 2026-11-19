@@ -9,7 +9,7 @@ Dans **Authentication → URL Configuration**, enregistrer :
 
 Supprimer localhost comme Site URL de production. Le code demande explicitement ce retour ; Supabase peut revenir à la Site URL si le retour n’est pas autorisé. Aucun joker ni nouvelle route serveur n’est nécessaire. Le callback est la page statique existante, avec `?code=…`, puis revient à `#preferences`.
 
-Le modèle de courriel par défaut avec son lien de confirmation convient. Aucun changement de modèle, SMTP personnalisé, clé secrète supplémentaire ou abonnement payant n’est requis par cette modification. Les quotas et restrictions du fournisseur d’emails Supabase continuent de s’appliquer. Le compte doit déjà exister dans Auth et être autorisé dans `bonnes_ondes_private.owners` ; la création publique de comptes reste désactivée par la demande.
+Le flux proposé vise le modèle de courriel par défaut avec son lien de confirmation, sans personnalisation ni abonnement. Sa compatibilité réelle avec ce projet Supabase Free reste à vérifier après publication approuvée : les tests simulés ne prouvent pas que le courriel retournera effectivement un code PKCE. Aucun changement de modèle, SMTP personnalisé ou clé secrète supplémentaire n’est introduit par cette PR. Les quotas et restrictions du fournisseur d’emails Supabase continuent de s’appliquer. Le compte doit déjà exister dans Auth et être autorisé dans `bonnes_ondes_private.owners` ; la création publique de comptes reste désactivée par la demande.
 
 ## Parcours et sécurité
 
@@ -24,6 +24,17 @@ Le vérificateur est à usage unique. Une demande plus récente remplace la pré
 
 `npm test`, `npm run typecheck`, `npm run build` depuis `source/`. Les tests couvrent S256, la destination Pages, les échanges, les erreurs, l’expiration, le refus des tokens implicites, le nettoyage d’URL et la préservation des données. Le workflow « Préparer les fichiers GitHub Pages » construit un artefact avec les variables publiques validées et refuse de fonctionner si `COLLECTION_ENABLED` ou `AUTO_PUBLISH_ENABLED` sont activées. Il ne déploie rien.
 
-Les fichiers racine actuellement publiés ne doivent être remplacés qu’après revue et accord de publication, à partir de l’artefact du commit approuvé, en conservant les anciens assets hachés. Cette PR ne fusionne et ne déploie rien. La réception d’un vrai courriel et le premier enregistrement consenti seront vérifiés avec le propriétaire après configuration des URL et publication approuvée. Le test du runner Supabase nécessite ce premier enregistrement.
+La PR inclut maintenant les fichiers statiques racine issus de l’artefact du commit source exact `3e7971a65184cb822ddb3329f954e7efc00b3781`, avec les anciens assets hachés conservés. La provenance et les empreintes des 24 fichiers exportés sont dans `pages-release.json`. Ils ne seront servis au public qu’après fusion et publication explicitement approuvées. Cette PR ne fusionne et ne déploie rien. La réception d’un vrai courriel et le premier enregistrement consenti seront vérifiés avec le propriétaire après configuration des URL et publication approuvée. Le test du runner Supabase nécessite ce premier enregistrement.
 
 Références : [PKCE Supabase](https://supabase.com/docs/guides/auth/sessions/pkce-flow), [URLs de retour](https://supabase.com/docs/guides/auth/redirect-urls), [connexion sans mot de passe](https://supabase.com/docs/guides/auth/auth-email-passwordless).
+
+## Recette réelle après accord de mise en ligne
+
+1. Après revue, obtenir l’accord explicite de fusion **et** publication. Vérifier Pages sur le commit approuvé, les scripts/CSS/images et la présence de « Recevoir un lien de connexion ». Garder `COLLECTION_ENABLED` et `AUTO_PUBLISH_ENABLED` absentes ou à `false` ; ne pas approuver l’édition 002.
+2. Le propriétaire demande un nouveau lien sur `https://haniadaher21-ops.github.io/bonnesondes/#preferences` et ouvre le courriel dans le même navigateur. Ne jamais copier le lien, le code, le vérificateur ou les tokens dans le chat, une capture, les logs ou la PR.
+3. Constater la connexion réussie et l’URL nettoyée finissant par `#preferences`. Ne consigner que succès/échec, type de callback (code ou fragment), statut HTTP et heure du contrôle. Les erreurs affichées ne contiennent pas le contenu privé du message.
+4. Si le fournisseur retourne un fragment de session, le callback le refuse : interrompre la recette, conserver les données locales et proposer une solution compatible Free sans abaisser la vérification de sécurité. Ne pas annoncer le bug réparé sur la seule base des tests simulés.
+5. Le propriétaire relit ses préférences, puis clique lui-même sur « Synchroniser les préférences de ce navigateur ». Attendre « Préférences et réactions synchronisées ». Recharger pour vérifier la persistance ; préserver les favoris existants.
+6. Relancer uniquement le contrôle d’intégration privé de la PR #17, sans fusionner cette PR ni activer de collecte/publication. Vérifier que le runner lit le profil et sa révision après fermeture du navigateur et que les accès anonymes/non autorisés restent refusés. Publier seulement le résultat et la révision, sans préférences détaillées, adresse email, clé ni token.
+
+Le réglage des URL est déclaré terminé par le propriétaire ; il ne constitue pas à lui seul un test de connexion. La recette réelle reste en attente de publication approuvée.

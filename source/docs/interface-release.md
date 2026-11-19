@@ -27,7 +27,7 @@ musical ». Les favoris existants restent dans off-frequency.library.v1.
 3. Ferme cet onglet puis indique que la sauvegarde est faite. Le contrôle Actions de la PR #17 vérifiera la lecture du profil par le runner, indépendamment du navigateur.
 
 Ton compte doit déjà exister dans Supabase Auth et être autorisé dans
-bonnes_ondes_private.owners. Le modèle d’email Supabase par défaut convient : aucune personnalisation ni fournisseur SMTP payant ne sont nécessaires. Les anciens liens doivent être remplacés par une nouvelle demande. Voir [la configuration des liens](magic-link-auth.md).
+bonnes_ondes_private.owners. Le flux vise le modèle d’email Supabase par défaut ; sa compatibilité de bout en bout reste à vérifier avec un vrai courriel après publication approuvée. Les anciens liens doivent être remplacés par une nouvelle demande. Voir [la configuration des liens](magic-link-auth.md).
 
 La déconnexion arrête les envois suivants et conserve le dernier profil sur
 le serveur. Le bouton d’effacement supprime ce profil distant et révoque
