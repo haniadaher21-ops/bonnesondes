@@ -40,3 +40,20 @@ l’accès du runner. Les favoris locaux restent disponibles.
 En cas d’erreur après publication, revert le commit de merge de cette release
 dans une PR, puis relancer Pages après validation. Les données de navigateur
 et les lignes privées Supabase ne font pas partie des fichiers statiques.
+
+## Validation de l’export
+
+Le build Actions de la release a validé les deux opt-ins désactivés, puis
+exécuté les 30 tests, TypeScript et Next.js. Le ZIP vérifié est celui de
+l’artefact bonnes-ondes-pages-interface du run 44544976936. Son SHA-256 est
+1d005026b3a1cd5f281fa0a4232dd3c21ad012e23d1e47b90705e90806647099.
+
+Les fichiers de ce ZIP sont recopiés à la racine du dépôt. Les anciens assets
+hachés sont conservés pour permettre aux pages déjà en cache de charger leurs
+scripts. Le nouvel index.html référence les fichiers de la release.
+
+Le contrôle Chromium de cet export couvre l’édition 001, les accès directs,
+les chemins CSS/JS/image, le profil enregistré après rechargement, la présence
+du formulaire Supabase, les favoris et réactions préexistants, les filtres
+Playlists et les URLs des lecteurs. La première connexion réelle du propriétaire
+aura lieu après approbation et publication de la release.

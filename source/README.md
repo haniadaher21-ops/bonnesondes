@@ -179,4 +179,9 @@ rapports personnalisés et de l’index privé reste hors des artefacts Actions.
 
 Un [essai sur les fournisseurs réels](editorial/exemple-selection-hebdomadaire.md)
 documente les résultats et les places restées vacantes.
-\n### Release de l’interface\n\nLe [guide de première connexion](docs/interface-release.md) décrit la préparation\ndes fichiers GitHub Pages, l’approbation de la release et la sauvegarde privée\ndu profil. Le site local se trouve sous /bonnesondes/ avec cette configuration.\n
+
+### Release de l’interface
+
+Le [guide de première connexion](docs/interface-release.md) décrit la préparation
+des fichiers GitHub Pages, l’approbation de la release et la sauvegarde privée
+du profil. Le site local se trouve sous /bonnesondes/ avec cette configuration.
