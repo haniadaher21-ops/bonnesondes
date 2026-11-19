@@ -11,7 +11,7 @@ export function publicProviderFetcher(fetcher,{now=new Date(),backoff={},wait=pa
       const response=await fetcher(url,options);
       if(response.status===429) {
         const seconds=Number(response.headers.get('retry-after'));
-        const retryAt=Date.parse(response.headers.get('retry-after')??'');
+        const retryAt=Number.isFinite(seconds)?NaN:Date.parse(response.headers.get('retry-after')??'');
         backoff.bandcamp=new Date(Math.max(+now+3600000,Number.isFinite(seconds)?+now+seconds*1000:0,Number.isFinite(retryAt)?retryAt:0)).toISOString();
       }
       return response;

@@ -106,3 +106,9 @@ test('release-day assertions must refer to the named album and preserve the labe
  assert.equal(releaseDayArticle(html,'https://label.test/album','Label').releaseDate,'2026-11-11');
  assert.equal(releaseDayArticle(html.replace('release of Album','release of Something Else'),'https://label.test/album','Label'),undefined);
 });
+
+test('numeric Retry-After is seconds, not a calendar year',async()=>{
+ const {publicProviderFetcher}=await import('../scripts/provider-policy.mjs');
+ const backoff={};const fetcher=publicProviderFetcher(async()=>new Response('',{status:429,headers:{'retry-after':'7200'}}),{now,backoff,wait:async()=>{}});
+ await fetcher('https://label.bandcamp.com/music');assert.equal(backoff.bandcamp,new Date(+now+7200000).toISOString());
+});
