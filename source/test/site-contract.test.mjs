@@ -28,7 +28,7 @@ test('the first radio row is FIP, NTS 1 and La Belle Aventure', () => {
 });
 
 test('Radio Nova and Nouvo Nova take the former FIP Jazz and FIP Electro positions', () => {
-  const order=[...main.matchAll(/\\bname: '([^']+)'|fip\\('([^']+)'/g)].map(m=>m[1]||m[2]);
+  const order=[...main.matchAll(/\bname: '([^']+)'|fip\('([^']+)'/g)].map(m=>m[1]||m[2]);
   assert.deepEqual(order,[
     'FIP','NTS 1','Radio La Belle Aventure',
     'Radio Nova','FIP Groove','Nouvo Nova',
