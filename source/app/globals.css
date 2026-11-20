@@ -102,6 +102,33 @@ nav .library-nav { display: flex; align-items: center; gap: 7px; padding: 7px 12
 .page-heading { padding: 50px 0 22px; border-bottom: 1px solid var(--line); margin-bottom: 25px; }
 .page-heading h1 { font: clamp(65px, 9vw, 115px)/.95 var(--display); letter-spacing: -.04em; margin: 8px 0 12px; }
 .page-heading > p:last-child { color: var(--muted); max-width: 65ch; }
+
+/* Editorial snapshots: choose a publication date, then browse the original edition. */
+.edition-list { border-top: 1px solid var(--line); }
+.edition-list-item { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; padding: 19px 9px; border-bottom: 1px solid var(--line); min-width: 0; transition: background .15s ease; }
+.edition-list-item:hover, .edition-list-item:focus-visible { background: var(--surface); }
+.edition-list-number { font: 500 11px var(--mono); color: var(--accent); min-width: 68px; }
+.edition-list-main { flex: 1; min-width: 185px; display: grid; gap: 2px; }
+.edition-list-main strong { font: 37px/.95 var(--display); text-transform: uppercase; }
+.edition-list-main > span { color: var(--muted); font-size: 12px; }
+.edition-list-counts { color: var(--muted); font-size: 12px; }
+.edition-list-current { border: 1px solid var(--accent); color: var(--accent); font: 600 10px var(--mono); text-transform: uppercase; padding: 4px 6px; }
+.edition-list-item > svg { color: var(--accent); flex: none; }
+.editions-back { margin: 4px 0 27px; }
+.editions-back-icon { transform: rotate(180deg); }
+.edition-detail-heading { padding: 18px 0 24px; border-bottom: 1px solid var(--line); }
+.edition-detail-heading h2 { font: clamp(44px, 6vw, 76px)/.95 var(--display); margin: 8px 0; }
+.edition-detail-heading > p:last-child { color: var(--muted); font-size: 13px; }
+.edition-featured-note { background: #f0dfca; border-left: 3px solid var(--accent); padding: 12px 15px; margin-bottom: 16px; font-size: 13px; }
+@media (max-width: 780px) {
+  .edition-list-item { align-items: flex-start; gap: 7px 12px; padding: 16px 4px; }
+  .edition-list-number { min-width: 62px; margin-top: 3px; }
+  .edition-list-main { flex-basis: calc(100% - 100px); }
+  .edition-list-counts { order: 2; flex-basis: 100%; }
+  .edition-list-current { order: 1; }
+  .edition-list-item > svg { margin-left: auto; }
+}
+
 .station { padding: 23px; display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
 .station > svg { color: var(--accent); margin-bottom: 18px; }
 .station h2 { font: 35px/1 var(--display); margin: 5px 0 8px; }
