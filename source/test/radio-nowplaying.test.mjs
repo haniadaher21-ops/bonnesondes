@@ -15,7 +15,8 @@ test('Nova returns a fresh, real station title and artist, with Paris broadcast 
     title:'PAINKILLER',artist:'JOY CROOKES & DENZEL CURRY',playedAt:'10:03'
   });
   assert.equal(parseNovaNowPlaying(html('09:59'),now)?.playedAt,'09:59');
-  assert.equal(parseNovaNowPlaying(html('09:50'),now),null);
+  assert.equal(parseNovaNowPlaying(html('09:50'),now)?.playedAt,'09:50');
+  assert.equal(parseNovaNowPlaying(html('07:04'),now),null);
   assert.equal(parseNovaNowPlaying(html('10:06'),now),null);
   assert.equal(parseNovaNowPlaying(html('26:02'),now),null);
 });
@@ -26,6 +27,19 @@ test('the Nova parser fails closed if the page structure or metadata is invalid'
   assert.equal(parseNovaNowPlaying(html('10:04','','Track'),now),null);
   assert.equal(parseNovaNowPlaying('x'.repeat(20001),now),null);
   assert.equal(parseNovaNowPlaying(html('10:04','Station','&lt;Song&gt;'),now)?.title,'<Song>');
+});
+
+test('Nova returns only the artwork of the current first slide, never a placeholder',()=>{
+  const at=new Date('2026-11-20T09:05:00Z');
+  const artwork='https://www.nova.fr/wp-content/thumbnails/uploads/2024/cover.jpeg';
+  const image='<img src="data:image/svg+xml,placeholder" data-lazy-src="'+artwork+'" alt="Disque">';
+  const updated=html('10:03').replace('<div class="wwtt_imgcontent"></div>',
+    '<div class="wwtt_imgcontent">'+image+'</div>');
+  assert.equal(parseNovaNowPlaying(updated,at)?.artwork,artwork);
+  const placeholder=updated.replace(artwork,'https://www.nova.fr/assets/nova-default.png');
+  assert.equal(parseNovaNowPlaying(placeholder,at)?.artwork,undefined);
+  const bad=updated.replace(artwork,'javascript:alert(1)');
+  assert.equal(parseNovaNowPlaying(bad,at)?.artwork,undefined);
 });
 
 test('the first-party Radio France endpoint is used for every themed FIP station',()=>{

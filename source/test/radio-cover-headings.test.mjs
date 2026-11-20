@@ -44,6 +44,7 @@ test('album covers accompany saved radio songs while station provenance and NTS 
   assert.match(page,/radioTracks: item.format === 'Track' && saved/);
   assert.match(player,/!isNts && saveTrack\(track\)/);
   assert.match(player,/isNts \? 'ÉMISSION EN DIRECT'/);
-  assert.match(page,/item.metadata.provider !== 'nova-page'/);
+  assert.doesNotMatch(page,/item.metadata.provider !== 'nova-page'/);
+  assert.match(page,/item.metadata\s+\? <RadioTrack/);
   assert.match(page,/<p className="station-description">\{item.description\}<\/p>/);
 });

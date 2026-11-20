@@ -70,7 +70,7 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
         const headers=metadata.provider==='nova-page' ? {
           'X-Respond-With':'html',
           'X-Target-Selector':'.what_was_title .swiper-slide:first-child',
-          'X-Cache-Tolerance':'60',
+          'X-Cache-Tolerance':'30',
         } : undefined;
         const response = await fetch(metadata.endpoint, { signal: controller.signal, cache: 'no-store', headers });
         const onAir = await readOnAir(response, metadata);
@@ -78,7 +78,7 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
       } catch {
         if (!controller.signal.aborted) { setTrack(null); setLoading(false); }
       } finally {
-        if (!controller.signal.aborted) timer = setTimeout(refresh, metadata.provider === 'nova-page' ? 60_000 : compact ? 30_000 : 15_000);
+        if (!controller.signal.aborted) timer = setTimeout(refresh, metadata.provider === 'nova-page' ? 30_000 : compact ? 30_000 : 15_000);
       }
     }
 
@@ -93,22 +93,26 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
   const isNova = metadata.provider === 'nova-page';
   if (compact) {
     return <div className="station-now-playing" aria-live="polite">
-      <p className="eyebrow">{isNts ? 'ÉMISSION EN DIRECT' : 'EN CE MOMENT'}</p>
+      <p className="eyebrow">{isNts ? 'ÉMISSION EN DIRECT' : isNova ? 'DERNIER TITRE DIFFUSÉ' : 'EN CE MOMENT'}</p>
       {track ? <div className="station-track-layout">
         {track.artwork && <BroadcastArtwork key={track.artwork} artwork={track.artwork} title={track.title} isNts={isNts} />}
         <div className="station-track-copy">
           <strong className="station-track-title">{track.title}</strong>
           {!isNts && track.artist && <p className="station-track-artist">{track.artist}</p>}
+          {isNova && track.playedAt && <p className="station-track-time">À {track.playedAt}, selon Nova</p>}
           {!isNts && saveTrack(track)}
         </div>
       </div> : <p className="station-track-unavailable">
-        {loading ? 'Chargement du direct…' : isNts ? 'Émission indisponible pour le moment.' : 'Titre indisponible pour le moment.'}
+        {loading ? 'Chargement du direct…' : isNts ? 'Émission indisponible pour le moment.' : isNova ? 'Dernier titre Nova indisponible pour le moment.' : 'Titre indisponible pour le moment.'}
       </p>}
     </div>;
   }
   return <div className="radio-track" aria-live="polite">
     <p className="eyebrow">{isNts ? 'Émission en cours' : isNova ? 'Dernier titre identifié chez Nova' : 'À l’antenne'}</p>
-    {track ? <><strong>{track.title}</strong>{track.artist && <p>{track.artist}</p>}{track.playedAt && <p>Diffusé à {track.playedAt}, heure de Paris · selon Nova</p>}</>
+    {track ? <div className="station-track-layout">
+      {track.artwork && <BroadcastArtwork key={track.artwork} artwork={track.artwork} title={track.title} isNts={isNts} />}
+      <div className="station-track-copy"><strong>{track.title}</strong>{track.artist && <p>{track.artist}</p>}{track.playedAt && <p>Diffusé à {track.playedAt}, heure de Paris · selon Nova</p>}</div>
+    </div>
       : <p>{isNts ? 'Émission indisponible pour le moment.' : isNova ? 'Aucun titre récent confirmé par Nova. Réessaie dans quelques instants.' : 'Titre indisponible pour le moment.'}</p>}
     {!isNts && track && saveTrack(track)}
     {isNova && <a className="text-link" href="https://jina.ai/reader/" target="_blank" rel="noopener noreferrer">Données de Nova via Jina Reader</a>}

@@ -27,6 +27,16 @@ test('the first radio row is FIP, NTS 1 and La Belle Aventure', () => {
   }
 });
 
+test('Radio Nova and Nouvo Nova take the former FIP Jazz and FIP Electro positions', () => {
+  const order=[...main.matchAll(/\bname: '([^']+)'|fip\('([^']+)'/g)].map(m=>m[1]||m[2]);
+  assert.deepEqual(order,[
+    'FIP','NTS 1','Radio La Belle Aventure',
+    'Radio Nova','FIP Groove','Nouvo Nova',
+    'FIP Rock','FIP Jazz','Nova la nuit',
+    'FIP Electro','NTS 2',
+  ]);
+});
+
 test('live discovery has verified official sources beyond the initial three', () => {
   for (const [id,channelId] of [
     ['kexp-live','UC3I2GFN_F8WudD_2jUZbojA'],

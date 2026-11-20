@@ -203,3 +203,34 @@ du profil. Le site local se trouve sous /bonnesondes/ avec cette configuration.
 - La première rangée des radios présente FIP, NTS 1 et Radio La Belle Aventure. Nova, Nova la nuit et Nouvo Nova utilisent des flux MP3 HTTPS recensés publiquement, dans le lecteur audio du site. Leur disponibilité et les conditions d'intégration sont à contrôler dans un navigateur réel ; en cas d'échec, le lien vers le site Nova reste proposé.
 - Le brouillon historique dans `editorial/drafts/002-selection.json`, créé avec deux lives avant cette modification, est conservé comme archive de travail et ne satisfait plus le nouveau validateur. Une édition 002 conforme devra être reconstruite à partir de trois performances contrôlées.
 - Le workflow `site-deploy.yml` reconstruit puis déploie les fichiers GitHub Pages lors d'une fusion sur `main` qui modifie `source/app/` ou la configuration Next. Il préserve les ressources statiques historiques et ne touche ni aux données d'éditions ni à l'activation `AUTO_PUBLISH_ENABLED`. Les tests et le build doivent passer avant d'écrire l'export public.
+
+### Métadonnées des radios Nova (vérifiées le 20 novembre 2026)
+
+Les cartes **Radio Nova**, **Nouvo Nova** et **Nova la nuit** affichent comme les
+radios FIP un titre, un artiste, l'heure de diffusion et la pochette lorsqu'elle
+est fournie par Nova. Les cartes sont mises à jour toutes les 30 secondes.
+L'ordre de présentation est FIP / NTS 1 / La Belle Aventure, puis Radio Nova /
+FIP Groove / Nouvo Nova, etc. Le bouton d'enregistrement fonctionne depuis
+chaque carte et conserve la station et le visuel éventuel.
+
+**Limite importante :** il s'agit du *dernier titre diffusé selon la page
+publique de Nova*, pas d'une confirmation sonore de la seconde en cours. Les
+trois flux MP3 Infomaniak ont été testés avec `Icy-MetaData: 1` : les champs
+`StreamTitle` étaient vides. Les endpoints Icecast `status-json.xsl` ont
+répondu 404 et la métadonnée Infomaniak accessible par le nom du flux ne
+contenait pas de titre. L'API WordPress `/radio-tracks/v1/latests` renvoie
+des titres globaux sans paramètre de station ; la route
+`/mobile-app/v1/cqct/{radio_slug}` est protégée (401). Il ne serait pas
+fiable de les présenter comme le morceau **en cours**.
+
+Les pages publiques des trois stations contiennent une rubrique
+**« C'était quoi ce titre »** avec un horodatage et, quand disponible, une
+image associée. Bonnes Ondes lit uniquement la première entrée de la bonne
+station via le relais public HTTPS de Jina Reader qui autorise l'accès depuis
+GitHub Pages. Chaque carte affiche **« Dernier titre diffusé »**, son heure
+(Paris) et le lien de sauvegarde. Le parseur rejette les données de plus de
+180 minutes, les images génériques, les images non HTTPS et le HTML incomplet.
+Si le relais tiers est indisponible, le site affiche un état indisponible sans
+inventer de titre. Cette intégration dépend de la structure du site de Nova
+et de la disponibilité du relais : une API officielle de titre par station
+devrait la remplacer si Nova en propose une publiquement.

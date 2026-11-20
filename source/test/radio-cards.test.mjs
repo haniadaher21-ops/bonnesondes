@@ -7,8 +7,11 @@ const radio = readFileSync(new URL('../app/radio-track.tsx', import.meta.url), '
 const content = readFileSync(new URL('../app/content.ts', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
 
-test('non-Nova radio cards display live metadata instead of static descriptions', () => {
-  assert.match(journal, /item\.metadata && item\.metadata\.provider !== 'nova-page'/);
+test('all radios including Nova can show identifiable songs in the cards', () => {
+  assert.match(journal, /\{item\.metadata\s+\? <RadioTrack/);
+  assert.doesNotMatch(journal, /item\.metadata\.provider !== 'nova-page'/);
+  assert.match(radio, /isNova \? 'DERNIER TITRE DIFFUSÉ'/);
+  assert.match(radio, /À \{track\.playedAt\}, selon Nova/);
   assert.match(journal, /<RadioTrack metadata=\{item\.metadata\} compact/);
   assert.match(journal, /: <p className="station-description">\{item\.description\}<\/p>/);
   assert.match(radio, /className="station-track-title">\{track\.title\}/);
