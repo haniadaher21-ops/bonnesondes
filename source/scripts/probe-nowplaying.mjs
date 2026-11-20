@@ -14,7 +14,7 @@ async function probe(name,url) {
       return value;
     };
     const routeKeys=name==='Nova routes' && json?.routes
-      ? Object.keys(json.routes).filter(k=>/radio-tracks|cqct|^\\/radios|^\\/track/.test(k)) : undefined;
+      ? Object.keys(json.routes).filter(k=>['radio-tracks','cqct','/radios','/track'].some(fragment=>k.includes(fragment))) : undefined;
     console.log(JSON.stringify({name,status:res.status,allowOrigin:res.headers.get('access-control-allow-origin'),contentType:res.headers.get('content-type'),size:body.length,sample:name==='Nova routes'?undefined:sample(json),routeKeys}));
   }catch(e){console.log(JSON.stringify({name,error:e.name||'FetchError',message:e.message?.slice(0,140)}));}
 }
