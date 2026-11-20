@@ -68,7 +68,7 @@ jobs:
           grep -q '/bonnesondes/_next/' source/out/index.html
           cp -R source/out/. .
           touch .nojekyll
-          git add -A -- index.html index.txt 404.html 404 _next _not-found art .nojekyll
+          git add -A -- index.html index.txt 404.html 404 _next _not-found art icon.svg bonnes-ondes-mark.svg .nojekyll
           git diff --cached --quiet && exit 0
           git config user.name 'Bonnes Ondes'
           git config user.email 'actions@users.noreply.github.com'
