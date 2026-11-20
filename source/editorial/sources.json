@@ -109,6 +109,28 @@
     "format": "Live session"
   },
   {
+    "id": "kexp-live",
+    "name": "KEXP · Live on KEXP",
+    "mode": "automatic",
+    "method": "youtube-atom",
+    "url": "https://www.youtube.com/@kexp",
+    "channelId": "UC3I2GFN_F8WudD_2jUZbojA",
+    "titleContains": "live on kexp",
+    "provider": "YouTube",
+    "format": "Live session"
+  },
+  {
+    "id": "npr-tiny-desk",
+    "name": "NPR Music · Tiny Desk Concert",
+    "mode": "automatic",
+    "method": "youtube-atom",
+    "url": "https://www.youtube.com/@nprmusic",
+    "channelId": "UC4eYXhJI4-7wSWc8UNRwD4A",
+    "titleContains": "tiny desk concert",
+    "provider": "YouTube",
+    "format": "Live session"
+  },
+  {
     "id": "basique",
     "name": "Basique",
     "mode": "manual",
