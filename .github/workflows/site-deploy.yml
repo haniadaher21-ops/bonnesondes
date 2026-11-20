@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'source/app/**'
+      - 'source/public/**'
       - 'source/next.config.ts'
       - '.github/workflows/site-deploy.yml'
   workflow_dispatch:
@@ -66,9 +67,12 @@ jobs:
           set -euo pipefail
           test -f source/out/index.html
           grep -q '/bonnesondes/_next/' source/out/index.html
+          test -s source/out/icon.svg
+          test -s source/out/bonnes-ondes-mark.svg
+          grep -q '/bonnesondes/icon.svg' source/out/index.html
           cp -R source/out/. .
           touch .nojekyll
-          git add -A -- index.html index.txt 404.html 404 _next _not-found art .nojekyll
+          git add -A -- index.html index.txt 404.html 404 _next _not-found art icon.svg bonnes-ondes-mark.svg .nojekyll
           git diff --cached --quiet && exit 0
           git config user.name 'Bonnes Ondes'
           git config user.email 'actions@users.noreply.github.com'

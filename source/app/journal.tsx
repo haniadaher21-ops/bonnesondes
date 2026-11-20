@@ -12,7 +12,7 @@ import TastePreferences from './taste-preferences';
 
 const pages = [
   ['rotation', 'Sélection'], ['radio', 'Radios'], ['playlists', 'Playlists'],
-  ['live', 'Live'], ['mix', 'Mix'], ['archive', 'Archives'], ['library', 'Ma collection'],
+  ['live', 'Live'], ['mix', 'Mix'], ['archive', 'Historique d’écoute'], ['library', 'Ma collection'],
 ] as const;
 type Page = typeof pages[number][0] | 'preferences';
 const formatLabels: Record<Format, string> = {
@@ -26,7 +26,7 @@ const viewLabels: Record<string, string> = {
 const reactions = ['Loved', 'Not for me'] as const;
 // Keep existing localStorage/profile reaction values readable for older collections.
 type Reaction = 'Loved' | 'Interesting' | 'Not for me' | 'Worth revisiting';
-type Entry = { saved?: boolean; listened?: boolean; reaction?: Reaction };
+type Entry = { saved?: boolean; listened?: boolean; listenedAt?: string; reaction?: Reaction };
 type Library = { entries: Record<string, Entry>; playlists: Recommendation[]; radioTracks: Record<string, Recommendation>; curators: string[] };
 const emptyLibrary: Library = { entries: {}, playlists: [], radioTracks: {}, curators: [] };
 const storageKey = 'off-frequency.library.v1';
@@ -215,8 +215,8 @@ export default function Journal() {
     </div>;
   };
 
-  const cards = (items: Recommendation[], withPlayers = false) => <div className="card-grid">
-    {items.map((item, index) => <article className="music-card" key={item.id}>
+  const cards = (items: Recommendation[], withPlayers = false, compact = false) => <div className={compact ? 'card-grid card-grid-compact' : 'card-grid'}>
+    {items.map((item, index) => <article className={compact ? 'music-card music-card-compact' : 'music-card'} key={item.id}>
       {withPlayers && item.embed ? <Player item={item} /> : <Artwork item={item} index={index} />}
       <div className="card-body">
         <div className="flex justify-between items-center gap-2">
@@ -256,6 +256,9 @@ export default function Journal() {
     return inView && (!format || item.format === format) && (!mood || item.mood === mood)
       && (!source || item.source === source) && (!duration || (item.minutes != null && item.minutes <= Number(duration)));
   });
+  const listenedItems = all.filter(item => library.entries[item.id]?.listened)
+    .sort((a, b) => (Date.parse(library.entries[b.id]?.listenedAt ?? '') || 0)
+      - (Date.parse(library.entries[a.id]?.listenedAt ?? '') || 0));
   const featured = issue.featured;
   const currentEntry = selected ? library.entries[selected.id] : undefined;
 
@@ -263,7 +266,7 @@ export default function Journal() {
     <a className="skip-link" href="#main-content">Aller au contenu</a>
     <header className="masthead">
       <div className="shell nav-inner">
-        <a className="brand" href="#rotation" aria-label="Accueil Bonnes Ondes"><span className="brand-disc"><Disc3 size={20} /></span>Bonnes Ondes<span className="brand-dot">.</span></a>
+        <a className="brand" href="#rotation" aria-label="Accueil Bonnes Ondes"><img className="brand-mark" src={(process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/bonnes-ondes-mark.svg'} alt="" width="33" height="33" />Bonnes Ondes<span className="brand-dot">.</span></a>
         <button className="menu-button icon-button" onClick={() => setMobileOpen(!mobileOpen)} aria-expanded={mobileOpen} aria-controls="main-nav" aria-label="Afficher ou masquer le menu">{mobileOpen ? <X /> : <Menu />}</button>
         <nav id="main-nav" aria-label="Navigation principale" className={mobileOpen ? 'nav-open' : ''}>
           {pages.map(([key, label]) => <a href={'#' + key} key={key} aria-current={page === key || (page === 'preferences' && key === 'library') ? 'page' : undefined}
@@ -286,7 +289,7 @@ export default function Journal() {
         <article className="feature">
           <div className="feature-art"><img src={(process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/art/disques.jpg'} alt="Une personne porte une pile de disques vinyles sous le bras" /></div>
           <div className="feature-copy">
-            <p className="eyebrow"><span className="signal-dot" /> Mix de la semaine</p>
+            <p className="eyebrow">Mix de la semaine</p>
             <h2>{featured.title}</h2>
             <p className="feature-meta">{featured.source} {featured.date && ' / ' + dateLabel(featured.date)}</p>
             <p className="feature-note">{featured.note}</p>
@@ -356,26 +359,59 @@ export default function Journal() {
       </>}
 
       {page === 'archive' && <>
-        <PageHeading label="À RÉÉCOUTER" title="Archives" note="Une sélection à réécouter. Retrouve les anciennes playlists et sessions dans leurs rubriques, et les sélections hebdomadaires dans « Ma collection », sous « Toutes les découvertes »." />
-        {cards(archive)}
+        <PageHeading label="TON PARCOURS MUSICAL" title="Historique d’écoute" note="Retrouve les morceaux et découvertes que tu as marqués « Déjà écouté »." />
+        <section aria-label="Tes écoutes">
+          <h2 className="history-page-title">Tes écoutes</h2>
+          {listenedItems.length ? cards(listenedItems, false, true)
+            : <p className="empty">Ton historique est vide. Ouvre une découverte et coche « Déjà écouté » pour la retrouver ici.</p>}
+        </section>
+        <Section label="À REDÉCOUVRIR" title="Les archives de Bonnes Ondes">
+          <p className="history-archive-note">Ces sélections plus anciennes ne sont pas automatiquement comptées comme écoutées.</p>
+          {cards(archive, false, true)}
+        </Section>
       </>}
 
       {page === 'library' && <>
-        <PageHeading label="TES FAVORIS" title="Ma collection" note="Retrouve tes favoris, tes écoutes et les découvertes auxquelles tu veux revenir." />
-        <a className="text-link" href="#preferences">Modifier mon profil musical <ArrowRight size={14} /></a>
-        <div className="filters library-filters">
-          <label className="filter">Afficher<select value={libraryView} onChange={event => setLibraryView(event.target.value)}>
-            {['Saved', 'All discoveries', 'Listened', ...reactions].map(value => <option key={value} value={value}>{viewLabels[value]}</option>)}
-          </select></label>
-          {filter('Format', format, setFormat, [...new Set(all.map(item => item.format))])}
-          {filter('Ambiance', mood, setMood, options(all, 'mood'))}
-          {filter('Source', source, setSource, options(all, 'source'))}
-          <label className="filter">Durée d’écoute<select value={duration} onChange={event => setDuration(event.target.value)}>
-            <option value="">Toutes les durées</option><option value="15">Jusqu’à 15 min</option>
-            <option value="60">Jusqu’à 1 h</option><option value="180">Jusqu’à 3 h</option>
-          </select></label>
+        <PageHeading label="TES FAVORIS" title="Ma collection" note="Retrouve tes favoris et, sur la droite, ton historique d’écoute." />
+        <div className="collection-layout">
+          <section className="collection-content" aria-label="Tes découvertes enregistrées">
+            <a className="text-link" href="#preferences">Modifier mon profil musical <ArrowRight size={14} /></a>
+            <div className="filters library-filters">
+              <label className="filter">Afficher<select value={libraryView} onChange={event => setLibraryView(event.target.value)}>
+                {['Saved', 'All discoveries', 'Listened', ...reactions].map(value => <option key={value} value={value}>{viewLabels[value]}</option>)}
+              </select></label>
+              {filter('Format', format, setFormat, [...new Set(all.map(item => item.format))])}
+              {filter('Ambiance', mood, setMood, options(all, 'mood'))}
+              {filter('Source', source, setSource, options(all, 'source'))}
+              <label className="filter">Durée d’écoute<select value={duration} onChange={event => setDuration(event.target.value)}>
+                <option value="">Toutes les durées</option><option value="15">Jusqu’à 15 min</option>
+                <option value="60">Jusqu’à 1 h</option><option value="180">Jusqu’à 3 h</option>
+              </select></label>
+            </div>
+            {libraryResults.length ? cards(libraryResults, false, true) : <p className="empty">{libraryView === 'Saved' && !Object.values(library.entries).some(entry => entry.saved) ? 'Utilise le marque-page d’une recommandation pour la retrouver ici.' : 'Aucune découverte ne correspond à ces filtres.'}</p>}
+          </section>
+          <aside className="history-panel" aria-labelledby="history-panel-title">
+            <div className="history-panel-heading">
+              <p className="eyebrow">TES ÉCOUTES</p>
+              <h2 id="history-panel-title">Historique d’écoute</h2>
+              <p>Les titres que tu as marqués « Déjà écouté ».</p>
+            </div>
+            {listenedItems.length ? <ol className="history-list" aria-label="Historique d’écoute défilant">
+              {listenedItems.map((item, index) => <li key={item.id}>
+                <button type="button" className="history-entry" onClick={() => setSelected(item)}>
+                  <span className="history-art"><Artwork item={item} index={index} /></span>
+                  <span className="history-entry-copy">
+                    <strong>{item.title}</strong>
+                    <span>{item.creator || item.source}</span>
+                    {library.entries[item.id]?.listenedAt && <time dateTime={library.entries[item.id].listenedAt}>{dateLabel(library.entries[item.id].listenedAt!.slice(0, 10))}</time>}
+                  </span>
+                  <ArrowUpRight size={15} aria-hidden="true" />
+                </button>
+              </li>)}
+            </ol> : <p className="history-empty">Aucune écoute pour le moment. Coche « Déjà écouté » dans la fiche d’un contenu pour commencer.</p>}
+            <a className="text-link history-full-link" href="#archive">Voir tout l’historique <ArrowRight size={15} /></a>
+          </aside>
         </div>
-        {libraryResults.length ? cards(libraryResults) : <p className="empty">{libraryView === 'Saved' && !Object.values(library.entries).some(entry => entry.saved) ? 'Utilise le marque-page d’une recommandation pour la retrouver ici.' : 'Aucune découverte ne correspond à ces filtres.'}</p>}
       </>}
       {page === 'preferences' && <>
         <PageHeading title="Mon profil musical" label="PRÉFÉRENCES" note="Enregistre les artistes, radios, médias et curateurs que tu veux suivre." />
@@ -384,7 +420,7 @@ export default function Journal() {
     </main>
 
     <div className="shell"><ProfileSync library={library} recommendations={all} ready={ready} visible={page === 'preferences'} /></div>
-    <footer className="shell footer"><a className="brand" href="#rotation"><Disc3 size={19} /> Bonnes Ondes<span className="brand-dot">.</span></a><span>JOURNAL MUSICAL INDÉPENDANT</span></footer>
+    <footer className="shell footer"><a className="brand" href="#rotation"><img className="brand-mark" src={(process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/bonnes-ondes-mark.svg'} alt="" width="30" height="30" />Bonnes Ondes<span className="brand-dot">.</span></a><span>JOURNAL MUSICAL INDÉPENDANT</span></footer>
 
     <aside className="radio-dock" aria-label="Lecteur radio">
       {radioOpen && <div className="dock-expanded">
@@ -419,7 +455,7 @@ export default function Journal() {
         <div className="feedback">
           <label><input type="checkbox" checked={!!currentEntry?.listened} onChange={event => {
             const checked = event.target.checked;
-            updateEntry(selected.id, entry => ({ ...entry, listened: checked }));
+            updateEntry(selected.id, entry => ({ ...entry, listened: checked, listenedAt: checked ? new Date().toISOString() : undefined }));
           }} /> Déjà écouté</label>
           <div className="dialog-reactions"><span>Ton avis</span>{reactionButtons(selected)}</div>
           {selected.format === 'Playlist' && selected.creator && <button className="text-link" aria-pressed={library.curators.includes(selected.creator)}
@@ -431,5 +467,5 @@ export default function Journal() {
 }
 
 function PageHeading({ label, title, note }: { label: string; title: string; note: string }) {
-  return <header className="page-heading"><p className="eyebrow"><span className="signal-dot" /> {label}</p><h1>{title}<span>.</span></h1><p>{note}</p></header>;
+  return <header className="page-heading"><p className="eyebrow">{label}</p><h1>{title}<span>.</span></h1><p>{note}</p></header>;
 }
