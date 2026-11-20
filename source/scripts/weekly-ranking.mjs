@@ -10,7 +10,7 @@ const groups = [
   { name: 'nts', count: 1, max: 1, match: item => item.format === 'Radio show' && radioNts(item) },
   { name: 'otherRadio', count: 1, max: 1, match: item => item.format === 'Radio show' && !radioNts(item) },
   { name: 'playlists', count: 1, max: 1, match: item => item.format === 'Playlist' },
-  { name: 'live', count: 1, max: 2, match: item => item.format === 'Live session' },
+  { name: 'live', count: 3, max: 3, match: item => item.format === 'Live session' },
 ];
 
 export function nextEditionMonday(now) {
