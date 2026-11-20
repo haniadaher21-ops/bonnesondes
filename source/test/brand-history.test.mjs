@@ -43,7 +43,7 @@ test('the complete history stays at the former archives route, and archival disc
   assert.match(source, /title="Historique d’écoute"/);
   assert.match(source, /Les archives de Bonnes Ondes/);
   assert.match(source, /\{cards\(archive, false, true\)\}/);
-  assert.match(source, /\{cards\(libraryResults, false, true\)\}/);
+  assert.match(source, /cards\(libraryResults, false, true\)/);
   assert.match(styles, /\.card-grid-compact \{ grid-template-columns: repeat\(4/);
 });
 
