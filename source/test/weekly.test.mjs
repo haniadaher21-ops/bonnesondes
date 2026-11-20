@@ -80,6 +80,8 @@ const completeCandidates = [
   radio('Jazzafip', 'FIP'), radio('Nova Club', 'Radio Nova'),
   item('Playlist', 'Playlist', {url: 'https://open.spotify.com/playlist/' + playlistId, playlistOrigin: 'publisher-discovered'}),
   item('Live', 'Live session', {minutes: 4.5, verificationStatus: 'performance-verified'}),
+  item('Live2', 'Live session', {minutes: 18, verificationStatus: 'performance-verified'}),
+  item('Live3', 'Live session', {minutes: 22, verificationStatus: 'performance-verified'}),
   item('Unchecked', 'Live session'),
 ];
 
@@ -92,6 +94,8 @@ test('complete verified inputs give a valid draft and tastes change the radio an
   } });
   assert.equal(fip.complete, true);
   assert.equal(nova.complete, true);
+  assert.equal(fip.selected.live.length, 3);
+  assert.equal(nova.draft.live.length, 3);
   assert.equal(fip.selected.otherRadio[0].item.id, 'Jazzafip');
   assert.equal(nova.selected.otherRadio[0].item.id, 'Nova Club');
   assert.equal(fip.draft.albums[0].id, 'Beta');
@@ -117,10 +121,33 @@ test('feedback, duplicate artists, previously seen links and missing quotas are 
     },
   } });
   assert.deepEqual(result.gaps, {albums: 1, live: 1});
+  assert.equal(result.selected.live.length, 2);
   assert.equal(result.complete, false);
   assert.equal(result.selected.otherRadio[0].item.id, 'Jazzafip');
   assert.match(result.selected.otherRadio[0].reason, /Coup de cœur/);
   assert.ok(result.rankings.find(row => row.item.id === 'Beta').previouslySeen);
+});
+
+test('hearts and thumbs-down affect future artists without penalizing an unrelated source', () => {
+  const options = {...readyOptions, candidates: [
+    album('Fresh loved', {creator:'Future Star',genre:'Jazz'}),
+    album('Fresh disliked', {creator:'Avoid Artist',genre:'Folk'}),
+    album('Unrelated', {creator:'Someone Else',genre:'Rock'}),
+  ]};
+  const profile = {
+    ...emptyTasteProfile(),
+    signals: {curators:[], items:[
+      {id:'old-loved', saved:false, reaction:'Loved', creator:'Future Star', genre:'Jazz'},
+      {id:'old-disliked', saved:false, reaction:'Not for me', creator:'Avoid Artist', genre:'Folk'},
+    ]},
+  };
+  const ranked = weeklyShortlist({...options,profile});
+  const neutral = weeklyShortlist({...options,profile:emptyTasteProfile()});
+  const get = (report,id) => report.rankings.find(entry => entry.item.id === id);
+  assert.ok(get(ranked,'Fresh loved').score > get(neutral,'Fresh loved').score);
+  assert.ok(get(ranked,'Fresh disliked').score < get(neutral,'Fresh disliked').score);
+  assert.equal(get(ranked,'Unrelated').score,get(neutral,'Unrelated').score);
+  assert.match(get(ranked,'Fresh loved').reason,/artiste déjà apprécié/i);
 });
 
 test('midweek and late Sunday preparation target the same Monday in Paris', () => {

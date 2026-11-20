@@ -48,7 +48,7 @@ Le registre [editorial/sources.json](editorial/sources.json) permet d’ajouter 
 | [FIP](https://www.radiofrance.fr/fip/podcasts/club-jazzafip) | RSS officiel de Club Jazzafip, avec fiches de replays. Les conditions [Open API de Radio France](https://developers.radiofrance.fr/doc/faq) limitent l’agrégation et la conservation des données. La programmation en direct nécessiterait une autorisation spécifique. |
 | [Radio Nova](https://www.nova.fr/podcasts/nova-club/) | RSS de Nova Club et liens d’épisodes individuels. La Belle Aventure reste en collecte manuelle tant qu’un flux public vérifié fait défaut. |
 | [NTS](https://www.nts.live/) | Floating Points, Moxie et Don’t Trip. Les fiches épisodes sont vérifiées et les liens de tracklist sont copiés seulement lorsqu’ils figurent dans les données NTS. `broadcastAt` date la diffusion. |
-| [YouTube](https://developers.google.com/youtube/v3/guides/push_notifications) | Atom des chaînes officielles, liens vérifiés via oEmbed. Les liens /shorts/ et les titres d’entretiens, clips ou extraits identifiables sont écartés. Le flux ne fournit pas la durée. Vérifier l’intégralité en relecture. Une chaîne d’artiste associée à un nom dans le registre peut être activée par le profil. |
+| [YouTube](https://developers.google.com/youtube/v3/guides/push_notifications) | Atom des chaînes officielles (COLORS, Live Lounge, triple j, KEXP, NPR Music / Tiny Desk), liens vérifiés via oEmbed. Les liens /shorts/ et les titres d’entretiens, clips ou extraits identifiables sont écartés. Le flux ne fournit pas la durée. Vérifier l’intégralité en relecture. Une chaîne d’artiste associée à un nom dans le registre peut être activée par le profil. |
 | [Bandcamp Notes](https://daily.bandcamp.com/features/introducing-bandcamp-notes) et labels | Les flux publiés par Bandcamp Notes, Rhymesayers et Mr Bongo produisent des pistes avec liens primaires quand disponibles. Un intitulé explicite de Bandcamp Notes peut donner un album à vérifier. Les liens Bandcamp orientent la vérification humaine. [La politique de Bandcamp](https://get.bandcamp.help/en/articles/15263124-bandcamp-s-acceptable-use-and-moderation-policy) exclut l’aspiration du site. |
 | [Spotify](https://developer.spotify.com/documentation/embeds/reference/oembed) | Les playlists officielles du registre, les liens issus de flux de labels et les playlists directement suivies sont vérifiés via oEmbed. Les profils de curateur suivis sont signalés avec une couverture limitée. Aucun accès au catalogue du curateur ou aux morceaux et aucun OAuth. |
 
@@ -72,7 +72,7 @@ Crée un fichier de travail `selection.json` avec ces champs.
 | `albums` | Trois objets candidats retenus, chacun avec la date de sortie dans la fenêtre |
 | `mixes`, `featuredId` | Au moins deux candidats, dont un épisode NTS et un mix d’une autre source. `featuredId` désigne l’identifiant de l’épisode NTS mis en avant |
 | `playlists` | Une playlist Spotify avec un lien direct |
-| `live` | Une ou deux performances vérifiées |
+| `live` | Trois performances vérifiées minimum (trois sélectionnées automatiquement, une édition incomplète n'est jamais publiée) |
 
 Recopie les objets candidats sélectionnés et ajoute à chacun une courte raison d’écoute dans `reason`. Pour remettre en avant un contenu du catalogue, réutilise son identifiant, son format et son lien. Mets à jour la raison d’écoute selon la sélection de la semaine. Pour afficher une vidéo officielle, renseigne `embed` avec `provider: "youtube"` et l’identifiant de la vidéo, indique son lien dans `videoSourceUrl`, puis renseigne `officialVideo: true` après vérification. Pour Spotify, le lecteur facultatif utilise `provider: "spotify"` et l’identifiant de l’album ou de la playlist.
 
@@ -195,3 +195,11 @@ reste désactivée.
 Le [guide de première connexion](docs/interface-release.md) décrit la préparation
 des fichiers GitHub Pages, l’approbation de la release et la sauvegarde privée
 du profil. Le site local se trouve sous /bonnesondes/ avec cette configuration.
+
+### Ajustements du 20 novembre 2026
+
+- Les cartes proposent **Coup de cœur** (cœur) et **Je n'aime pas** (pouce vers le bas), deux choix exclusifs ; un second clic retire la réaction. Les anciens états de réaction restent lisibles pour ne pas casser les collections. La synchronisation privée déjà consentie transmet ces réactions au classement suivant.
+- L'accueil affiche **Performances à découvrir**, avec trois lives de l'édition active ; l'édition historique 001 dispose de trois anciennes performances. Les futures éditions demandent au moins trois lives vérifiés, et le moteur en choisit trois, provenant notamment des chaînes officielles KEXP et NPR Music. Si les trois ne sont pas disponibles, la publication est bloquée, sans contenu inventé.
+- La première rangée des radios présente FIP, NTS 1 et Radio La Belle Aventure. Nova, Nova la nuit et Nouvo Nova utilisent des flux MP3 HTTPS recensés publiquement, dans le lecteur audio du site. Leur disponibilité et les conditions d'intégration sont à contrôler dans un navigateur réel ; en cas d'échec, le lien vers le site Nova reste proposé.
+- Le brouillon historique dans `editorial/drafts/002-selection.json`, créé avec deux lives avant cette modification, est conservé comme archive de travail et ne satisfait plus le nouveau validateur. Une édition 002 conforme devra être reconstruite à partir de trois performances contrôlées.
+- Le workflow `site-deploy.yml` reconstruit puis déploie les fichiers GitHub Pages lors d'une fusion sur `main` qui modifie `source/app/` ou la configuration Next. Il préserve les ressources statiques historiques et ne touche ni aux données d'éditions ni à l'activation `AUTO_PUBLISH_ENABLED`. Les tests et le build doivent passer avant d'écrire l'export public.

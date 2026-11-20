@@ -64,7 +64,7 @@ export function validateEdition(edition, earlier = [], catalog = []) {
       errors.push(group + ' doit être une liste.');
       continue;
     }
-    const [min, max] = { albums: [3, 3], mixes: [2, Infinity], playlists: [1, 1], live: [1, 2] }[group];
+    const [min, max] = { albums: [3, 3], mixes: [2, Infinity], playlists: [1, 1], live: [3, Infinity] }[group];
     if (items.length < min || items.length > max) errors.push('Quota non respecté pour ' + group + '.');
     for (const item of items) {
       if (!item || item.format !== format || !text(item.id) || !text(item.title) || !text(item.source) || !text(item.reason)) {

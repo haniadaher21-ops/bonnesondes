@@ -82,6 +82,16 @@ nav .library-nav { display: flex; align-items: center; gap: 7px; padding: 7px 12
 .card-body { padding: 13px 17px 18px; }
 .icon-button { display: inline-grid; place-items: center; min-width: 34px; min-height: 34px; border-radius: 0; flex: none; }
 .icon-button:hover, .icon-button[aria-pressed=true] { background: #f1e5d5; color: var(--accent); }
+.card-feedback, .reaction-buttons { display: inline-flex; align-items: center; gap: 5px; }
+.reaction-button { display: inline-grid; place-items: center; width: 36px; height: 36px; border: 1px solid transparent; color: var(--muted); background: transparent; transition: background .15s ease, color .15s ease; }
+.reaction-button:hover { background: #f1e5d5; color: var(--ink); }
+.reaction-love[aria-pressed="true"] { background: #f1d1cb; color: var(--accent); }
+.reaction-dislike[aria-pressed="true"] { background: #ddd0bf; color: var(--ink); }
+.feature .reaction-button { border-color: #fff1d7; color: #fff1d7; }
+.feature .reaction-button:hover, .feature .reaction-love[aria-pressed="true"] { background: #171512; color: #fff1d7; }
+.feature .reaction-dislike[aria-pressed="true"] { background: #f5e4c9; color: #171512; }
+.dialog-reactions { display: flex; align-items: center; gap: 12px; }
+.dialog-reactions > span { font-size: 12px; font-weight: 600; color: var(--muted); }
 .card-body h3 { font: 36px/.98 var(--display); margin-bottom: 4px; }
 .card-body h3 button { text-align: left; }
 .card-body h3 button:hover { color: var(--accent); }

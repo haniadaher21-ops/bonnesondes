@@ -1,0 +1,41 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { readFileSync } from 'node:fs';
+import sources from '../editorial/sources.json' with { type: 'json' };
+
+const ui = readFileSync(new URL('../app/journal.tsx', import.meta.url), 'utf8');
+const stations = readFileSync(new URL('../app/content.ts', import.meta.url), 'utf8');
+const main = stations.split('export const stations: Station[] = [')[1]?.split('\n];')[0] ?? '';
+
+test('the homepage offers heart and thumbs-down as mutually exclusive reactions', () => {
+  assert.match(ui, /Heart size=\{18\}/);
+  assert.match(ui, /ThumbsDown size=\{18\}/);
+  assert.match(ui, /entry\.reaction === reaction \? undefined : reaction/);
+  assert.match(ui, /aria-pressed=\{reaction === 'Loved'\}/);
+  assert.match(ui, /aria-pressed=\{reaction === 'Not for me'\}/);
+  assert.match(ui, /\{reactionButtons\(item\)\}/);
+  assert.match(ui, /title="Performances à découvrir"/);
+  assert.match(ui, /cards\(issue\.live\.slice\(0, 3\), true\)/);
+  assert.doesNotMatch(ui, /<span className="signal-dot" \/> Journal musical/);
+});
+
+test('the first radio row is FIP, NTS 1 and La Belle Aventure', () => {
+  const order = [...main.matchAll(/name: '([^']+)'/g)].map(match => match[1]);
+  assert.deepEqual(order.slice(0,3), ['FIP','NTS 1','Radio La Belle Aventure']);
+  for (const stream of ['novazz','nova-ln','nova-nouvo']) {
+    assert.match(main, new RegExp('https://'+stream+'\\.ice\\.infomaniak\\.ch/'));
+  }
+});
+
+test('live discovery has verified official sources beyond the initial three', () => {
+  for (const [id,channelId] of [
+    ['kexp-live','UC3I2GFN_F8WudD_2jUZbojA'],
+    ['npr-tiny-desk','UC4eYXhJI4-7wSWc8UNRwD4A']
+  ]) {
+    const source=sources.find(s=>s.id===id);
+    assert.ok(source);
+    assert.equal(source.method,'youtube-atom');
+    assert.equal(source.channelId,channelId);
+    assert.equal(source.format,'Live session');
+  }
+});

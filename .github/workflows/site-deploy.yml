@@ -1,0 +1,90 @@
+name: Déployer l'interface Bonnes Ondes
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'source/app/**'
+      - 'source/next.config.ts'
+      - '.github/workflows/site-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: bonnes-ondes-site-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: source
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - run: npm ci
+      - run: npm test && npm run typecheck
+      - name: Vérifier la configuration client Supabase publique
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'JS'
+          import { projectOrigin } from './private-sync/client.mjs';
+          const url=projectOrigin(process.env.SUPABASE_URL??'');
+          const key=process.env.SUPABASE_PUBLISHABLE_KEY??'';
+          let publicKey=key.startsWith('sb_publishable_');
+          if(key.split('.').length===3) {
+            try { publicKey=JSON.parse(Buffer.from(key.split('.')[1],'base64url').toString()).role==='anon'; }
+            catch { publicKey=false; }
+          }
+          if(!url||!publicKey)throw new Error('Configuration publique absente ou invalide.');
+          JS
+      - name: Générer l'export statique
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_BASE_PATH: /bonnesondes
+      - name: Installer l'export sans toucher aux données éditoriales
+        working-directory: .
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f source/out/index.html
+          grep -q '/bonnesondes/_next/' source/out/index.html
+          cp -R source/out/. .
+          touch .nojekyll
+          git add -A -- index.html index.txt 404.html 404 _next _not-found art .nojekyll
+          git diff --cached --quiet && exit 0
+          git config user.name 'Bonnes Ondes'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m 'Déployer les améliorations de l’interface Bonnes Ondes'
+          git push origin HEAD:main
+      - name: Déclencher le build GitHub Pages
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          curl --fail-with-body --silent --show-error --output /dev/null -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/pages/builds"
+      - name: Signaler un échec
+        if: failure()
+        working-directory: .
+        run: echo '::error::La nouvelle interface n’a pas été déployée. Conserver le site en ligne et vérifier Actions.'

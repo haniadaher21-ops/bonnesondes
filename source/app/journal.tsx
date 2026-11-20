@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { ArrowDown, ArrowRight, ArrowUpRight, Bookmark, Disc3, Headphones, Menu, Music2, Play, Plus, Radio, X } from 'lucide-react';
+import { ArrowDown, ArrowRight, ArrowUpRight, Bookmark, Disc3, Headphones, Heart, Menu, Music2, Play, Plus, Radio, ThumbsDown, X } from 'lucide-react';
 import { archive, catalog, issues, live, parsePlaylist, personalPlaylist, playlists, stations, type Format, type Recommendation } from './content';
 
 import { selectEdition } from '../editorial/edition.mjs';
@@ -23,8 +23,9 @@ const viewLabels: Record<string, string> = {
   Loved: 'Coup de cœur', Interesting: 'Intéressant', 'Not for me': 'Pas pour moi',
   'Worth revisiting': 'À réécouter',
 };
-const reactions = ['Loved', 'Interesting', 'Not for me', 'Worth revisiting'] as const;
-type Reaction = typeof reactions[number];
+const reactions = ['Loved', 'Not for me'] as const;
+// Keep existing localStorage/profile reaction values readable for older collections.
+type Reaction = 'Loved' | 'Interesting' | 'Not for me' | 'Worth revisiting';
 type Entry = { saved?: boolean; listened?: boolean; reaction?: Reaction };
 type Library = { entries: Record<string, Entry>; playlists: Recommendation[]; radioTracks: Record<string, Recommendation>; curators: string[] };
 const emptyLibrary: Library = { entries: {}, playlists: [], radioTracks: {}, curators: [] };
@@ -134,6 +135,10 @@ export default function Journal() {
   const updateEntry = (id: string, update: (entry: Entry) => Entry) => {
     setLibrary(state => ({ ...state, entries: { ...state.entries, [id]: update(state.entries[id] ?? {}) } }));
   };
+  const toggleReaction = (id: string, reaction: 'Loved' | 'Not for me') => {
+    updateEntry(id, entry => ({...entry, reaction: entry.reaction === reaction ? undefined : reaction}));
+  };
+
   const save = (item: Recommendation) => setLibrary(state => {
     const entry = state.entries[item.id];
     const saved = !entry?.saved;
@@ -194,13 +199,29 @@ export default function Journal() {
     </button>;
   };
 
+  const reactionButtons = (item: Recommendation) => {
+    const reaction = library.entries[item.id]?.reaction;
+    return <div className="reaction-buttons" role="group" aria-label={'Ton avis sur ' + item.title}>
+      <button type="button" className="reaction-button reaction-love" title="Coup de cœur"
+        aria-label={'Coup de cœur : ' + item.title} aria-pressed={reaction === 'Loved'}
+        disabled={!ready} onClick={() => toggleReaction(item.id, 'Loved')}>
+        <Heart size={18} fill={reaction === 'Loved' ? 'currentColor' : 'none'} aria-hidden="true" />
+      </button>
+      <button type="button" className="reaction-button reaction-dislike" title="Je n’aime pas"
+        aria-label={'Je n’aime pas : ' + item.title} aria-pressed={reaction === 'Not for me'}
+        disabled={!ready} onClick={() => toggleReaction(item.id, 'Not for me')}>
+        <ThumbsDown size={18} fill={reaction === 'Not for me' ? 'currentColor' : 'none'} aria-hidden="true" />
+      </button>
+    </div>;
+  };
+
   const cards = (items: Recommendation[], withPlayers = false) => <div className="card-grid">
     {items.map((item, index) => <article className="music-card" key={item.id}>
       {withPlayers && item.embed ? <Player item={item} /> : <Artwork item={item} index={index} />}
       <div className="card-body">
         <div className="flex justify-between items-center gap-2">
           <p className="eyebrow">{formatLabels[item.format]}{item.format !== 'Album' && <> <span aria-hidden="true">·</span> {item.source}</>}</p>
-          {saveButton(item)}
+          <div className="card-feedback">{reactionButtons(item)}{saveButton(item)}</div>
         </div>
         <h3><button onClick={() => setSelected(item)}>{item.title}</button></h3>
         {item.creator && <p className="creator">{[item.creator, item.publisher].filter(Boolean).join(' · ')}</p>}
@@ -256,7 +277,7 @@ export default function Journal() {
     <main className="shell" id="main-content">
       {storageMessage && <p className="empty" role="status">{storageMessage}</p>}
       {page === 'rotation' && <>
-        <div className="issue-line"><span><span className="signal-dot" /> Journal musical</span><span>N° {issue.number} <b> / </b> {issue.label}</span></div>
+        <div className="issue-line"><span>Journal musical</span><span>N° {issue.number} <b> / </b> {issue.label}</span></div>
         <header className="intro">
           <h1>Bonnes Ondes<span>.</span></h1>
           <div className="intro-aside"><h2>La sélection de la semaine</h2><p>Des disques, des radios et des concerts choisis chaque semaine.</p>
@@ -272,6 +293,7 @@ export default function Journal() {
             <div className="flex flex-wrap gap-3 items-center">
               <a className="primary" href={featured.url} target="_blank" rel="noopener noreferrer"><Play size={15} fill="currentColor" /> Écouter le mix</a>
               {saveButton(featured, 'hero-save')}
+              {reactionButtons(featured)}
             </div>
             <button className="text-link feature-notes" onClick={() => setSelected(featured)}>Infos tracks <ArrowRight size={14} /></button>
           </div>
@@ -279,7 +301,7 @@ export default function Journal() {
         <Section label="DISQUES" title="Trois albums essentiels" id="essential-albums">{cards(issue.albums)}</Section>
         <Section label="SUR LES ONDES" title="Radios et mixes">{cards(issue.mixes)}</Section>
         <Section label="SUR SPOTIFY" title="Les playlists de la semaine">{cards(issue.playlists, true)}</Section>
-        <Section label="LIVE" title="Deux performances à découvrir">{cards(issue.live, true)}</Section>
+        <Section label="LIVE" title="Performances à découvrir">{cards(issue.live.slice(0, 3), true)}</Section>
       </>}
 
       {page === 'radio' && <>
@@ -395,10 +417,7 @@ export default function Journal() {
             const checked = event.target.checked;
             updateEntry(selected.id, entry => ({ ...entry, listened: checked }));
           }} /> Déjà écouté</label>
-          <label>Ta réaction<select value={currentEntry?.reaction ?? ''} onChange={event => {
-            const reaction = (event.target.value || undefined) as Reaction | undefined;
-            updateEntry(selected.id, entry => ({ ...entry, reaction }));
-          }}><option value="">Choisir une réaction</option>{reactions.map(value => <option key={value} value={value}>{viewLabels[value]}</option>)}</select></label>
+          <div className="dialog-reactions"><span>Ton avis</span>{reactionButtons(selected)}</div>
           {selected.format === 'Playlist' && selected.creator && <button className="text-link" aria-pressed={library.curators.includes(selected.creator)}
             onClick={() => favoriteCurator(selected.creator!)}><Music2 size={16} />{library.curators.includes(selected.creator) ? 'Retirer ce créateur des favoris' : 'Ajouter ce créateur aux favoris'}</button>}
         </div>
