@@ -35,10 +35,18 @@ test('publication is explicitly gated, idempotent and tied to the Paris Sunday c
   ]) {
     const now=new Date(at);
     assert.equal(editionForCycle(now),monday);
-    const observations=[1,2,3].map(i=>({id:String(i),at:new Date(+now-i*3600000).toISOString(),complete:true,fingerprint:'valid'}));
+    const observations=[
+      {id:'previous-week',at:new Date(+now-7*86400000).toISOString(),complete:true,fingerprint:'valid',trigger:'schedule'},
+      {id:'current-week',at:new Date(+now-3600000).toISOString(),complete:true,fingerprint:'valid',trigger:'schedule'},
+      {id:'manual-check',at:new Date(+now-7200000).toISOString(),complete:true,fingerprint:'valid',trigger:'manual'},
+    ];
     const options={at:now,startsOn:monday,editions:[],complete:true,enabled:'false',observations,fingerprint:'valid'};
     assert.equal(publicationDecision(options).status,'observe');
     assert.equal(publicationDecision({...options,enabled:'true'}).status,'publish');
+    const sameWeek = observations.map((run,i)=>({...run,at:new Date(+now-(i+1)*3600000).toISOString()}));
+    assert.equal(publicationDecision({...options,enabled:'true',observations:sameWeek}).status,'blocked');
+    const manualOnly = observations.map(run=>({...run,trigger:'manual'}));
+    assert.equal(publicationDecision({...options,enabled:'true',observations:manualOnly}).status,'blocked');
     assert.equal(publicationDecision({...options,enabled:'true',observations:observations.slice(0,2)}).status,'blocked');
     assert.equal(publicationDecision({...options,enabled:'true',fingerprint:'changed'}).status,'blocked');
     assert.equal(publicationDecision({...options,editions:[{startsOn:monday}]}).status,'noop');
