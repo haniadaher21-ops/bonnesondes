@@ -1,8 +1,8 @@
 # Mise en place de l’automatisation
 
-Cette PR est une proposition à tester. Les étapes externes ci-dessous requièrent
-les comptes du propriétaire. Les variables d’activation restent absentes ou à
-false pendant la relecture.
+Les intégrations privées Supabase et YouTube ont été testées en réel le
+19 novembre 2026. Les automatisations de contenu restent distinctes de la
+publication, qui requiert un opt-in explicite et des contrôles de fiabilité.
 
 ## 1. YouTube Data API
 
@@ -102,9 +102,9 @@ playlists suivies privées ; il est conservé sept jours.
 
 Le workflow hebdomadaire dispose seulement de `contents: read` dans GitHub.
 Il force `AUTO_PUBLISH_ENABLED: 'false'`. Il ne commite aucune édition et ne
-déclenche pas GitHub Pages. Les collectes quotidiennes et le cycle de
-publication du dimanche restent **désactivés** tant que
-`COLLECTION_ENABLED` n'est pas activé. L'édition 002 n'est pas approuvée.
+déclenche pas GitHub Pages. La collecte quotidienne est gérée séparément par `discover.yml`.
+La publication du dimanche reste désactivée tant que
+`AUTO_PUBLISH_ENABLED` n'est pas activé. L'édition 002 n'est pas approuvée.
 
 Pour **mettre en pause le brouillon hebdomadaire**, définir la variable Actions
 `WEEKLY_DRAFT_PAUSED` à `true` dans les paramètres du dépôt (ou désactiver
@@ -115,12 +115,46 @@ qui échoue sans profil autorisé. Un échec peut produire un brouillon partiel,
 jamais une publication. Vérifier le premier lancement planifié et sa durée
 sur l'onglet Actions, car le calendrier n'a pas encore été observé en réel.
 
-## 4. Activation des collectes quotidiennes et de la publication
+## Collecte quotidienne indépendante (20 novembre 2026)
 
-Avec accord explicite, règle COLLECTION_ENABLED à true pour les collectes
-quotidiennes de 09 h 17 Europe/Paris et le cycle du dimanche à 18 h. Règle
-AUTO_PUBLISH_ENABLED à true uniquement après les observations concluantes.
-Ces variables sont des opt-ins et leur absence équivaut à false.
+Le workflow `Collecte quotidienne des découvertes` de `.github/workflows/discover.yml` est
+programmé chaque jour à **09 h 17 Europe/Paris**. Une fois fusionné sur
+`main`, ce workflow lance `private-cycle.mjs collect` avec le profil privé
+synchronisé et vérifie la persistance de l'index Supabase. Il ne produit pas
+de page publique, ne crée pas d'édition et force `AUTO_PUBLISH_ENABLED=false`.
+Permissions GitHub limitées à `contents: read` et même groupe de concurrence
+que le brouillon du dimanche pour éviter les écritures concurrentes.
+
+Le `schedule` du cycle de publication `autonomous.yml` reste uniquement le
+dimanche à **18 h** et le job ne démarre que si
+`AUTO_PUBLISH_ENABLED=true`. La collecte quotidienne ne peut donc jamais
+activer ce job à elle seule. `COLLECTION_ENABLED` est un ancien interrupteur
+qui n'est plus requis pour les nouveaux horaires.
+
+Pour suspendre uniquement le quotidien : variable Actions
+`DAILY_COLLECTION_PAUSED=true`. La commande manuelle reste disponible.
+Les échecs se voient dans Actions et dans les notifications GitHub si le compte
+les a activées. Vérifier le premier lancement planifié, sa durée et les
+compteurs `before`, `after`, `new` et `retained`, sans exposer le profil.
+Une collecte sans nouveau candidat n'est pas forcément une erreur.
+
+### Contrôle éditorial avant autopublication
+
+Le brouillon du **dimanche 22 novembre 2026 à 17 h 30** ne peut pas être
+confirmé à l'avance. Après son lancement, vérifier que l'exécution est terminée,
+que l'artefact de sept jours est accessible, que `complete=true`,
+`build=passed`, que les quotas, les liens, la provenance et la diversité des
+sélections sont cohérents, et qu'aucun goût privé n'a été exposé. Comparer
+les éditions proposées sur plusieurs dimanches distincts, pas seulement trois
+observations réalisées le même jour. Ne pas activer `AUTO_PUBLISH_ENABLED`
+tant que ce contrôle multihebdomadaire et les alertes d'échec ne sont pas validés.
+
+## 4. Activation de la publication autonome
+
+La collecte quotidienne fonctionne indépendamment via `discover.yml`. Après
+observations concluantes de plusieurs semaines et accord explicite, régler
+`AUTO_PUBLISH_ENABLED` à `true` pour autoriser le cycle du dimanche à 18 h.
+Son absence équivaut à `false`.
 
 Le cycle du dimanche vise lundi à 00 h Europe/Paris. Un déclenchement retardé
 au lundi conserve ce lundi. Un lancement hors cycle est bloqué pour la
@@ -142,9 +176,9 @@ les workflows ordinaires. Vérifie les permissions Actions contents/pages et
 les règles de protection de main avant activation. La configuration Pages
 doit rester celle qui sert main à la racine.
 
-Pour arrêter, remets AUTO_PUBLISH_ENABLED à false. Pour arrêter aussi la
-collecte quotidienne, remets COLLECTION_ENABLED à false. Pour arrêter le
-brouillon du dimanche, règle WEEKLY_DRAFT_PAUSED à true. Pour revenir à une release stable,
+Pour arrêter la publication, remettre `AUTO_PUBLISH_ENABLED` à `false`.
+Pour arrêter la collecte quotidienne, régler `DAILY_COLLECTION_PAUSED` à `true`.
+Pour arrêter le brouillon du dimanche, régler `WEEKLY_DRAFT_PAUSED` à `true`. Pour revenir à une release stable,
 revert le commit de contenu de la semaine via une PR. Si le commit a réussi mais
 Pages a échoué, relance uniquement le build Pages depuis le commit de release.
 
