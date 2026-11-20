@@ -49,3 +49,8 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
+      - name: Signaler un brouillon bloqué
+        if: failure()
+        run: |
+          echo '::error::Brouillon hebdomadaire incomplet ou indisponible ; aucune édition publiée.'
+          echo 'Le brouillon n’a pas passé tous les contrôles. Voir les logs et l’artefact, si disponible.' >> "$GITHUB_STEP_SUMMARY"
