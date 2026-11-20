@@ -13,7 +13,9 @@ async function probe(name,url) {
       if(typeof value==='string')return value.slice(0,80);
       return value;
     };
-    const excerpt = name.startsWith('Nova Reader') ? body.slice(Math.max(0,body.search(/C'ÉTAIT QUOI CE TITRE|C’ÉTAIT QUOI CE TITRE/i)-150),Math.max(0,body.search(/C'ÉTAIT QUOI CE TITRE|C’ÉTAIT QUOI CE TITRE/i))+1300) : undefined;
+    const matchesHeadings=[...body.matchAll(/C['’]ÉTAIT QUOI CE TITRE/gi)];
+    const offset=matchesHeadings.at(-1)?.index ?? 0;
+    const excerpt=name.startsWith('Nova Reader') ? body.slice(Math.max(0,offset-80),offset+1600) : undefined;
     const matches=name.startsWith('Tuneping') && Array.isArray(json?.data)
       ? json.data.slice(0,50).map(({id,name,stream_url,metadata,homepage,station,artist,title,classification,confirmed_at})=>({id:id??station?.id,name:name??station?.name,stream_url,metadata,homepage,artist,title,classification,confirmed_at})):undefined;
     const routeKeys=name==='Nova routes' && json?.routes
