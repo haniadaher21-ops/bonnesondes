@@ -80,6 +80,8 @@ const completeCandidates = [
   radio('Jazzafip', 'FIP'), radio('Nova Club', 'Radio Nova'),
   item('Playlist', 'Playlist', {url: 'https://open.spotify.com/playlist/' + playlistId, playlistOrigin: 'publisher-discovered'}),
   item('Live', 'Live session', {minutes: 4.5, verificationStatus: 'performance-verified'}),
+  item('Live2', 'Live session', {minutes: 18, verificationStatus: 'performance-verified'}),
+  item('Live3', 'Live session', {minutes: 22, verificationStatus: 'performance-verified'}),
   item('Unchecked', 'Live session'),
 ];
 
@@ -92,6 +94,8 @@ test('complete verified inputs give a valid draft and tastes change the radio an
   } });
   assert.equal(fip.complete, true);
   assert.equal(nova.complete, true);
+  assert.equal(fip.selected.live.length, 3);
+  assert.equal(nova.draft.live.length, 3);
   assert.equal(fip.selected.otherRadio[0].item.id, 'Jazzafip');
   assert.equal(nova.selected.otherRadio[0].item.id, 'Nova Club');
   assert.equal(fip.draft.albums[0].id, 'Beta');
@@ -117,6 +121,7 @@ test('feedback, duplicate artists, previously seen links and missing quotas are 
     },
   } });
   assert.deepEqual(result.gaps, {albums: 1, live: 1});
+  assert.equal(result.selected.live.length, 2);
   assert.equal(result.complete, false);
   assert.equal(result.selected.otherRadio[0].item.id, 'Jazzafip');
   assert.match(result.selected.otherRadio[0].reason, /Coup de cœur/);
