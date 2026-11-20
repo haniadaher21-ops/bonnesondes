@@ -128,6 +128,28 @@ test('feedback, duplicate artists, previously seen links and missing quotas are 
   assert.ok(result.rankings.find(row => row.item.id === 'Beta').previouslySeen);
 });
 
+test('hearts and thumbs-down affect future artists without penalizing an unrelated source', () => {
+  const options = {...readyOptions, candidates: [
+    album('Fresh loved', {creator:'Future Star',genre:'Jazz'}),
+    album('Fresh disliked', {creator:'Avoid Artist',genre:'Folk'}),
+    album('Unrelated', {creator:'Someone Else',genre:'Rock'}),
+  ]};
+  const profile = {
+    ...emptyTasteProfile(),
+    signals: {curators:[], items:[
+      {id:'old-loved', saved:false, reaction:'Loved', creator:'Future Star', genre:'Jazz'},
+      {id:'old-disliked', saved:false, reaction:'Not for me', creator:'Avoid Artist', genre:'Folk'},
+    ]},
+  };
+  const ranked = weeklyShortlist({...options,profile});
+  const neutral = weeklyShortlist({...options,profile:emptyTasteProfile()});
+  const get = (report,id) => report.rankings.find(entry => entry.item.id === id);
+  assert.ok(get(ranked,'Fresh loved').score > get(neutral,'Fresh loved').score);
+  assert.ok(get(ranked,'Fresh disliked').score < get(neutral,'Fresh disliked').score);
+  assert.equal(get(ranked,'Unrelated').score,get(neutral,'Unrelated').score);
+  assert.match(get(ranked,'Fresh loved').reason,/artiste déjà apprécié/i);
+});
+
 test('midweek and late Sunday preparation target the same Monday in Paris', () => {
   assert.equal(nextEditionMonday(new Date('2026-11-18T12:00:00Z')), '2026-11-23');
   assert.equal(nextEditionMonday(new Date('2026-11-22T20:00:00Z')), '2026-11-23');
