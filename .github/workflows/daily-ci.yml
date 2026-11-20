@@ -1,0 +1,29 @@
+name: Vérifier les automatisations
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/discover.yml'
+      - '.github/workflows/autonomous.yml'
+      - '.github/workflows/weekly.yml'
+      - '.github/workflows/daily-ci.yml'
+      - 'source/test/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: source
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - run: npm ci
+      - run: npm test && npm run typecheck
