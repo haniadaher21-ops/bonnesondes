@@ -49,6 +49,6 @@ test('the first-party Radio France endpoint is used for every themed FIP station
   for(const slug of ['radio-nova','nova-lanuit','nouvo-nova'])
     assert.ok(src.includes('https://r.jina.ai/https://www.nova.fr/radios/'+slug+'/'));
   const player=readFileSync(new URL('../app/radio-track.tsx',import.meta.url),'utf8');
-  assert.match(player,/saveTrack\(track\)/);
+  assert.match(player,/saveTrack\(trackForSave\)/);
   assert.match(player,/parseNovaNowPlaying/);
 });
