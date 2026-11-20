@@ -13,9 +13,11 @@ async function probe(name,url) {
       if(typeof value==='string')return value.slice(0,80);
       return value;
     };
+    const matches=name.startsWith('Tuneping') && Array.isArray(json?.data)
+      ? json.data.slice(0,50).map(({id,name,stream_url,metadata,homepage,station,artist,title,classification,confirmed_at})=>({id:id??station?.id,name:name??station?.name,stream_url,metadata,homepage,artist,title,classification,confirmed_at})):undefined;
     const routeKeys=name==='Nova routes' && json?.routes
       ? Object.keys(json.routes).filter(k=>['radio-tracks','cqct','/radios','/track'].some(fragment=>k.includes(fragment))) : undefined;
-    console.log(JSON.stringify({name,status:res.status,allowOrigin:res.headers.get('access-control-allow-origin'),contentType:res.headers.get('content-type'),size:body.length,sample:name==='Nova routes'?undefined:sample(json),routeKeys}));
+    console.log(JSON.stringify({name,status:res.status,allowOrigin:res.headers.get('access-control-allow-origin'),contentType:res.headers.get('content-type'),size:body.length,sample:name==='Nova routes'?undefined:sample(json),routeKeys,matches}));
   }catch(e){console.log(JSON.stringify({name,error:e.name||'FetchError',message:e.message?.slice(0,140)}));}
 }
 await probe('Nova routes',root);
@@ -34,5 +36,9 @@ await Promise.all([
   ['Nova radio nouvo','https://www.nova.fr/wp-json/radios/nouvo-nova'],
   ['Nova radios all','https://www.nova.fr/wp-json/radios/all-radios'],
   ['Nova tracks','https://www.nova.fr/wp-json/track'],
+  ['Nova webpage','https://www.nova.fr/radios/nouvo-nova/'],
+  ['Tuneping Radio Nova','https://api.tuneping.com/v1/stations?q=radio%20nova&country=FR&limit=50'],
+  ['Tuneping Nouvo','https://api.tuneping.com/v1/stations?q=nouvo%20nova&country=FR&limit=50'],
+  ['Tuneping Nova la nuit','https://api.tuneping.com/v1/stations?q=nova%20la%20nuit&country=FR&limit=50'],
 
 ].map(([name,url])=>probe(name,url)));
