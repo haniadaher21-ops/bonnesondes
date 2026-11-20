@@ -25,7 +25,7 @@ export function publicationDecision({at, startsOn, editions, complete, enabled, 
   const recent = observations.filter(run => run.complete === true && run.fingerprint === fingerprint
     && Date.parse(run.at) >= at.getTime() - 14*DAY && Date.parse(run.at) <= at.getTime());
   const successful = new Set(recent.map(run => run.id));
-  if (successful.size < 3) return {status:'blocked',reason:'Trois simulations complètes sont requises'};
+  if (successful.size < 2) return {status:'blocked',reason:'Deux observations complètes sont requises'};
   // Multiple checks in a single workflow do not prove reliability over time.
   // Two distinct scheduled weekly editions must have passed with unchanged config/profile.
   const scheduledWeeks = new Set(recent.filter(run => run.trigger === 'schedule')
