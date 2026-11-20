@@ -1,7 +1,10 @@
-name: Découvrir des candidats
+name: Collecte quotidienne des découvertes
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '17 9 * * *'
+      timezone: Europe/Paris
 
 concurrency:
   group: bonnes-ondes-private-cycle
@@ -12,7 +15,7 @@ permissions:
 
 jobs:
   discover:
-    if: github.event_name == 'workflow_dispatch' || vars.COLLECTION_ENABLED == 'true'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && vars.DAILY_COLLECTION_PAUSED != 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 25
     defaults:
@@ -26,9 +29,13 @@ jobs:
           cache: npm
           cache-dependency-path: source/package-lock.json
       - run: npm ci
-      - run: node scripts/private-cycle.mjs collect
+      - name: Collecter et conserver les découvertes privées
+        run: node scripts/private-cycle.mjs collect
         env:
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
           BONNES_ONDES_RUNNER_TOKEN: ${{ secrets.BONNES_ONDES_RUNNER_TOKEN }}
           AUTO_PUBLISH_ENABLED: 'false'
+      - name: Signaler un échec sans publier
+        if: failure()
+        run: echo '::error::Collecte quotidienne interrompue ; vérifier le profil, Supabase et les sources. Aucune édition publiée.'
