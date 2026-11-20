@@ -2,7 +2,7 @@
 const root='https://www.nova.fr/wp-json/';
 async function probe(name,url) {
   try {
-    const res=await fetch(url,{headers:{Origin:'https://haniadaher21-ops.github.io','User-Agent':'BonnesOndesMetadataCheck/1.0'},signal:AbortSignal.timeout(12000)});
+    const res=await fetch(url,{headers:{Origin:'https://haniadaher21-ops.github.io','User-Agent':'BonnesOndesMetadataCheck/1.0',...(name==='Nova HTML Reader'?{'X-Respond-With':'html','X-Cache-Tolerance':'60'}:{})},signal:AbortSignal.timeout(12000)});
     const body=await res.text();
     let json;
     try {json=JSON.parse(body)}catch{}
@@ -15,7 +15,13 @@ async function probe(name,url) {
     };
     const matchesHeadings=[...body.matchAll(/C['’]ÉTAIT QUOI CE TITRE/gi)];
     const offset=matchesHeadings.at(-1)?.index ?? 0;
-    const excerpt=name.startsWith('Nova Reader') ? body.slice(Math.max(0,offset-80),offset+1600) : undefined;
+    const excerpt=(name.startsWith('Nova Reader')||name.startsWith('Nova webpage')) ? (() => {
+      const time=body.match(/(?:^|\\n)\\s*(?:[0-2]?[0-9]):[0-5][0-9]/m);
+      const playing=body.search(/(?:Écouter la radio|C.{0,10}TAIT QUOI CE TITRE)/i);
+      const point=time?.index ?? (playing>=0?playing:0);
+      return {timeCount:[...body.matchAll(/(?:^|\\n)\\s*(?:[0-2]?[0-9]):[0-5][0-9]/gm)].length,playing,
+        excerpt:body.slice(Math.max(0,point-250),point+1550)};
+    })() : undefined;
     const matches=name.startsWith('Tuneping') && Array.isArray(json?.data)
       ? json.data.slice(0,50).map(({id,name,stream_url,metadata,homepage,station,artist,title,classification,confirmed_at})=>({id:id??station?.id,name:name??station?.name,stream_url,metadata,homepage,artist,title,classification,confirmed_at})):undefined;
     const routeKeys=name==='Nova routes' && json?.routes
@@ -41,6 +47,7 @@ await Promise.all([
   ['Nova tracks','https://www.nova.fr/wp-json/track'],
   ['Nova webpage','https://www.nova.fr/radios/nouvo-nova/'],
   ['Nova Reader','https://r.jina.ai/https://www.nova.fr/radios/nouvo-nova/'],
+  ['Nova HTML Reader','https://r.jina.ai/https://www.nova.fr/radios/nouvo-nova/'],
   ['Nova Reader main','https://r.jina.ai/https://www.nova.fr/radios/radio-nova/'],
   ['Tuneping Radio Nova','https://api.tuneping.com/v1/stations?q=radio%20nova&country=FR&limit=50'],
   ['Tuneping Nouvo','https://api.tuneping.com/v1/stations?q=nouvo%20nova&country=FR&limit=50'],
