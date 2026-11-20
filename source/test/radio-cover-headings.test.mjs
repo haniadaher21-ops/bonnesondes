@@ -16,13 +16,15 @@ test('subtitles under every tab page heading are removed, not replaced by empty 
   assert.doesNotMatch(css,/\.page-heading > p:last-child/);
 });
 
-test('radio cover is only displayed when official now-playing metadata includes a safe HTTPS image',()=>{
+test('radio cover uses broadcaster artwork or a verified catalogue fallback',()=>{
   assert.match(player,/visual\?: string/);
   assert.match(player,/artwork: radioArtworkUrl\(current.visual\)/);
   assert.match(player,/artwork: radioArtworkUrl\(song.art\)/);
-  assert.match(player,/track.artwork && <BroadcastArtwork key=\{track.artwork\}/);
+  assert.match(player,/displayedArtwork && <div className="station-cover-group">/);
+  assert.match(player,/artwork=\{displayedArtwork\}/);
   assert.match(player,/className="station-cover"/);
-  assert.match(player,/onError=\{\(\) => setFailed\(true\)\}/);
+  assert.match(player,/onFailure=\{markArtworkFailed\}/);
+  assert.match(player,/setFailed\(true\); onFailure\?\.\(\)/);
   assert.match(css,/\.station-cover \{/);
   assert.match(css,/object-fit: cover/);
 });
