@@ -151,12 +151,12 @@ export default function Journal() {
     };
   });
 
-  const currentRadioTrack = ({ title, artist }: OnAir): Recommendation => ({
+  const currentRadioTrack = ({ title, artist }: OnAir, sourceName: string): Recommendation => ({
     id: 'radio-track:' + JSON.stringify([title, artist ?? ''].map(value => value.trim().normalize().toLowerCase())),
     title,
     creator: artist,
     format: 'Track',
-    source: station.name,
+    source: sourceName,
     url: 'https://open.spotify.com/search/' + encodeURIComponent([title, artist].filter(Boolean).join(' ')),
   });
   const favoriteCurator = (name: string) => setLibrary(state => ({
@@ -308,7 +308,11 @@ export default function Journal() {
         <PageHeading label="EN DIRECT" title="Radios" note="Choisis une station. Le lecteur reste à portée de main pendant que tu navigues." />
         <div className="station-grid">
           {stations.map(item => <article className="station" key={item.name}>
-            <Radio size={22} /><p className="eyebrow">{item.label}</p><h2>{item.name}</h2><p>{item.description}</p>
+            <Radio size={22} /><p className="eyebrow">{item.label}</p><h2>{item.name}</h2>
+            {item.metadata && item.metadata.provider !== 'nova-page'
+              ? <RadioTrack metadata={item.metadata} compact
+                  saveTrack={track => saveButton(currentRadioTrack(track, item.name), 'text-link radio-save', true)} />
+              : <p className="station-description">{item.description}</p>}
             {item.stream || item.embed
               ? <button className="text-link" onClick={() => tune(item)}><Play size={14} /> Écouter</button>
               : <SourceLink item={item}>Écouter sur le site de la radio</SourceLink>}
@@ -390,7 +394,7 @@ export default function Journal() {
           if (next) tune(next);
         }}>{stations.map(item => <option key={item.name}>{item.name}</option>)}</select></label>
         {station.metadata && <RadioTrack key={station.name} metadata={station.metadata}
-          saveTrack={track => saveButton(currentRadioTrack(track), 'text-link radio-save', true)} />}
+          saveTrack={track => saveButton(currentRadioTrack(track, station.name), 'text-link radio-save', true)} />}
         {station.stream && <audio key={station.stream} src={station.stream} controls preload="none" onError={() => setAudioError(true)} />}
         {station.embed && <iframe className="radio-frame" title={station.name + ' en direct'} src={station.embed} allow="autoplay" />}
         {audioError && <p role="status">Le flux n’a pas démarré. Essaie le lecteur de la station.</p>}
