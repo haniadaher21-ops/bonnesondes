@@ -65,26 +65,3 @@ const res=await fetch('https://r.jina.ai/https://www.nova.fr/radios/nouvo-nova/'
 });
 console.log(JSON.stringify({name:'Nova CORS preflight',status:res.status,allowOrigin:res.headers.get('access-control-allow-origin'),allowHeaders:res.headers.get('access-control-allow-headers'),allowMethods:res.headers.get('access-control-allow-methods')}));
 }catch(error){console.log(JSON.stringify({name:'Nova CORS preflight',error:String(error)}));}
-
-console.log('COVER_PROBE_START');
-for (const [artist, title] of [
-  ['Air','Sexy Boy'],
-  ['Sophia Stel','I Do'],
-  ['Outkast','Jazzy Belle'],
-  ['Rachel Chinouriri','One Song Away From Crying'],
-]) {
-  try {
-    const term = artist + ' ' + title;
-    const url = 'https://itunes.apple.com/search?country=FR&media=music&entity=song&limit=12&term=' + encodeURIComponent(term);
-    const res = await fetch(url,{headers:{Origin:'https://haniadaher21-ops.github.io'},signal:AbortSignal.timeout(10000)});
-    const json = await res.json();
-    console.log('COVER_PROBE '+JSON.stringify({
-      artist,title,status:res.status,allowOrigin:res.headers.get('access-control-allow-origin'),
-      type:res.headers.get('content-type'),resultCount:json.resultCount,
-      results:json.results?.slice(0,7).map(t=>({
-        artistName:t.artistName,trackName:t.trackName,artworkUrl100:t.artworkUrl100,
-        collectionName:t.collectionName
-      }))
-    }));
-  }catch(e){console.log('COVER_PROBE '+JSON.stringify({artist,title,error:String(e).slice(0,160)}));}
-}
