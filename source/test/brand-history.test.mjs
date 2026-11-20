@@ -31,25 +31,27 @@ test('library has a compact left section and separately scrollable listening his
   assert.match(source, /className="collection-layout"/);
   assert.match(source, /className="collection-content"/);
   assert.match(source, /className="history-panel"/);
-  assert.match(source, /listenedItems\.map\(/);
+  assert.match(source, /archive\.map\(/);
   assert.match(styles, /\.history-list \{ max-height: min\(640px, 65vh\); overflow-y: auto/);
   assert.match(styles, /\.collection-layout \{ display: grid; grid-template-columns: minmax\(0, 1fr\) 294px/);
   assert.match(styles, /@media \(max-width: 780px\)[\s\S]*?\.collection-layout \{ grid-template-columns: minmax\(0, 1fr\); \}/);
 });
 
-test('the complete history stays at the former archives route, and archival discoveries are preserved', () => {
+test('the former archives content is the only listening history source, both in sidebar and full page', () => {
   assert.match(source, /\['archive', 'Historique d’écoute'\]/);
   assert.match(source, /href="#archive">Voir tout l’historique/);
   assert.match(source, /title="Historique d’écoute"/);
-  assert.match(source, /Les archives de Bonnes Ondes/);
-  assert.match(source, /\{cards\(archive, false, true\)\}/);
+  assert.match(source, /\{archive\.length \? cards\(archive, false, true\)/);
+  assert.match(source, /\{archive\.map\(\(item, index\) => <li key=\{item\.id\}>/);
   assert.match(source, /cards\(libraryResults, false, true\)/);
   assert.match(styles, /\.card-grid-compact \{ grid-template-columns: repeat\(4/);
 });
 
-test('personal history contains only deliberately marked listened items, with newest first', () => {
-  assert.match(source, /all\.filter\(item => library\.entries\[item\.id\]\?\.listened\)/);
-  assert.match(source, /Date\.parse\(library\.entries\[b\.id\]\?\.listenedAt/);
-  assert.match(source, /listenedAt: checked \? new Date\(\)\.toISOString\(\) : undefined/);
-  assert.match(source, /Ces sélections plus anciennes ne sont pas automatiquement comptées comme écoutées/);
+test('no manual listened checkbox, listening state or listened filter remains visible', () => {
+  assert.doesNotMatch(source, /Déjà écouté/);
+  assert.doesNotMatch(source, /listenedItems/);
+  assert.doesNotMatch(source, /\.listened|listenedAt/);
+  assert.doesNotMatch(source, /type="checkbox"/);
+  assert.doesNotMatch(source, /\['Saved', 'All discoveries', 'Listened'/);
+  assert.match(source, /\['Saved', 'All discoveries', \.\.\.reactions\]/);
 });
