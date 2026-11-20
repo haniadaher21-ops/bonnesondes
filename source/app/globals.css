@@ -139,6 +139,9 @@ nav .library-nav { display: flex; align-items: center; gap: 7px; padding: 7px 12
 .station-track-layout { display: flex; align-items: flex-start; gap: 12px; width: 100%; min-width: 0; }
 .station-track-copy { flex: 1; min-width: 0; }
 .station-cover { display: block; width: 88px; height: 88px; flex: none; object-fit: cover; border: 1px solid #c6b6a2; background: #e7d9c4; }
+.station-cover-group { display: grid; justify-items: start; flex: none; gap: 2px; }
+.station-cover-store { font: 500 9px/1.2 var(--mono); color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+.station-cover-store:hover { color: var(--accent); }
 @media (max-width: 1100px) {
   .station-cover { width: 72px; height: 72px; }
 }
