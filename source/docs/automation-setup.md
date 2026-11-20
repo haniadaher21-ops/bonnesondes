@@ -13,7 +13,9 @@ publication, qui requiert un opt-in explicite et des contrôles de fiabilité.
 Après intégration et configuration du serveur privé, lance l’action
 « Bonnes Ondes · Observation et publication » avec mode observe. Le résumé doit
 compter de vraies vidéos vérifiées. Un secret inaccessible ou un quota atteint
-bloque la sélection des lives. Révoque la clé dans Google Cloud et remplace le
+bloque la sélection des lives. Le quota est désormais de trois performances
+publiques, intégrables et vérifiées par édition. KEXP et NPR Music s'ajoutent
+à COLORS, BBC Live Lounge et triple j pour élargir la collecte. Révoque la clé dans Google Cloud et remplace le
 secret GitHub pour la renouveler.
 
 videos.list coûte une unité par requête, avec au plus 50 vidéos par requête.
@@ -222,3 +224,17 @@ Un statut bloqué conserve ses recommandations partielles pour examen, mais ne v
 
 
 Les sous-domaines Bandcamp partagent la même file de requêtes (au moins 1,1 seconde entre départs). Le premier HTTP 429 suspend les requêtes de tout ce fournisseur et enregistre au moins une heure de pause dans l’état privé, prolongée si Retry-After le demande. Aucune nouvelle IP, proxy ou identité n’est utilisée pour contourner la limite. Les vérifications indispensables restent bloquées pendant cette pause ; une preuve primaire alternative peut débloquer l’album. Le connecteur Brownswood accepte uniquement un article identifié artiste+titre qui affirme explicitement « Today marks the release of » pour un album nouveau/de début, avec sa date de publication d’origine. Un simple article de critique ou une annonce « coming soon » ne donne pas de date de sortie.
+
+## Trois performances live obligatoires
+
+À compter du changement du 20 novembre 2026, le validateur rejette une édition
+qui contient moins de **trois sessions live**, et la shortlist en sélectionne
+trois au maximum. Les trois doivent avoir été vérifiées sur une chaîne
+YouTube officielle, avec une vidéo publique et intégrable de plus de trois
+minutes. Les deux nouvelles sources sont KEXP et NPR Music / Tiny Desk.
+Le contrôle de qualité doit publier un manque `live` si le stock est insuffisant.
+Le brouillon historique de l'édition 002 contenait deux lives : ne jamais
+l'approuver ou l'utiliser pour contourner le nouveau quota. Un dimanche où
+seulement une ou deux sessions sont vérifiées doit laisser l'édition précédente
+en place ; aucun remplissage artificiel. Vérifier le premier brouillon planifié
+avec les nouvelles règles et l'effet éventuel sur la fiabilité des éditions.
