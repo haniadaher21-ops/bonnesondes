@@ -103,10 +103,17 @@ nav .library-nav { display: flex; align-items: center; gap: 7px; padding: 7px 12
 .page-heading { padding: 50px 0 22px; border-bottom: 1px solid var(--line); margin-bottom: 25px; }
 .page-heading h1 { font: clamp(65px, 9vw, 115px)/.95 var(--display); letter-spacing: -.04em; margin: 8px 0 12px; }
 .page-heading > p:last-child { color: var(--muted); max-width: 65ch; }
-.station { padding: 23px; }
+.station { padding: 23px; display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
 .station > svg { color: var(--accent); margin-bottom: 18px; }
 .station h2 { font: 35px/1 var(--display); margin: 5px 0 8px; }
-.station .text-link { margin-top: 15px; }
+.station > .text-link { margin-top: auto; padding-top: 15px; }
+.station-description, .station-now-playing { flex: 1; }
+.station-now-playing { width: 100%; padding: 10px 0 14px; min-height: 110px; }
+.station-now-playing .eyebrow { margin-bottom: 7px; }
+.station-track-title { display: block; font-size: 16px; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.station-track-artist { color: var(--muted); font-size: 14px; margin-top: 5px; overflow-wrap: anywhere; }
+.station-track-unavailable { font-size: 13px; color: var(--muted); }
+.station-now-playing .radio-save { margin-top: 10px; font-size: 12px; text-align: left; }
 .shelf-toolbar { display: flex; align-items: end; justify-content: space-between; gap: 15px; flex-wrap: wrap; margin-bottom: 15px; }
 .filters { display: flex; gap: 11px; flex-wrap: wrap; }
 .filter, .add-form label, .feedback label { display: grid; align-content: start; gap: 5px; color: var(--muted); font-size: 12px; font-weight: 600; }
