@@ -57,7 +57,8 @@ for (const draft of readPublishedEditions(drafts, legacyEdition, catalog)) {
 
 export type RadioMetadata =
   | { provider: 'radio-france' | 'azuracast'; endpoint: string }
-  | { provider: 'nts'; endpoint: string; channel: '1' | '2' };
+  | { provider: 'nts'; endpoint: string; channel: '1' | '2' }
+  | { provider: 'nova-page'; endpoint: string };
 
 export interface Station {
   name: string;
@@ -92,11 +93,14 @@ export const stations: Station[] = [
   fip('FIP Electro', 74, 'Les musiques électroniques, du downtempo au club.'),
   fip('FIP Rock', 64, 'Le rock, des classiques aux marges.'),
   { name: 'Radio Nova', label: 'Nova', description: 'Le Grand Mix, de la soul et du reggae au rap et à l’électro.',
-    url: 'https://www.nova.fr/radios/radio-nova/', stream: 'https://novazz.ice.infomaniak.ch/novazz-128.mp3' },
+    url: 'https://www.nova.fr/radios/radio-nova/', stream: 'https://novazz.ice.infomaniak.ch/novazz-128.mp3',
+    metadata: { provider: 'nova-page', endpoint: 'https://r.jina.ai/https://www.nova.fr/radios/radio-nova/' } },
   { name: 'Nova la nuit', label: 'Nova', description: 'Grooves rares et versions longues à la nuit tombée.',
-    url: 'https://www.nova.fr/radios/nova-lanuit/', stream: 'https://nova-ln.ice.infomaniak.ch/nova-ln-128.mp3' },
+    url: 'https://www.nova.fr/radios/nova-lanuit/', stream: 'https://nova-ln.ice.infomaniak.ch/nova-ln-128.mp3',
+    metadata: { provider: 'nova-page', endpoint: 'https://r.jina.ai/https://www.nova.fr/radios/nova-lanuit/' } },
   { name: 'Nouvo Nova', label: 'Nova', description: 'Les nouveautés choisies par l’équipe de Nova.',
-    url: 'https://www.nova.fr/radios/nouvo-nova/', stream: 'https://nova-nouvo.ice.infomaniak.ch/nova-nouvo-128.mp3' },
+    url: 'https://www.nova.fr/radios/nouvo-nova/', stream: 'https://nova-nouvo.ice.infomaniak.ch/nova-nouvo-128.mp3',
+    metadata: { provider: 'nova-page', endpoint: 'https://r.jina.ai/https://www.nova.fr/radios/nouvo-nova/' } },
   { name: 'NTS 2', label: 'NTS', description: 'Le deuxième canal de NTS en direct.', url: 'https://www.nts.live/', stream: 'https://stream-relay-geo.ntslive.net/stream2',
     metadata: { provider: 'nts', endpoint: 'https://www.nts.live/api/v2/live', channel: '2' },
   },
