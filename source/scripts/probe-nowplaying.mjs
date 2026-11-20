@@ -1,67 +1,68 @@
-// Public-only diagnostic: no credentials, no browser profile, no data written.
-const root='https://www.nova.fr/wp-json/';
-async function probe(name,url) {
-  try {
-    const res=await fetch(url,{headers:{Origin:'https://haniadaher21-ops.github.io','User-Agent':'BonnesOndesMetadataCheck/1.0',...(name.startsWith('Nova Target')?{'X-Respond-With':'html','X-Cache-Tolerance':'60','X-Target-Selector':'.what_was_title .swiper-slide:first-child'}:name==='Nova HTML Reader'?{'X-Respond-With':'html','X-Cache-Tolerance':'60'}:{})},signal:AbortSignal.timeout(12000)});
-    const body=await res.text();
-    let json;
-    try {json=JSON.parse(body)}catch{}
-    const sample = (value,depth=0) => {
-      if(depth>2)return typeof value;
-      if(Array.isArray(value))return {arrayLength:value.length,first:sample(value[0],depth+1)};
-      if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).slice(0,12).map(([k,v])=>[k,sample(v,depth+1)]));
-      if(typeof value==='string')return value.slice(0,80);
-      return value;
-    };
-    const mentions=[...body.matchAll(/quoi ce titre|tracklist|radio[-_]tracks|[0-2][0-9]:[0-5][0-9]/gi)].slice(0,20).map(m=>({index:m.index,text:body.slice(Math.max(0,m.index-80),m.index+280)}));
-    const matchesHeadings=[...body.matchAll(/C['’]ÉTAIT QUOI CE TITRE/gi)];
-    const offset=matchesHeadings.at(-1)?.index ?? 0;
-    const excerpt=(name.startsWith('Nova Reader')||name.startsWith('Nova webpage')||name.startsWith('Nova Target')) ? (() => {
-      const time=body.match(/(?:^|\\n)\\s*(?:[0-2]?[0-9]):[0-5][0-9]/m);
-      const playing=body.search(/(?:Écouter la radio|C.{0,10}TAIT QUOI CE TITRE)/i);
-      const point=time?.index ?? (playing>=0?playing:0);
-      return {timeCount:[...body.matchAll(/(?:^|\\n)\\s*(?:[0-2]?[0-9]):[0-5][0-9]/gm)].length,playing,
-        excerpt:body.slice(Math.max(0,point-250),point+1550)};
-    })() : undefined;
-    const matches=name.startsWith('Tuneping') && Array.isArray(json?.data)
-      ? json.data.slice(0,50).map(({id,name,stream_url,metadata,homepage,station,artist,title,classification,confirmed_at})=>({id:id??station?.id,name:name??station?.name,stream_url,metadata,homepage,artist,title,classification,confirmed_at})):undefined;
-    const routeKeys=name==='Nova routes' && json?.routes
-      ? Object.keys(json.routes).filter(k=>['radio-tracks','cqct','/radios','/track'].some(fragment=>k.includes(fragment))) : undefined;
-    console.log(JSON.stringify({name,status:res.status,allowOrigin:res.headers.get('access-control-allow-origin'),contentType:res.headers.get('content-type'),size:body.length,sample:name==='Nova routes'?undefined:sample(json),routeKeys,matches,excerpt,mentions:(name==='Nova webpage'||name==='Nova HTML Reader')?mentions:undefined}));
-  }catch(e){console.log(JSON.stringify({name,error:e.name||'FetchError',message:e.message?.slice(0,140)}));}
+// Temporary diagnostic, public network calls only; do not print credentials.
+const stations=[
+  ['Nova','novazz.ice.infomaniak.ch','novazz-128.mp3','radio-nova'],
+  ['Nouvo','nova-nouvo.ice.infomaniak.ch','nova-nouvo-128.mp3','nouvo-nova'],
+  ['La nuit','nova-ln.ice.infomaniak.ch','nova-ln-128.mp3','nova-lanuit']
+];
+const requests=[];
+for(const [name,host,mp3,slug] of stations){
+  requests.push([name+' station HTML','https://www.nova.fr/radios/'+slug+'/','page']);
+  requests.push([name+' stream ICY','https://'+host+'/'+mp3,'stream']);
+  requests.push([name+' Icecast status','https://'+host+'/status-json.xsl','json']);
+  requests.push([name+' Reader HTML','https://r.jina.ai/https://www.nova.fr/radios/'+slug+'/','reader']);
 }
-await probe('Nova routes',root);
-await Promise.all([
-  ['FIP Jazz','https://api.radiofrance.fr/livemeta/pull/65'],
-  ['FIP Groove','https://api.radiofrance.fr/livemeta/pull/66'],
-  ['FIP Electro','https://api.radiofrance.fr/livemeta/pull/74'],
-  ['FIP Rock','https://api.radiofrance.fr/livemeta/pull/64'],
-  ['Nova main','https://www.nova.fr/wp-json/mobile-app/v1/cqct/radio-nova'],
-  ['Nova Night','https://www.nova.fr/wp-json/mobile-app/v1/cqct/nova-lanuit'],
-  ['Nouvo Nova','https://www.nova.fr/wp-json/mobile-app/v1/cqct/nouvo-nova'],
-  ['Nova latest','https://www.nova.fr/wp-json/radio-tracks/v1/latests'],
-  ['Nova latest main','https://www.nova.fr/wp-json/radio-tracks/v1/latests?radio=radio-nova'],
-  ['Nova radio main','https://www.nova.fr/wp-json/radios/radio-nova'],
-  ['Nova radio night','https://www.nova.fr/wp-json/radios/nova-lanuit'],
-  ['Nova radio nouvo','https://www.nova.fr/wp-json/radios/nouvo-nova'],
-  ['Nova radios all','https://www.nova.fr/wp-json/radios/all-radios'],
-  ['Nova tracks','https://www.nova.fr/wp-json/track'],
-  ['Nova webpage','https://www.nova.fr/radios/nouvo-nova/'],
-  ['Nova Reader','https://r.jina.ai/https://www.nova.fr/radios/nouvo-nova/'],
-  ['Nova HTML Reader','https://r.jina.ai/https://www.nova.fr/radios/nouvo-nova/'],
-  ['Nova Target','https://r.jina.ai/https://www.nova.fr/radios/nouvo-nova/'],
-  ['Nova Reader main','https://r.jina.ai/https://www.nova.fr/radios/radio-nova/'],
-  ['Tuneping Radio Nova','https://api.tuneping.com/v1/stations?q=radio%20nova&country=FR&limit=50'],
-  ['Tuneping Nouvo','https://api.tuneping.com/v1/stations?q=nouvo%20nova&country=FR&limit=50'],
-  ['Tuneping Nova la nuit','https://api.tuneping.com/v1/stations?q=nova%20la%20nuit&country=FR&limit=50'],
-
-].map(([name,url])=>probe(name,url)));
-
-try{
-const res=await fetch('https://r.jina.ai/https://www.nova.fr/radios/nouvo-nova/',{
- method:'OPTIONS',
- headers:{Origin:'https://haniadaher21-ops.github.io','Access-Control-Request-Method':'GET','Access-Control-Request-Headers':'x-cache-tolerance,x-respond-with,x-target-selector'},
- signal:AbortSignal.timeout(10000)
-});
-console.log(JSON.stringify({name:'Nova CORS preflight',status:res.status,allowOrigin:res.headers.get('access-control-allow-origin'),allowHeaders:res.headers.get('access-control-allow-headers'),allowMethods:res.headers.get('access-control-allow-methods')}));
-}catch(error){console.log(JSON.stringify({name:'Nova CORS preflight',error:String(error)}));}
+requests.push(['Nova WP API','https://www.nova.fr/wp-json/','routes']);
+requests.push(['Nova radio-tracks','https://www.nova.fr/wp-json/radio-tracks/v1/latests','json']);
+requests.push(['Nova mobile app','https://www.nova.fr/wp-json/mobile-app/v1/cqct/radio-nova','json']);
+requests.push(['Infomaniak radio/novazz','https://metadata.infomaniak.com/api/radio/novazz/metadata','json']);
+requests.push(['Nova direct mobile','https://www.nova.fr/wp-json/radios/radio-nova','json']);
+requests.push(['Nova history old','https://www.nova.fr/wp-json/radios/all-radios','json']);
+function excerpt(text){
+ let found=[...text.matchAll(/(?:wwtt_content|player-radio\.infomaniak|metadata\.infomaniak|tracklist|icy[-_]metadata|radio-tracks|radio_id|station_id|radio-nouvo|novazz|C'ÉTAIT QUOI CE TITRE|www\.nova\.fr\/wp-json)/gi)].slice(0,14);
+ return found.map(m=>({at:m.index,text:text.slice(Math.max(0,m.index-85),m.index+145)}));
+}
+async function check([name,url,kind]) {
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),12000);
+ let res;
+ try{
+  const headers={
+   Origin:'https://haniadaher21-ops.github.io',
+   'User-Agent':'BonnesOndes-SourceVerification/1.0',
+   ...(kind==='stream'?{'Icy-MetaData':'1'}:{}),
+   ...(kind==='reader'?{'X-Respond-With':'html','X-Target-Selector':'.what_was_title .swiper-slide:first-child','X-Cache-Tolerance':'60'}:{})
+  };
+  res=await fetch(url,{signal:controller.signal,headers,redirect:'follow'});
+  const result={name,status:res.status,type:res.headers.get('content-type'),cors:res.headers.get('access-control-allow-origin'),icyMetaInt:res.headers.get('icy-metaint'),icyName:res.headers.get('icy-name'),location:res.url};
+  if(kind==='stream'){
+    const metaint=Number(res.headers.get('icy-metaint')??0);
+    if(metaint>0&&metaint<150000&&res.body){
+     const reader=res.body.getReader();let got=0, chunks=[];
+     while(got < metaint+4081){
+       const frame=await reader.read();
+       if(frame.done)break;
+       chunks.push(frame.value);got+=frame.value.length;
+     }
+     await reader.cancel().catch(()=>{});
+     const buffer=Buffer.concat(chunks.map(c=>Buffer.from(c)));
+     const metadataLength=buffer[metaint]*16;
+     result.sampleIcy=buffer.subarray(metaint+1,metaint+1+Math.min(metadataLength,1000)).toString('utf8');
+    } else {await res.body?.cancel().catch(()=>{});}
+  } else {
+   const body=(await res.text()).slice(0,420000);
+   if(kind==='routes'){
+    try{const json=JSON.parse(body);result.routes=Object.keys(json.routes??{}).filter(x=>/nova|radio|track|titre|cqct|history|metadata/.test(x)).slice(0,55)}
+    catch{result.snippet=body.slice(0,180);}
+   } else if(kind==='page'){result.excerpt=excerpt(body);result.bytes=body.length;result.first=body.slice(0,100);}
+   else if(kind==='reader'){result.excerpt=excerpt(body);result.bytes=body.length;result.first=body.slice(0,650);}
+   else {
+    try{const j=JSON.parse(body);result.json=JSON.stringify(j).slice(0,450)}
+    catch{result.snippet=body.slice(0,230);}
+   }
+  }
+  console.log('NOVA_PROBE '+JSON.stringify(result));
+ }catch(e){
+  console.log('NOVA_PROBE '+JSON.stringify({name,error:e.name+': '+String(e.message).slice(0,95)}));
+ }finally{clearTimeout(timeout);if(res?.body&&!res.bodyUsed)try{await res.body.cancel()}catch{}}
+}
+await Promise.all(requests.map(check));
