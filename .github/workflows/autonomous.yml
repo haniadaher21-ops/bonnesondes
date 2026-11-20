@@ -8,8 +8,6 @@ on:
         options: [observe, collect, publish]
         default: observe
   schedule:
-    - cron: '17 9 * * *'
-      timezone: Europe/Paris
     - cron: '0 18 * * 0'
       timezone: Europe/Paris
 permissions:
@@ -19,7 +17,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   cycle:
-    if: github.event_name == 'workflow_dispatch' || vars.COLLECTION_ENABLED == 'true'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && vars.AUTO_PUBLISH_ENABLED == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
