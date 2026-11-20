@@ -47,7 +47,8 @@ test('publication is explicitly gated, idempotent and tied to the Paris Sunday c
     assert.equal(publicationDecision({...options,enabled:'true',observations:sameWeek}).status,'blocked');
     const manualOnly = observations.map(run=>({...run,trigger:'manual'}));
     assert.equal(publicationDecision({...options,enabled:'true',observations:manualOnly}).status,'blocked');
-    assert.equal(publicationDecision({...options,enabled:'true',observations:observations.slice(0,2)}).status,'blocked');
+    assert.equal(publicationDecision({...options,enabled:'true',observations:observations.slice(0,2)}).status,'publish');
+    assert.equal(publicationDecision({...options,enabled:'true',observations:observations.slice(0,1)}).status,'blocked');
     assert.equal(publicationDecision({...options,enabled:'true',fingerprint:'changed'}).status,'blocked');
     assert.equal(publicationDecision({...options,editions:[{startsOn:monday}]}).status,'noop');
     assert.equal(publicationDecision({...options,enabled:'true',complete:false}).status,'blocked');
