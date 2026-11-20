@@ -285,7 +285,7 @@ export default function Journal() {
     <main className="shell" id="main-content">
       {storageMessage && <p className="empty" role="status">{storageMessage}</p>}
       {page === 'rotation' && <>
-        <div className="issue-line"><span>Journal musical</span><span>N° {issue.number} <b> / </b> {issue.label}</span></div>
+        <div className="issue-line"><span>Journal musical</span><span>N° {issue.number} <b> / </b> <a className="issue-date-link" href={"#editions/" + issue.startsOn} aria-label={"Voir l’édition du " + dateLabel(issue.startsOn)}>{issue.label}</a></span></div>
         <header className="intro">
           <h1>Bonnes Ondes<span>.</span></h1>
           <div className="intro-aside"><h2>La sélection de la semaine</h2><p>Des disques, des radios et des concerts choisis chaque semaine.</p>
