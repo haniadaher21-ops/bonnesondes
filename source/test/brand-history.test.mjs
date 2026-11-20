@@ -38,7 +38,11 @@ test('library has a compact left section and separately scrollable listening his
 });
 
 test('the former archives content is the only listening history source, both in sidebar and full page', () => {
-  assert.match(source, /\['archive', 'Historique d’écoute'\]/);
+  assert.doesNotMatch(source, /\['archive', 'Historique d’écoute'\]/);
+  assert.match(source, /type Page = typeof pages\[number\]\[0\] \| 'archive' \| 'preferences'/);
+  assert.match(source, /hash === 'archive' \|\| hash === 'preferences'/);
+  assert.match(source, /page === 'archive'/);
+  assert.match(source, /\(page === 'preferences' \|\| page === 'archive'\) && key === 'library'/);
   assert.match(source, /href="#archive">Voir tout l’historique/);
   assert.match(source, /title="Historique d’écoute"/);
   assert.match(source, /\{archive\.length \? cards\(archive, false, true\)/);
