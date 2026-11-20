@@ -46,8 +46,11 @@ async function readOnAir(response: Response, metadata: RadioMetadata): Promise<O
   return { title: current.title, artist };
 }
 
-export default function RadioTrack({ metadata, saveTrack }: { metadata: RadioMetadata; saveTrack: (track: OnAir) => ReactNode }) {
+export default function RadioTrack({ metadata, saveTrack, compact = false }: {
+  metadata: RadioMetadata; saveTrack: (track: OnAir) => ReactNode; compact?: boolean;
+}) {
   const [track, setTrack] = useState<OnAir | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -62,11 +65,11 @@ export default function RadioTrack({ metadata, saveTrack }: { metadata: RadioMet
         } : undefined;
         const response = await fetch(metadata.endpoint, { signal: controller.signal, cache: 'no-store', headers });
         const onAir = await readOnAir(response, metadata);
-        if (!controller.signal.aborted) setTrack(onAir);
+        if (!controller.signal.aborted) { setTrack(onAir); setLoading(false); }
       } catch {
-        if (!controller.signal.aborted) setTrack(null);
+        if (!controller.signal.aborted) { setTrack(null); setLoading(false); }
       } finally {
-        if (!controller.signal.aborted) timer = setTimeout(refresh, metadata.provider === 'nova-page' ? 60_000 : 15_000);
+        if (!controller.signal.aborted) timer = setTimeout(refresh, metadata.provider === 'nova-page' ? 60_000 : compact ? 30_000 : 15_000);
       }
     }
 
@@ -79,6 +82,18 @@ export default function RadioTrack({ metadata, saveTrack }: { metadata: RadioMet
 
   const isNts = metadata.provider === 'nts';
   const isNova = metadata.provider === 'nova-page';
+  if (compact) {
+    return <div className="station-now-playing" aria-live="polite">
+      <p className="eyebrow">{isNts ? 'ÉMISSION EN DIRECT' : 'EN CE MOMENT'}</p>
+      {track ? <>
+        <strong className="station-track-title">{track.title}</strong>
+        {!isNts && track.artist && <p className="station-track-artist">{track.artist}</p>}
+        {!isNts && saveTrack(track)}
+      </> : <p className="station-track-unavailable">
+        {loading ? 'Chargement du direct…' : isNts ? 'Émission indisponible pour le moment.' : 'Titre indisponible pour le moment.'}
+      </p>}
+    </div>;
+  }
   return <div className="radio-track" aria-live="polite">
     <p className="eyebrow">{isNts ? 'Émission en cours' : isNova ? 'Dernier titre identifié chez Nova' : 'À l’antenne'}</p>
     {track ? <><strong>{track.title}</strong>{track.artist && <p>{track.artist}</p>}{track.playedAt && <p>Diffusé à {track.playedAt}, heure de Paris · selon Nova</p>}</>
