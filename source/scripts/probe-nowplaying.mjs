@@ -39,7 +39,7 @@ async function run([name,url,kind]){
   try{const j=JSON.parse(data);output.count=Array.isArray(j)?j.length:undefined;output.first=JSON.stringify(j[0]??j).slice(0,480);}
   catch{output.snippet=data.slice(0,250);}
  }else if(kind==='wp'){
-  try{const j=JSON.parse(data);output.keys=Object.keys(j);output.meta=JSON.stringify(j.meta??j.acf??j.radio??j.template??j.title??j._links).slice(0,1050);}
+  try{const j=JSON.parse(data);output.keys=Object.keys(j);output.meta=JSON.stringify(j.meta??j.acf??j.radio??j.template??j.title??j._links).slice(0,1050);output.renderedLength=j.content?.rendered?.length;output.renderedWwtt=j.content?.rendered?.includes('wwtt_content');output.renderedSample=j.content?.rendered?.slice(0,800);}
   catch{output.snippet=data.slice(0,200);}
  }else if(kind==='html'||kind==='page'){
   output.cover=sampleHtml(data);output.length=data.length;
