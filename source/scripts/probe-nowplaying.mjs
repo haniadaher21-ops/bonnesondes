@@ -13,6 +13,7 @@ async function probe(name,url) {
       if(typeof value==='string')return value.slice(0,80);
       return value;
     };
+    const mentions=[...body.matchAll(/quoi ce titre|tracklist|radio[-_]tracks|[0-2][0-9]:[0-5][0-9]/gi)].slice(0,20).map(m=>({index:m.index,text:body.slice(Math.max(0,m.index-80),m.index+280)}));
     const matchesHeadings=[...body.matchAll(/C['’]ÉTAIT QUOI CE TITRE/gi)];
     const offset=matchesHeadings.at(-1)?.index ?? 0;
     const excerpt=(name.startsWith('Nova Reader')||name.startsWith('Nova webpage')) ? (() => {
@@ -26,7 +27,7 @@ async function probe(name,url) {
       ? json.data.slice(0,50).map(({id,name,stream_url,metadata,homepage,station,artist,title,classification,confirmed_at})=>({id:id??station?.id,name:name??station?.name,stream_url,metadata,homepage,artist,title,classification,confirmed_at})):undefined;
     const routeKeys=name==='Nova routes' && json?.routes
       ? Object.keys(json.routes).filter(k=>['radio-tracks','cqct','/radios','/track'].some(fragment=>k.includes(fragment))) : undefined;
-    console.log(JSON.stringify({name,status:res.status,allowOrigin:res.headers.get('access-control-allow-origin'),contentType:res.headers.get('content-type'),size:body.length,sample:name==='Nova routes'?undefined:sample(json),routeKeys,matches,excerpt}));
+    console.log(JSON.stringify({name,status:res.status,allowOrigin:res.headers.get('access-control-allow-origin'),contentType:res.headers.get('content-type'),size:body.length,sample:name==='Nova routes'?undefined:sample(json),routeKeys,matches,excerpt,mentions:(name==='Nova webpage'||name==='Nova HTML Reader')?mentions:undefined}));
   }catch(e){console.log(JSON.stringify({name,error:e.name||'FetchError',message:e.message?.slice(0,140)}));}
 }
 await probe('Nova routes',root);
