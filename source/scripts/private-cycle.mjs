@@ -194,7 +194,8 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     const decision = publicationDecision({at:now,startsOn,editions,complete:true,
       enabled:mode === 'publish' ? env.AUTO_PUBLISH_ENABLED : 'false',observations:state.dryRuns,fingerprint});
     if (mode === 'observe') {
-      state.dryRuns.push({id:env.GITHUB_RUN_ID ?? date,at:date,complete:true,fingerprint});
+      state.dryRuns.push({id:env.GITHUB_RUN_ID ?? date,at:date,complete:true,fingerprint,
+        trigger:env.GITHUB_EVENT_NAME === 'schedule' ? 'schedule' : 'manual'});
       await saveState();
       return {status:'observe',complete:true,startsOn,profileRevision:remote.revision,incremental};
     }
