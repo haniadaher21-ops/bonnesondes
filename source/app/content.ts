@@ -71,6 +71,7 @@ export interface Station {
 const fip = (name: string, station: number, description: string): Station => ({
   name, label: 'Radio France', description, url: 'https://www.radiofrance.fr/fip',
   embed: 'https://embed.radiofrance.fr/fip/player?id_station=' + station,
+  metadata: { provider: 'radio-france', endpoint: 'https://api.radiofrance.fr/livemeta/pull/' + station },
 });
 
 export const stations: Station[] = [
