@@ -146,8 +146,14 @@ que l'artefact de sept jours est accessible, que `complete=true`,
 `build=passed`, que les quotas, les liens, la provenance et la diversité des
 sélections sont cohérents, et qu'aucun goût privé n'a été exposé. Comparer
 les éditions proposées sur plusieurs dimanches distincts, pas seulement trois
-observations réalisées le même jour. Ne pas activer `AUTO_PUBLISH_ENABLED`
-tant que ce contrôle multihebdomadaire et les alertes d'échec ne sont pas validés.
+observations réalisées le même jour. Le garde-fou de publication impose trois
+observations complètes récentes de même configuration/profil **et au moins deux
+semaines distinctes de brouillons exécutés par le planificateur**, dans la
+fenêtre de 14 jours. Un déclenchement manuel ou trois observations du même
+dimanche ne peuvent pas remplacer ce recul. Une exécution bloquée échoue
+explicitement dans GitHub Actions ; les notifications de workflow doivent être
+activées dans les préférences GitHub du propriétaire. Ne pas activer
+`AUTO_PUBLISH_ENABLED` tant que la qualité et les alertes n'ont pas été revues.
 
 ## 4. Activation de la publication autonome
 
