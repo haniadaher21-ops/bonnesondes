@@ -15,7 +15,9 @@ const cases=[
  ['Nova Radio first-party HTML','https://www.nova.fr/radios/radio-nova/','page'],
  ];
 function sampleHtml(body){
- let m=body.match(/<div class="wwtt_imgcontent">([\\s\\S]{0,2000}?)<\\/div>/i);
+ const start=body.indexOf('<div class="wwtt_imgcontent">');
+ let img=start>=0 ? body.slice(start,start+1800) : '';
+ let m=[null,img];
  return {img:m?.[1].slice(0,1350),firstSlide:body.slice(body.indexOf('wwtt_content')-100,body.indexOf('wwtt_content')+1750),
    scripts:body.match(/<script[^>]*src="[^"]*radio[^"]*"/gi)?.slice(0,10)};
 }
