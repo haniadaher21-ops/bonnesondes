@@ -146,8 +146,8 @@ que l'artefact de sept jours est accessible, que `complete=true`,
 `build=passed`, que les quotas, les liens, la provenance et la diversité des
 sélections sont cohérents, et qu'aucun goût privé n'a été exposé. Comparer
 les éditions proposées sur plusieurs dimanches distincts, pas seulement trois
-observations réalisées le même jour. Le garde-fou de publication impose trois
-observations complètes récentes de même configuration/profil **et au moins deux
+observations réalisées le même jour. Le garde-fou de publication impose au moins deux
+observations complètes récentes de même configuration/profil, provenant de **deux
 semaines distinctes de brouillons exécutés par le planificateur**, dans la
 fenêtre de 14 jours. Un déclenchement manuel ou trois observations du même
 dimanche ne peuvent pas remplacer ce recul. Une exécution bloquée échoue
