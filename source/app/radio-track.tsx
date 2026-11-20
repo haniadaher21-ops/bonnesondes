@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { RadioMetadata } from './content';
+import { parseNovaNowPlaying } from './nova-nowplaying.mjs';
 
 type BroadcastStep = {
   embedType: string;
@@ -14,10 +15,14 @@ type BroadcastStep = {
   authors?: string;
 };
 
-export type OnAir = { title: string; artist?: string };
+export type OnAir = { title: string; artist?: string; playedAt?: string };
 
 async function readOnAir(response: Response, metadata: RadioMetadata): Promise<OnAir | null> {
   if (!response.ok) throw new Error('Métadonnées indisponibles');
+
+  if (metadata.provider === 'nova-page') {
+    return parseNovaNowPlaying(await response.text());
+  }
 
   if (metadata.provider === 'azuracast') {
     const data: { now_playing?: { song?: OnAir } } = await response.json();
@@ -50,13 +55,18 @@ export default function RadioTrack({ metadata, saveTrack }: { metadata: RadioMet
 
     async function refresh() {
       try {
-        const response = await fetch(metadata.endpoint, { signal: controller.signal, cache: 'no-store' });
+        const headers=metadata.provider==='nova-page' ? {
+          'X-Respond-With':'html',
+          'X-Target-Selector':'.what_was_title .swiper-slide:first-child',
+          'X-Cache-Tolerance':'60',
+        } : undefined;
+        const response = await fetch(metadata.endpoint, { signal: controller.signal, cache: 'no-store', headers });
         const onAir = await readOnAir(response, metadata);
         if (!controller.signal.aborted) setTrack(onAir);
       } catch {
         if (!controller.signal.aborted) setTrack(null);
       } finally {
-        if (!controller.signal.aborted) timer = setTimeout(refresh, 15_000);
+        if (!controller.signal.aborted) timer = setTimeout(refresh, metadata.provider === 'nova-page' ? 60_000 : 15_000);
       }
     }
 
@@ -68,11 +78,13 @@ export default function RadioTrack({ metadata, saveTrack }: { metadata: RadioMet
   }, [metadata]);
 
   const isNts = metadata.provider === 'nts';
+  const isNova = metadata.provider === 'nova-page';
   return <div className="radio-track" aria-live="polite">
-    <p className="eyebrow">{isNts ? 'Émission en cours' : 'À l’antenne'}</p>
-    {track ? <><strong>{track.title}</strong>{track.artist && <p>{track.artist}</p>}</>
-      : <p>{isNts ? 'Émission indisponible pour le moment.' : 'Titre indisponible pour le moment.'}</p>}
+    <p className="eyebrow">{isNts ? 'Émission en cours' : isNova ? 'Dernier titre identifié chez Nova' : 'À l’antenne'}</p>
+    {track ? <><strong>{track.title}</strong>{track.artist && <p>{track.artist}</p>}{track.playedAt && <p>Diffusé à {track.playedAt}, heure de Paris · selon Nova</p>}</>
+      : <p>{isNts ? 'Émission indisponible pour le moment.' : isNova ? 'Aucun titre récent confirmé par Nova. Réessaie dans quelques instants.' : 'Titre indisponible pour le moment.'}</p>}
     {!isNts && track && saveTrack(track)}
+    {isNova && <a className="text-link" href="https://jina.ai/reader/" target="_blank" rel="noopener noreferrer">Données de Nova via Jina Reader</a>}
     {isNts && <a className="text-link" href="https://www.nts.live/supporters" target="_blank" rel="noopener noreferrer">Titres en direct avec NTS Supporters ↗</a>}
   </div>;
 }
