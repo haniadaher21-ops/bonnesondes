@@ -27,4 +27,12 @@ await Promise.all([
   ['Nova main','https://www.nova.fr/wp-json/mobile-app/v1/cqct/radio-nova'],
   ['Nova Night','https://www.nova.fr/wp-json/mobile-app/v1/cqct/nova-lanuit'],
   ['Nouvo Nova','https://www.nova.fr/wp-json/mobile-app/v1/cqct/nouvo-nova'],
+  ['Nova latest','https://www.nova.fr/wp-json/radio-tracks/v1/latests'],
+  ['Nova latest main','https://www.nova.fr/wp-json/radio-tracks/v1/latests?radio=radio-nova'],
+  ['Nova radio main','https://www.nova.fr/wp-json/radios/radio-nova'],
+  ['Nova radio night','https://www.nova.fr/wp-json/radios/nova-lanuit'],
+  ['Nova radio nouvo','https://www.nova.fr/wp-json/radios/nouvo-nova'],
+  ['Nova radios all','https://www.nova.fr/wp-json/radios/all-radios'],
+  ['Nova tracks','https://www.nova.fr/wp-json/track'],
+
 ].map(([name,url])=>probe(name,url)));
