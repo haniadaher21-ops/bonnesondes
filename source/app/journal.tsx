@@ -352,7 +352,7 @@ export default function Journal() {
         <div className="station-grid">
           {stations.map(item => <article className="station" key={item.name}>
             <Radio size={22} /><p className="eyebrow">{item.label}</p><h2>{item.name}</h2>
-            {item.metadata && item.metadata.provider !== 'nova-page'
+            {item.metadata
               ? <RadioTrack metadata={item.metadata} compact
                   saveTrack={track => saveButton(currentRadioTrack(track, item.name), 'text-link radio-save', true)} />
               : <p className="station-description">{item.description}</p>}
