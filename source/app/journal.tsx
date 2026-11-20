@@ -149,17 +149,18 @@ export default function Journal() {
     return {
       ...state,
       entries: { ...state.entries, [item.id]: { ...entry, saved } },
-      radioTracks: item.format === 'Track' && saved && !state.radioTracks[item.id]
-        ? { ...state.radioTracks, [item.id]: item }
+      radioTracks: item.format === 'Track' && saved
+        ? { ...state.radioTracks, [item.id]: { ...state.radioTracks[item.id], ...item } }
         : state.radioTracks,
     };
   });
 
-  const currentRadioTrack = ({ title, artist }: OnAir, sourceName: string): Recommendation => ({
+  const currentRadioTrack = ({ title, artist, artwork }: OnAir, sourceName: string): Recommendation => ({
     id: 'radio-track:' + JSON.stringify([title, artist ?? ''].map(value => value.trim().normalize().toLowerCase())),
     title,
     creator: artist,
     format: 'Track',
+    artwork,
     source: sourceName,
     url: 'https://open.spotify.com/search/' + encodeURIComponent([title, artist].filter(Boolean).join(' ')),
   });
@@ -313,7 +314,7 @@ export default function Journal() {
       </>}
 
       {page === 'editions' && <>
-        <PageHeading label="LES ÉDITIONS" title="Archives des éditions" note="Toutes les sélections hebdomadaires de Bonnes Ondes, conservées dans leur version d’origine. Choisis une date pour retrouver les albums, émissions, playlists et performances recommandés cette semaine-là." />
+        <PageHeading label="LES ÉDITIONS" title="Archives des éditions" />
         {archivedIssue ? <>
           <a className="text-link editions-back" href="#editions"><ArrowRight className="editions-back-icon" size={16} /> Toutes les éditions</a>
           <div className="edition-detail-heading">
@@ -347,7 +348,7 @@ export default function Journal() {
       </>}
 
       {page === 'radio' && <>
-        <PageHeading label="EN DIRECT" title="Radios" note="Choisis une station. Le lecteur reste à portée de main pendant que tu navigues." />
+        <PageHeading label="EN DIRECT" title="Radios" />
         <div className="station-grid">
           {stations.map(item => <article className="station" key={item.name}>
             <Radio size={22} /><p className="eyebrow">{item.label}</p><h2>{item.name}</h2>
@@ -363,7 +364,7 @@ export default function Journal() {
       </>}
 
       {page === 'playlists' && <>
-        <PageHeading label="SÉLECTIONS INDÉPENDANTES" title="Playlists" note="Des playlists indépendantes et de saison, auxquelles tu peux ajouter tes trouvailles." />
+        <PageHeading label="SÉLECTIONS INDÉPENDANTES" title="Playlists" />
         <div className="shelf-toolbar">
           <div className="filters">
             {filter('Créateur', curator, setCurator, ['★ Créateurs favoris', ...options(shelf, 'creator')])}
@@ -388,22 +389,22 @@ export default function Journal() {
       </>}
 
       {page === 'live' && <>
-        <PageHeading label="SESSIONS ET REPRISES" title="Live" note="Des performances à regarder, le son bien ouvert." />
+        <PageHeading label="SESSIONS ET REPRISES" title="Live" />
         {cards(liveShelf, true)}
       </>}
 
       {page === 'mix' && <>
-        <PageHeading label="SUR LES ONDES" title="Mix" note="Des sets de DJ et des émissions à écouter en replay." />
+        <PageHeading label="SUR LES ONDES" title="Mix" />
         {cards(issue.mixes)}
       </>}
 
       {page === 'archive' && <>
-        <PageHeading label="À RÉÉCOUTER" title="Historique d’écoute" note="Retrouve ici toutes les découvertes conservées dans l’ancien espace Archives de Bonnes Ondes." />
+        <PageHeading label="À RÉÉCOUTER" title="Historique d’écoute" />
         {archive.length ? cards(archive, false, true) : <p className="empty">Aucun contenu dans l’historique pour le moment.</p>}
       </>}
 
       {page === 'library' && <>
-        <PageHeading label="TES FAVORIS" title="Ma collection" note="Retrouve tes favoris et, sur la droite, ton historique d’écoute." />
+        <PageHeading label="TES FAVORIS" title="Ma collection" />
         <div className="collection-layout">
           <section className="collection-content" aria-label="Tes découvertes enregistrées">
             <a className="text-link" href="#preferences">Modifier mon profil musical <ArrowRight size={14} /></a>
@@ -444,7 +445,7 @@ export default function Journal() {
         </div>
       </>}
       {page === 'preferences' && <>
-        <PageHeading title="Mon profil musical" label="PRÉFÉRENCES" note="Enregistre les artistes, radios, médias et curateurs que tu veux suivre." />
+        <PageHeading title="Mon profil musical" label="PRÉFÉRENCES" />
         <TastePreferences library={library} recommendations={all} libraryReady={ready} />
       </>}
     </main>
@@ -492,6 +493,6 @@ export default function Journal() {
   </>;
 }
 
-function PageHeading({ label, title, note }: { label: string; title: string; note: string }) {
-  return <header className="page-heading"><p className="eyebrow">{label}</p><h1>{title}<span>.</span></h1><p>{note}</p></header>;
+function PageHeading({ label, title }: { label: string; title: string }) {
+  return <header className="page-heading"><p className="eyebrow">{label}</p><h1>{title}<span>.</span></h1></header>;
 }

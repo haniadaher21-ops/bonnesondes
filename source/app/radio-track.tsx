@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { RadioMetadata } from './content';
 import { parseNovaNowPlaying } from './nova-nowplaying.mjs';
+import { radioArtworkUrl } from './radio-artwork.mjs';
 
 type BroadcastStep = {
   embedType: string;
@@ -13,9 +14,10 @@ type BroadcastStep = {
   highlightedArtists?: string[];
   performers?: string;
   authors?: string;
+  visual?: string;
 };
 
-export type OnAir = { title: string; artist?: string; playedAt?: string };
+export type OnAir = { title: string; artist?: string; playedAt?: string; artwork?: string };
 
 async function readOnAir(response: Response, metadata: RadioMetadata): Promise<OnAir | null> {
   if (!response.ok) throw new Error('Métadonnées indisponibles');
@@ -25,9 +27,9 @@ async function readOnAir(response: Response, metadata: RadioMetadata): Promise<O
   }
 
   if (metadata.provider === 'azuracast') {
-    const data: { now_playing?: { song?: OnAir } } = await response.json();
+    const data: { now_playing?: { song?: OnAir & { art?: string } } } = await response.json();
     const song = data.now_playing?.song;
-    return song?.title ? { title: song.title, artist: song.artist } : null;
+    return song?.title ? { title: song.title, artist: song.artist, artwork: radioArtworkUrl(song.art) } : null;
   }
 
   if (metadata.provider === 'nts') {
@@ -43,7 +45,14 @@ async function readOnAir(response: Response, metadata: RadioMetadata): Promise<O
     .sort((a, b) => b.start - a.start)[0];
   if (!current?.title) return null;
   const artist = current.highlightedArtists?.filter(Boolean).join(', ') || current.performers || current.authors;
-  return { title: current.title, artist };
+  return { title: current.title, artist, artwork: radioArtworkUrl(current.visual) };
+}
+
+function BroadcastArtwork({ artwork, title, isNts }: { artwork: string; title: string; isNts: boolean }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return <img className="station-cover" src={artwork} alt={isNts ? 'Visuel de l’émission ' + title : 'Pochette du morceau ' + title}
+    width={88} height={88} loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} />;
 }
 
 export default function RadioTrack({ metadata, saveTrack, compact = false }: {
@@ -85,11 +94,14 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
   if (compact) {
     return <div className="station-now-playing" aria-live="polite">
       <p className="eyebrow">{isNts ? 'ÉMISSION EN DIRECT' : 'EN CE MOMENT'}</p>
-      {track ? <>
-        <strong className="station-track-title">{track.title}</strong>
-        {!isNts && track.artist && <p className="station-track-artist">{track.artist}</p>}
-        {!isNts && saveTrack(track)}
-      </> : <p className="station-track-unavailable">
+      {track ? <div className="station-track-layout">
+        {track.artwork && <BroadcastArtwork key={track.artwork} artwork={track.artwork} title={track.title} isNts={isNts} />}
+        <div className="station-track-copy">
+          <strong className="station-track-title">{track.title}</strong>
+          {!isNts && track.artist && <p className="station-track-artist">{track.artist}</p>}
+          {!isNts && saveTrack(track)}
+        </div>
+      </div> : <p className="station-track-unavailable">
         {loading ? 'Chargement du direct…' : isNts ? 'Émission indisponible pour le moment.' : 'Titre indisponible pour le moment.'}
       </p>}
     </div>;
