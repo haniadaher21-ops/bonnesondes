@@ -17,12 +17,19 @@ function selection() {
     })),
     mixes: [nts, item('nova', 'Radio show', 'https://www.nova.fr/podcasts/episode')],
     playlists: [item('playlist', 'Playlist', 'https://open.spotify.com/playlist/7LXauPdOlnW55FQNDWPotY')],
-    live: [item('live', 'Live session', 'https://www.youtube.com/watch?v=abcdefghijk')],
+    live: [
+      item('live1', 'Live session', 'https://www.youtube.com/watch?v=abcdefghijk'),
+      item('live2', 'Live session', 'https://www.youtube.com/watch?v=123456789ab'),
+      item('live3', 'Live session', 'https://www.youtube.com/watch?v=QWERTYuiOP1'),
+    ],
   };
 }
 
 test('accepts a complete edition and refuses incomplete or unverifiable selections', () => {
   assert.deepEqual(validateEdition(selection(), [legacyEdition]), []);
+  const twoLives = selection();
+  twoLives.live = twoLives.live.slice(0, 2);
+  assert.match(validateEdition(twoLives, [legacyEdition]).join('\n'), /Quota non respecté pour live/);
   const draft = selection();
   draft.albums[0].date = '2026-10-20';
   draft.albums[1].date = '2026-11-31';
@@ -114,7 +121,7 @@ test('reuses stable identities while rejecting URL, ID and format collisions', (
   draft.playlists = [selectedPlaylist];
   draft.live[0] = { ...draft.live[0], id: selectedPlaylist.id, url: selectedPlaylist.url };
   assert.match(validateEdition(draft, [legacyEdition], legacyItems).join(), /Identifiant déjà associé/);
-  draft.live = [selection().live[0], { ...selection().live[0], id: 'second-live' }];
+  draft.live = [selection().live[0], { ...selection().live[0], id: 'second-live' }, selection().live[2]];
   assert.match(validateEdition(draft, [legacyEdition], legacyItems).join(), /Doublon/);
 });
 
@@ -182,6 +189,7 @@ test('validated edition 002 leads the dedicated shelves alongside older and pers
   draft.live = [
     ['Ji7g_Bks7Xc', 'WILLOW in the Radio 1 Live Lounge'],
     ['R03Hzewk_yk', 'Somebody That I Used to Know (reprise de Gotye)'],
+    ['sWJbOWJMJQ0', 'Rachel Chinouriri dans le Live Lounge'],
   ].map(([id, title]) => {
     const url = 'https://www.youtube.com/watch?v=' + id;
     return {
@@ -203,7 +211,7 @@ test('validated edition 002 leads the dedicated shelves alongside older and pers
   assert.deepEqual(playlists.map(item => item.id), [draft.playlists[0].id, ...historicalPlaylists.map(item => item.id), personal.id]);
   assert.deepEqual(live.map(item => item.id), [...draft.live, ...historicalLive].map(item => item.id));
   assert.deepEqual(playlists[0].embed, draft.playlists[0].embed);
-  assert.deepEqual(live.slice(0, 2).map(item => item.embed), draft.live.map(item => item.embed));
+  assert.deepEqual(live.slice(0, 3).map(item => item.embed), draft.live.map(item => item.embed));
   assert.deepEqual(playlists.filter(item => saved[item.id]?.saved), [historicalPlaylists[0], personal]);
   assert.ok(!editionShelf(editions, first, 'playlists', historicalPlaylists).some(item => item.id === draft.playlists[0].id));
 });
