@@ -37,6 +37,8 @@ await Promise.all([
   ['Nova radios all','https://www.nova.fr/wp-json/radios/all-radios'],
   ['Nova tracks','https://www.nova.fr/wp-json/track'],
   ['Nova webpage','https://www.nova.fr/radios/nouvo-nova/'],
+  ['Nova Reader','https://r.jina.ai/https://www.nova.fr/radios/nouvo-nova/'],
+  ['Nova Reader main','https://r.jina.ai/https://www.nova.fr/radios/radio-nova/'],
   ['Tuneping Radio Nova','https://api.tuneping.com/v1/stations?q=radio%20nova&country=FR&limit=50'],
   ['Tuneping Nouvo','https://api.tuneping.com/v1/stations?q=nouvo%20nova&country=FR&limit=50'],
   ['Tuneping Nova la nuit','https://api.tuneping.com/v1/stations?q=nova%20la%20nuit&country=FR&limit=50'],
