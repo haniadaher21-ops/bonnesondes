@@ -45,7 +45,7 @@ interface Edition {
 }
 
 export const issues: Edition[] = [{
-  ...legacyEdition, featured: mixes[0], albums, mixes, playlists: playlists.slice(0, 2), live: live.slice(0, 2),
+  ...legacyEdition, featured: mixes[0], albums, mixes, playlists: playlists.slice(0, 2), live: live.slice(0, 3),
 }];
 
 export const catalog = [...new Map([...albums, ...mixes, ...playlists, ...live, ...archive].map(item => [item.id, item])).values()];
@@ -80,19 +80,22 @@ export const stations: Station[] = [
     stream: 'https://icecast.radiofrance.fr/fip-midfi.mp3?id=openapi',
     metadata: { provider: 'radio-france', endpoint: 'https://api.radiofrance.fr/livemeta/pull/7' },
   },
+  { name: 'NTS 1', label: 'NTS', description: 'Le premier canal de NTS en direct.', url: 'https://www.nts.live/', stream: 'https://stream-relay-geo.ntslive.net/stream',
+    metadata: { provider: 'nts', endpoint: 'https://www.nts.live/api/v2/live', channel: '1' },
+  },
+  { name: 'Radio La Belle Aventure', label: 'Indépendante', description: 'Une radio bretonne éclectique, soutenue par ses auditeurs.', url: 'https://www.radiolabelleaventure.com/', stream: 'https://flux.radiolabelleaventure.com/listen/radio_la_belle_aventure/radio.mp3',
+    metadata: { provider: 'azuracast', endpoint: 'https://flux.radiolabelleaventure.com/api/nowplaying/radio_la_belle_aventure' },
+  },
   fip('FIP Jazz', 65, 'Le jazz à travers les époques, les styles et les scènes.'),
   fip('FIP Groove', 66, 'La soul, le funk et les disques qu’ils ont inspirés.'),
   fip('FIP Electro', 74, 'Les musiques électroniques, du downtempo au club.'),
   fip('FIP Rock', 64, 'Le rock, des classiques aux marges.'),
-  { name: 'Radio Nova', label: 'Nova', description: 'Le Grand Mix, de la soul et du reggae au rap et à l’électro.', url: 'https://www.nova.fr/radios/' },
-  { name: 'Nova la nuit', label: 'Nova', description: 'Grooves rares et versions longues à la nuit tombée.', url: 'https://www.nova.fr/radios/nova-lanuit/' },
-  { name: 'Nouvo Nova', label: 'Nova', description: 'Les nouveautés choisies par l’équipe de Nova.', url: 'https://www.nova.fr/radios/nouvo-nova/' },
-  { name: 'Radio La Belle Aventure', label: 'Indépendante', description: 'Une radio bretonne éclectique, soutenue par ses auditeurs.', url: 'https://www.radiolabelleaventure.com/', stream: 'https://flux.radiolabelleaventure.com/listen/radio_la_belle_aventure/radio.mp3',
-    metadata: { provider: 'azuracast', endpoint: 'https://flux.radiolabelleaventure.com/api/nowplaying/radio_la_belle_aventure' },
-  },
-  { name: 'NTS 1', label: 'NTS', description: 'Le premier canal de NTS en direct.', url: 'https://www.nts.live/', stream: 'https://stream-relay-geo.ntslive.net/stream',
-    metadata: { provider: 'nts', endpoint: 'https://www.nts.live/api/v2/live', channel: '1' },
-  },
+  { name: 'Radio Nova', label: 'Nova', description: 'Le Grand Mix, de la soul et du reggae au rap et à l’électro.',
+    url: 'https://www.nova.fr/radios/radio-nova/', stream: 'https://novazz.ice.infomaniak.ch/novazz-128.mp3' },
+  { name: 'Nova la nuit', label: 'Nova', description: 'Grooves rares et versions longues à la nuit tombée.',
+    url: 'https://www.nova.fr/radios/nova-lanuit/', stream: 'https://nova-ln.ice.infomaniak.ch/nova-ln-128.mp3' },
+  { name: 'Nouvo Nova', label: 'Nova', description: 'Les nouveautés choisies par l’équipe de Nova.',
+    url: 'https://www.nova.fr/radios/nouvo-nova/', stream: 'https://nova-nouvo.ice.infomaniak.ch/nova-nouvo-128.mp3' },
   { name: 'NTS 2', label: 'NTS', description: 'Le deuxième canal de NTS en direct.', url: 'https://www.nts.live/', stream: 'https://stream-relay-geo.ntslive.net/stream2',
     metadata: { provider: 'nts', endpoint: 'https://www.nts.live/api/v2/live', channel: '2' },
   },
