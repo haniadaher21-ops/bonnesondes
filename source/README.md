@@ -234,3 +234,21 @@ Si le relais tiers est indisponible, le site affiche un état indisponible sans
 inventer de titre. Cette intégration dépend de la structure du site de Nova
 et de la disponibilité du relais : une API officielle de titre par station
 devrait la remplacer si Nova en propose une publiquement.
+
+### Pochettes de secours pour Radio Nova et Nouvo Nova
+
+Le visuel publié par Radio Nova reste prioritaire. Sur certains morceaux,
+notamment sur Nouvo Nova, Nova fournit `nova-default.png` à la place de la
+pochette : Bonnes Ondes ignore cette image générique. Si une pochette Nova
+manque ou si l'image officielle ne charge pas, la carte interroge l'API
+publique iTunes Search d'Apple (CORS vérifié en novembre 2026), uniquement
+à partir de l'artiste et du titre diffusés. La pochette n'est retenue que si
+**l'artiste et le titre exact** correspondent, sans accepter un remix, une
+reprise ou un simple morceau du même artiste. En second recours, un single
+ou EP du même artiste portant exactement le nom du titre est accepté. Le
+morceau ou la sortie est alors lié à l'iTunes Store près de sa pochette.
+Les résultats positifs ou négatifs sont gardés en mémoire 30 minutes, pour
+éviter un nouvel appel à chaque rafraîchissement des radios. Si aucun
+résultat exact n'est disponible, aucune pochette n'est inventée. Cette
+recherche concerne seulement les radios Nova, sans changer FIP, NTS ou La
+Belle Aventure, et l'image retrouvée accompagne le morceau sauvegardé.
