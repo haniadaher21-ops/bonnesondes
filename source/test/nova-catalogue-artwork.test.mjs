@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {readFileSync} from 'node:fs';
-import { exactCatalogueArtwork, findNovaCatalogueArtwork, normalizeRecording } from '../app/nova-catalogue-artwork.mjs';
+import { exactCatalogueArtwork, exactNamedReleaseArtwork, findNovaCatalogueArtwork, normalizeRecording } from '../app/nova-catalogue-artwork.mjs';
 
 const row=(artistName,trackName,other={})=>({
   artistName,trackName,kind:'song',
@@ -47,6 +47,29 @@ test('public catalogue lookup is cached, searches FR first, then US for an exact
  assert.ok(calls.every(x=>x.origin==='https://itunes.apple.com'));
  await findNovaCatalogueArtwork('Example Artist','Deep Song',fakeFetch);
  assert.equal(calls.length,2,'cached track must not trigger another request on each 30s refresh');
+});
+
+test('a genuinely matching same-named EP can supply artwork when the song is not catalogued',async()=>{
+  const release={
+    wrapperType:'collection',artistName:'Sophia Stel',collectionName:'I Do - EP',
+    artworkUrl100:'https://is1-ssl.mzstatic.com/image/thumb/sophia/i-do.jpg',
+    collectionViewUrl:'https://music.apple.com/us/album/i-do-ep/6797386072'
+  };
+  assert.equal(exactNamedReleaseArtwork([release],'SOPHIA STEL','I DO')?.artwork,
+    release.artworkUrl100);
+  assert.equal(exactNamedReleaseArtwork([{...release,artistName:'Another artist'}],'Sophia Stel','I Do'),null);
+  assert.equal(exactNamedReleaseArtwork([{...release,collectionName:'Different EP'}],'Sophia Stel','I Do'),null);
+
+  const calls=[];
+  const result=await findNovaCatalogueArtwork('Sophia Stel','I Do',async url=>{
+    const parts=new URL(url).searchParams;
+    calls.push([parts.get('country'),parts.get('entity')]);
+    return {ok:true,json:async()=>({
+      results:parts.get('entity')==='album' && parts.get('country')==='FR'?[release]:[]
+    })};
+  });
+  assert.equal(result?.artwork,release.artworkUrl100);
+  assert.deepEqual(calls,[['FR','song'],['US','song'],['FR','album']]);
 });
 
 test('unknown recordings never receive guessed covers and errors fail closed',async()=>{
