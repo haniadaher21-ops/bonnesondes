@@ -22,9 +22,15 @@ export function publicationDecision({at, startsOn, editions, complete, enabled, 
   const target = editionForCycle(at);
   const sameCycle = startsOn === target && (date === startsOn || (new Date(date + 'T12:00:00Z').getUTCDay() === 0 && hour >= 18));
   if (!sameCycle) return {status:'blocked',reason:'Hors du cycle dimanche 18 h – lundi'};
-  const successful = new Set(observations.filter(run => run.complete === true && run.fingerprint === fingerprint
-    && Date.parse(run.at) >= at.getTime() - 14*DAY && Date.parse(run.at) <= at.getTime()).map(run => run.id));
-  if (successful.size < 3) return {status:'blocked',reason:'Trois simulations complètes sont requises'};
+  const recent = observations.filter(run => run.complete === true && run.fingerprint === fingerprint
+    && Date.parse(run.at) >= at.getTime() - 14*DAY && Date.parse(run.at) <= at.getTime());
+  const successful = new Set(recent.map(run => run.id));
+  if (successful.size < 2) return {status:'blocked',reason:'Deux observations complètes sont requises'};
+  // Multiple checks in a single workflow do not prove reliability over time.
+  // Two distinct scheduled weekly editions must have passed with unchanged config/profile.
+  const scheduledWeeks = new Set(recent.filter(run => run.trigger === 'schedule')
+    .map(run => editionForCycle(new Date(run.at))));
+  if (scheduledWeeks.size < 2) return {status:'blocked',reason:'Deux semaines de brouillons planifiés réussis sont requises'};
   return {status:'publish',reason:'Contrôles satisfaits'};
 }
 
