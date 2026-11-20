@@ -5,6 +5,7 @@ on:
     paths:
       - 'source/app/**'
       - 'source/public/**'
+      - 'source/editorial/editions.json'
       - 'source/next.config.ts'
       - '.github/workflows/site-deploy.yml'
   workflow_dispatch:
