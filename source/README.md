@@ -186,9 +186,10 @@ La configuration par étapes, les comptes requis, les coûts et les procédures
 de révocation sont décrits dans [le guide d’automatisation](docs/automation-setup.md).
 Le brouillon hebdomadaire est programmé le dimanche à 17 h 30 (Europe/Paris),
 avec collecte et vérification privées, sans publication. Pour le suspendre,
-règle la variable Actions `WEEKLY_DRAFT_PAUSED` à `true`. Les collectes
-quotidiennes (`COLLECTION_ENABLED`) et la publication automatique
-(`AUTO_PUBLISH_ENABLED`) restent désactivées.
+règle la variable Actions `WEEKLY_DRAFT_PAUSED` à `true`. La collecte quotidienne est planifiée à 9 h 17 (Europe/Paris), indépendante
+et sans publication ; définis `DAILY_COLLECTION_PAUSED=true` dans les variables
+Actions pour la suspendre. La publication automatique (`AUTO_PUBLISH_ENABLED`)
+reste désactivée.
 ### Release de l’interface
 
 Le [guide de première connexion](docs/interface-release.md) décrit la préparation
