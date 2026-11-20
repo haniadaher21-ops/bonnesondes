@@ -12,7 +12,7 @@ import TastePreferences from './taste-preferences';
 
 const pages = [
   ['rotation', 'Sélection'], ['radio', 'Radios'], ['playlists', 'Playlists'],
-  ['live', 'Live'], ['mix', 'Mix'], ['library', 'Ma collection'],
+  ['live', 'Live'], ['mix', 'Mix'], ['editions', 'Archives'], ['library', 'Ma collection'],
 ] as const;
 type Page = typeof pages[number][0] | 'archive' | 'preferences';
 const formatLabels: Record<Format, string> = {
@@ -68,6 +68,7 @@ function Section({ label, title, children, id }: { label?: string; title: string
 export default function Journal() {
   const [page, setPage] = useState<Page>('rotation');
   const [issue, setIssue] = useState(issues[0]);
+  const [archivedEditionDate, setArchivedEditionDate] = useState<string | null>(null);
   const [library, setLibrary] = useState<Library>(emptyLibrary);
   const [ready, setReady] = useState(false);
   const [storageMessage, setStorageMessage] = useState('');
@@ -93,9 +94,12 @@ export default function Journal() {
     const readHash = () => {
       const hash = location.hash.slice(1);
       const match = pages.find(([name]) => name === hash);
-      setPage(hash === 'archive' || hash === 'preferences' ? hash : match?.[0] ?? 'rotation');
+      const editionDate = hash.startsWith('editions/') ? hash.slice('editions/'.length) : null;
+      const archived = editionDate && issues.some(edition => edition.startsOn === editionDate);
+      setArchivedEditionDate(archived ? editionDate : null);
+      setPage(editionDate ? 'editions' : hash === 'archive' || hash === 'preferences' ? hash : match?.[0] ?? 'rotation');
       setMobileOpen(false);
-      if (match || hash === 'archive' || hash === 'preferences') window.scrollTo({ top: 0, behavior: 'instant' });
+      if (match || editionDate || hash === 'archive' || hash === 'preferences') window.scrollTo({ top: 0, behavior: 'instant' });
     };
     readHash();
     window.addEventListener('hashchange', readHash);
@@ -256,6 +260,11 @@ export default function Journal() {
     return inView && (!format || item.format === format) && (!mood || item.mood === mood)
       && (!source || item.source === source) && (!duration || (item.minutes != null && item.minutes <= Number(duration)));
   });
+  // Published editions are immutable snapshots, not a collection of mutable recommendations.
+  // Include the active week as well, so visitors can open an issue directly by date.
+  const browsableEditions = issues.filter(edition => edition.startsOn <= issue.startsOn)
+    .sort((a, b) => b.startsOn.localeCompare(a.startsOn));
+  const archivedIssue = browsableEditions.find(edition => edition.startsOn === archivedEditionDate);
   const featured = issue.featured;
 
   return <>
@@ -276,7 +285,7 @@ export default function Journal() {
     <main className="shell" id="main-content">
       {storageMessage && <p className="empty" role="status">{storageMessage}</p>}
       {page === 'rotation' && <>
-        <div className="issue-line"><span>Journal musical</span><span>N° {issue.number} <b> / </b> {issue.label}</span></div>
+        <div className="issue-line"><span>Journal musical</span><span>N° {issue.number} <b> / </b> <a className="issue-date-link" href={"#editions/" + issue.startsOn} aria-label={"Voir l’édition du " + dateLabel(issue.startsOn)}>{issue.label}</a></span></div>
         <header className="intro">
           <h1>Bonnes Ondes<span>.</span></h1>
           <div className="intro-aside"><h2>La sélection de la semaine</h2><p>Des disques, des radios et des concerts choisis chaque semaine.</p>
@@ -301,6 +310,40 @@ export default function Journal() {
         <Section label="SUR LES ONDES" title="Radios et mixes">{cards(issue.mixes)}</Section>
         <Section label="SUR SPOTIFY" title="Les playlists de la semaine">{cards(issue.playlists, true)}</Section>
         <Section label="LIVE" title="Performances à découvrir">{cards(issue.live.slice(0, 3), true)}</Section>
+      </>}
+
+      {page === 'editions' && <>
+        <PageHeading label="LES ÉDITIONS" title="Archives des éditions" note="Toutes les sélections hebdomadaires de Bonnes Ondes, conservées dans leur version d’origine. Choisis une date pour retrouver les albums, émissions, playlists et performances recommandés cette semaine-là." />
+        {archivedIssue ? <>
+          <a className="text-link editions-back" href="#editions"><ArrowRight className="editions-back-icon" size={16} /> Toutes les éditions</a>
+          <div className="edition-detail-heading">
+            <p className="eyebrow">ÉDITION N° {archivedIssue.number}{archivedIssue.startsOn === issue.startsOn ? ' · ÉDITION ACTUELLE' : ''}</p>
+            <h2>Semaine du {dateLabel(archivedIssue.startsOn)}</h2>
+            <p>{archivedIssue.label}</p>
+          </div>
+          <Section label="DISQUES" title="Albums recommandés">{cards(archivedIssue.albums)}</Section>
+          <Section label="SUR LES ONDES" title="Émissions et mixes">
+            <p className="edition-featured-note">Mix de la semaine : <strong>{archivedIssue.featured.title}</strong></p>
+            {cards(archivedIssue.mixes)}
+          </Section>
+          <Section label="SUR SPOTIFY" title="Playlists">{cards(archivedIssue.playlists, true)}</Section>
+          <Section label="LIVE" title="Performances à découvrir">{cards(archivedIssue.live, true)}</Section>
+        </> : <>
+          <div className="edition-list" role="list" aria-label="Éditions classées par date, de la plus récente à la plus ancienne">
+            {browsableEditions.map(edition => <a role="listitem" key={edition.startsOn}
+              className="edition-list-item" href={'#editions/' + edition.startsOn}
+              aria-label={'Voir l’édition du ' + dateLabel(edition.startsOn)}>
+              <span className="edition-list-number">N° {edition.number}</span>
+              <span className="edition-list-main">
+                <strong>{dateLabel(edition.startsOn)}</strong>
+                <span>{edition.label}</span>
+              </span>
+              <span className="edition-list-counts">{edition.albums.length} albums · {edition.mixes.length} émissions et mixes · {edition.live.length} lives</span>
+              {edition.startsOn === issue.startsOn && <span className="edition-list-current">En cours</span>}
+              <ArrowRight size={19} aria-hidden="true" />
+            </a>)}
+          </div>
+        </>}
       </>}
 
       {page === 'radio' && <>
