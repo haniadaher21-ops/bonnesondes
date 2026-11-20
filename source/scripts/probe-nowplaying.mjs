@@ -13,11 +13,12 @@ async function probe(name,url) {
       if(typeof value==='string')return value.slice(0,80);
       return value;
     };
+    const excerpt = name.startsWith('Nova Reader') ? body.slice(Math.max(0,body.search(/C'ÉTAIT QUOI CE TITRE|C’ÉTAIT QUOI CE TITRE/i)-150),Math.max(0,body.search(/C'ÉTAIT QUOI CE TITRE|C’ÉTAIT QUOI CE TITRE/i))+1300) : undefined;
     const matches=name.startsWith('Tuneping') && Array.isArray(json?.data)
       ? json.data.slice(0,50).map(({id,name,stream_url,metadata,homepage,station,artist,title,classification,confirmed_at})=>({id:id??station?.id,name:name??station?.name,stream_url,metadata,homepage,artist,title,classification,confirmed_at})):undefined;
     const routeKeys=name==='Nova routes' && json?.routes
       ? Object.keys(json.routes).filter(k=>['radio-tracks','cqct','/radios','/track'].some(fragment=>k.includes(fragment))) : undefined;
-    console.log(JSON.stringify({name,status:res.status,allowOrigin:res.headers.get('access-control-allow-origin'),contentType:res.headers.get('content-type'),size:body.length,sample:name==='Nova routes'?undefined:sample(json),routeKeys,matches}));
+    console.log(JSON.stringify({name,status:res.status,allowOrigin:res.headers.get('access-control-allow-origin'),contentType:res.headers.get('content-type'),size:body.length,sample:name==='Nova routes'?undefined:sample(json),routeKeys,matches,excerpt}));
   }catch(e){console.log(JSON.stringify({name,error:e.name||'FetchError',message:e.message?.slice(0,140)}));}
 }
 await probe('Nova routes',root);
