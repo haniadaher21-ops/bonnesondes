@@ -40,6 +40,8 @@ nav .library-nav { display: flex; align-items: center; gap: 7px; padding: 7px 12
 .eyebrow, .issue-line, .art-stamp, .footer > span { font: 500 11px/1.45 var(--mono); letter-spacing: .13em; text-transform: uppercase; }
 .issue-line span:first-child, .eyebrow { color: var(--accent); }
 .issue-line b { font-weight: 400; margin-inline: 3px; opacity: .55; }
+.issue-date-link { text-underline-offset: 3px; text-decoration: underline; text-decoration-color: transparent; }
+.issue-date-link:hover, .issue-date-link:focus-visible { color: var(--accent); text-decoration-color: currentColor; }
 .intro { display: grid; grid-template-columns: minmax(0, 1fr) 252px; align-items: stretch; border-bottom: 1px solid var(--line); }
 .intro h1 { font: 900 clamp(68px, 8vw, 138px)/.89 var(--sans); letter-spacing: -.085em; text-transform: uppercase; padding: 22px 13px 22px 0; }
 .intro-aside { padding: 15px 0 13px 17px; border-left: 1px solid var(--line); align-content: center; }
