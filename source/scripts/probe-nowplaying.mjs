@@ -56,3 +56,12 @@ await Promise.all([
   ['Tuneping Nova la nuit','https://api.tuneping.com/v1/stations?q=nova%20la%20nuit&country=FR&limit=50'],
 
 ].map(([name,url])=>probe(name,url)));
+
+try{
+const res=await fetch('https://r.jina.ai/https://www.nova.fr/radios/nouvo-nova/',{
+ method:'OPTIONS',
+ headers:{Origin:'https://haniadaher21-ops.github.io','Access-Control-Request-Method':'GET','Access-Control-Request-Headers':'x-cache-tolerance,x-respond-with,x-target-selector'},
+ signal:AbortSignal.timeout(10000)
+});
+console.log(JSON.stringify({name:'Nova CORS preflight',status:res.status,allowOrigin:res.headers.get('access-control-allow-origin'),allowHeaders:res.headers.get('access-control-allow-headers'),allowMethods:res.headers.get('access-control-allow-methods')}));
+}catch(error){console.log(JSON.stringify({name:'Nova CORS preflight',error:String(error)}));}
