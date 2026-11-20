@@ -12,9 +12,9 @@ import TastePreferences from './taste-preferences';
 
 const pages = [
   ['rotation', 'Sélection'], ['radio', 'Radios'], ['playlists', 'Playlists'],
-  ['live', 'Live'], ['mix', 'Mix'], ['archive', 'Historique d’écoute'], ['library', 'Ma collection'],
+  ['live', 'Live'], ['mix', 'Mix'], ['library', 'Ma collection'],
 ] as const;
-type Page = typeof pages[number][0] | 'preferences';
+type Page = typeof pages[number][0] | 'archive' | 'preferences';
 const formatLabels: Record<Format, string> = {
   Album: 'Album', 'Radio show': 'Émission radio', Playlist: 'Playlist', 'Live session': 'Session live', Track: 'Morceau',
 };
@@ -93,9 +93,9 @@ export default function Journal() {
     const readHash = () => {
       const hash = location.hash.slice(1);
       const match = pages.find(([name]) => name === hash);
-      setPage(hash === 'preferences' ? hash : match?.[0] ?? 'rotation');
+      setPage(hash === 'archive' || hash === 'preferences' ? hash : match?.[0] ?? 'rotation');
       setMobileOpen(false);
-      if (match || hash === 'preferences') window.scrollTo({ top: 0, behavior: 'instant' });
+      if (match || hash === 'archive' || hash === 'preferences') window.scrollTo({ top: 0, behavior: 'instant' });
     };
     readHash();
     window.addEventListener('hashchange', readHash);
@@ -265,7 +265,7 @@ export default function Journal() {
         <a className="brand" href="#rotation" aria-label="Accueil Bonnes Ondes"><img className="brand-mark" src={(process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/bonnes-ondes-mark.svg'} alt="" width="33" height="33" />Bonnes Ondes<span className="brand-dot">.</span></a>
         <button className="menu-button icon-button" onClick={() => setMobileOpen(!mobileOpen)} aria-expanded={mobileOpen} aria-controls="main-nav" aria-label="Afficher ou masquer le menu">{mobileOpen ? <X /> : <Menu />}</button>
         <nav id="main-nav" aria-label="Navigation principale" className={mobileOpen ? 'nav-open' : ''}>
-          {pages.map(([key, label]) => <a href={'#' + key} key={key} aria-current={page === key || (page === 'preferences' && key === 'library') ? 'page' : undefined}
+          {pages.map(([key, label]) => <a href={'#' + key} key={key} aria-current={page === key || ((page === 'preferences' || page === 'archive') && key === 'library') ? 'page' : undefined}
             className={key === 'library' ? 'library-nav' : undefined}>
             {key === 'library' && <Bookmark size={15} />}{label}
           </a>)}
