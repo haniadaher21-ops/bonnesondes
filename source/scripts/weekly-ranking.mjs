@@ -47,6 +47,24 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
     Loved: 'Coup de cœur', Interesting: 'Intéressant', 'Worth revisiting': 'À réécouter', 'Not for me': 'Pas pour moi',
   })[feedback.reaction] + ' »' : '');
 
+  // Apply reactions to genuinely related future discoveries, never to an unrelated
+  // artist merely because a video came from the same radio or YouTube channel.
+  const priorReactions = profile.signals.items.filter(entry =>
+    entry.id !== item.id && (entry.reaction === 'Loved' || entry.reaction === 'Not for me'));
+  const reactionBalance = entries => entries.reduce((total, entry) =>
+    total + (entry.reaction === 'Loved' ? 1 : -1), 0);
+  const artistMatches = priorReactions.filter(entry =>
+    normalized(entry.creator) && normalized(entry.creator) === normalized(item.creator));
+  const artistBalance = reactionBalance(artistMatches);
+  signal(artistBalance > 0, 20, 'Autre contenu d’un artiste déjà apprécié');
+  signal(artistBalance < 0, -28, 'Autre contenu d’un artiste déjà écarté');
+  const styleMatches = priorReactions.filter(entry =>
+    (normalized(entry.genre) && normalized(entry.genre) === normalized(item.genre))
+    || (normalized(entry.mood) && normalized(entry.mood) === normalized(item.mood)));
+  const styleBalance = reactionBalance(styleMatches);
+  signal(styleBalance > 0, 7, 'Genre ou ambiance déjà apprécié');
+  signal(styleBalance < 0, -12, 'Genre ou ambiance déjà écarté');
+
   const date = item.releaseDate ?? item.date;
   const age = isoDate(date) ? (Date.parse(today) - Date.parse(date)) / DAY : undefined;
   const freshness = age >= 0 ? Math.max(0, 28 - age) : 0;
