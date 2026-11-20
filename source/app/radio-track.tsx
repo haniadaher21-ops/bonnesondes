@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import type { RadioMetadata } from './content';
 import { parseNovaNowPlaying } from './nova-nowplaying.mjs';
 import { radioArtworkUrl } from './radio-artwork.mjs';
+import { findNovaCatalogueArtwork } from './nova-catalogue-artwork.mjs';
 
 type BroadcastStep = {
   embedType: string;
@@ -48,11 +49,13 @@ async function readOnAir(response: Response, metadata: RadioMetadata): Promise<O
   return { title: current.title, artist, artwork: radioArtworkUrl(current.visual) };
 }
 
-function BroadcastArtwork({ artwork, title, isNts }: { artwork: string; title: string; isNts: boolean }) {
+function BroadcastArtwork({ artwork, title, isNts, onFailure }: {
+  artwork: string; title: string; isNts: boolean; onFailure?: () => void;
+}) {
   const [failed, setFailed] = useState(false);
   if (failed) return null;
   return <img className="station-cover" src={artwork} alt={isNts ? 'Visuel de l’émission ' + title : 'Pochette du morceau ' + title}
-    width={88} height={88} loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} />;
+    width={88} height={88} loading="lazy" referrerPolicy="no-referrer" onError={() => { setFailed(true); onFailure?.(); }} />;
 }
 
 export default function RadioTrack({ metadata, saveTrack, compact = false }: {
@@ -60,6 +63,10 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
 }) {
   const [track, setTrack] = useState<OnAir | null>(null);
   const [loading, setLoading] = useState(true);
+  const [failedArtwork, setFailedArtwork] = useState<{ key: string; urls: string[] }>({key:'',urls:[]});
+  const [catalogueArtwork, setCatalogueArtwork] = useState<{
+    key: string; result: { artwork: string; storeUrl: string } | null;
+  } | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -91,16 +98,50 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
 
   const isNts = metadata.provider === 'nts';
   const isNova = metadata.provider === 'nova-page';
+  const artKey = metadata.endpoint + '|' + (track?.artist ?? '') + '|' + (track?.title ?? '');
+  const failedUrls = failedArtwork.key === artKey ? failedArtwork.urls : [];
+  const directArtwork = track?.artwork && !failedUrls.includes(track.artwork) ? track.artwork : undefined;
+  const found = catalogueArtwork?.key === artKey ? catalogueArtwork.result : null;
+  const matchedArtwork = found?.artwork && !failedUrls.includes(found.artwork) ? found.artwork : undefined;
+  const displayedArtwork = directArtwork || matchedArtwork;
+  const usingCatalogue = isNova && !directArtwork && !!matchedArtwork;
+  const trackForSave = track ? { ...track, artwork: displayedArtwork } : null;
+
+  // A new image is only searched for if Nova has no usable official cover,
+  // or if the official image fails to load in the browser.
+  useEffect(() => {
+    if (!isNova || !track?.artist || directArtwork || catalogueArtwork?.key === artKey) return;
+    let mounted = true;
+    void findNovaCatalogueArtwork(track.artist, track.title).then(result => {
+      if (mounted) setCatalogueArtwork({ key: artKey, result });
+    });
+    return () => { mounted = false; };
+  }, [isNova, track?.artist, track?.title, directArtwork, artKey, catalogueArtwork?.key]);
+
+  const markArtworkFailed = () => {
+    if (!displayedArtwork) return;
+    setFailedArtwork(prev => ({
+      key: artKey,
+      urls: prev.key === artKey ? [...new Set([...prev.urls, displayedArtwork])] : [displayedArtwork],
+    }));
+  };
+  const cover = displayedArtwork && <div className="station-cover-group">
+    <BroadcastArtwork key={displayedArtwork} artwork={displayedArtwork} title={track?.title ?? ''} isNts={isNts}
+      onFailure={markArtworkFailed} />
+    {usingCatalogue && found?.storeUrl && <a className="station-cover-store" href={found.storeUrl}
+      target="_blank" rel="noopener noreferrer" title="Voir ce morceau sur l’iTunes Store">Sur iTunes</a>}
+  </div>;
+
   if (compact) {
     return <div className="station-now-playing" aria-live="polite">
       <p className="eyebrow">{isNts ? 'ÉMISSION EN DIRECT' : isNova ? 'DERNIER TITRE DIFFUSÉ' : 'EN CE MOMENT'}</p>
       {track ? <div className="station-track-layout">
-        {track.artwork && <BroadcastArtwork key={track.artwork} artwork={track.artwork} title={track.title} isNts={isNts} />}
+        {cover}
         <div className="station-track-copy">
           <strong className="station-track-title">{track.title}</strong>
           {!isNts && track.artist && <p className="station-track-artist">{track.artist}</p>}
           {isNova && track.playedAt && <p className="station-track-time">À {track.playedAt}, selon Nova</p>}
-          {!isNts && saveTrack(track)}
+          {!isNts && trackForSave && saveTrack(trackForSave)}
         </div>
       </div> : <p className="station-track-unavailable">
         {loading ? 'Chargement du direct…' : isNts ? 'Émission indisponible pour le moment.' : isNova ? 'Dernier titre Nova indisponible pour le moment.' : 'Titre indisponible pour le moment.'}
@@ -110,11 +151,11 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
   return <div className="radio-track" aria-live="polite">
     <p className="eyebrow">{isNts ? 'Émission en cours' : isNova ? 'Dernier titre identifié chez Nova' : 'À l’antenne'}</p>
     {track ? <div className="station-track-layout">
-      {track.artwork && <BroadcastArtwork key={track.artwork} artwork={track.artwork} title={track.title} isNts={isNts} />}
+      {cover}
       <div className="station-track-copy"><strong>{track.title}</strong>{track.artist && <p>{track.artist}</p>}{track.playedAt && <p>Diffusé à {track.playedAt}, heure de Paris · selon Nova</p>}</div>
     </div>
       : <p>{isNts ? 'Émission indisponible pour le moment.' : isNova ? 'Aucun titre récent confirmé par Nova. Réessaie dans quelques instants.' : 'Titre indisponible pour le moment.'}</p>}
-    {!isNts && track && saveTrack(track)}
+    {!isNts && trackForSave && saveTrack(trackForSave)}
     {isNova && <a className="text-link" href="https://jina.ai/reader/" target="_blank" rel="noopener noreferrer">Données de Nova via Jina Reader</a>}
     {isNts && <a className="text-link" href="https://www.nts.live/supporters" target="_blank" rel="noopener noreferrer">Titres en direct avec NTS Supporters ↗</a>}
   </div>;
