@@ -24,7 +24,7 @@ test('NTS cards show the current broadcast and not a song-saving button', () => 
   assert.match(radio, /channel\.channel_name === metadata\.channel/);
   assert.match(radio, /now\?\.broadcast_title/);
   assert.match(radio, /isNts \? 'ÉMISSION EN DIRECT'/);
-  assert.match(radio, /!isNts && saveTrack\(track\)/);
+  assert.match(radio, /!isNts && trackForSave && saveTrack\(trackForSave\)/);
   assert.ok(content.includes("name: 'NTS 1'"));
   assert.ok(content.includes("name: 'NTS 2'"));
 });
