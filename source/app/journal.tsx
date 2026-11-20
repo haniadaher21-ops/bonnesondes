@@ -19,14 +19,14 @@ const formatLabels: Record<Format, string> = {
   Album: 'Album', 'Radio show': 'Émission radio', Playlist: 'Playlist', 'Live session': 'Session live', Track: 'Morceau',
 };
 const viewLabels: Record<string, string> = {
-  Saved: 'Favoris', 'All discoveries': 'Toutes les découvertes', Listened: 'Déjà écouté',
+  Saved: 'Favoris', 'All discoveries': 'Toutes les découvertes',
   Loved: 'Coup de cœur', Interesting: 'Intéressant', 'Not for me': 'Pas pour moi',
   'Worth revisiting': 'À réécouter',
 };
 const reactions = ['Loved', 'Not for me'] as const;
 // Keep existing localStorage/profile reaction values readable for older collections.
 type Reaction = 'Loved' | 'Interesting' | 'Not for me' | 'Worth revisiting';
-type Entry = { saved?: boolean; listened?: boolean; listenedAt?: string; reaction?: Reaction };
+type Entry = { saved?: boolean; reaction?: Reaction };
 type Library = { entries: Record<string, Entry>; playlists: Recommendation[]; radioTracks: Record<string, Recommendation>; curators: string[] };
 const emptyLibrary: Library = { entries: {}, playlists: [], radioTracks: {}, curators: [] };
 const storageKey = 'off-frequency.library.v1';
@@ -252,15 +252,11 @@ export default function Journal() {
   const libraryResults = all.filter(item => {
     const entry = library.entries[item.id];
     const inView = libraryView === 'All discoveries' || (libraryView === 'Saved' && entry?.saved)
-      || (libraryView === 'Listened' && entry?.listened) || entry?.reaction === libraryView;
+      || entry?.reaction === libraryView;
     return inView && (!format || item.format === format) && (!mood || item.mood === mood)
       && (!source || item.source === source) && (!duration || (item.minutes != null && item.minutes <= Number(duration)));
   });
-  const listenedItems = all.filter(item => library.entries[item.id]?.listened)
-    .sort((a, b) => (Date.parse(library.entries[b.id]?.listenedAt ?? '') || 0)
-      - (Date.parse(library.entries[a.id]?.listenedAt ?? '') || 0));
   const featured = issue.featured;
-  const currentEntry = selected ? library.entries[selected.id] : undefined;
 
   return <>
     <a className="skip-link" href="#main-content">Aller au contenu</a>
@@ -359,16 +355,8 @@ export default function Journal() {
       </>}
 
       {page === 'archive' && <>
-        <PageHeading label="TON PARCOURS MUSICAL" title="Historique d’écoute" note="Retrouve les morceaux et découvertes que tu as marqués « Déjà écouté »." />
-        <section aria-label="Tes écoutes">
-          <h2 className="history-page-title">Tes écoutes</h2>
-          {listenedItems.length ? cards(listenedItems, false, true)
-            : <p className="empty">Ton historique est vide. Ouvre une découverte et coche « Déjà écouté » pour la retrouver ici.</p>}
-        </section>
-        <Section label="À REDÉCOUVRIR" title="Les archives de Bonnes Ondes">
-          <p className="history-archive-note">Ces sélections plus anciennes ne sont pas automatiquement comptées comme écoutées.</p>
-          {cards(archive, false, true)}
-        </Section>
+        <PageHeading label="À RÉÉCOUTER" title="Historique d’écoute" note="Retrouve ici toutes les découvertes conservées dans l’ancien espace Archives de Bonnes Ondes." />
+        {archive.length ? cards(archive, false, true) : <p className="empty">Aucun contenu dans l’historique pour le moment.</p>}
       </>}
 
       {page === 'library' && <>
@@ -378,7 +366,7 @@ export default function Journal() {
             <a className="text-link" href="#preferences">Modifier mon profil musical <ArrowRight size={14} /></a>
             <div className="filters library-filters">
               <label className="filter">Afficher<select value={libraryView} onChange={event => setLibraryView(event.target.value)}>
-                {['Saved', 'All discoveries', 'Listened', ...reactions].map(value => <option key={value} value={value}>{viewLabels[value]}</option>)}
+                {['Saved', 'All discoveries', ...reactions].map(value => <option key={value} value={value}>{viewLabels[value]}</option>)}
               </select></label>
               {filter('Format', format, setFormat, [...new Set(all.map(item => item.format))])}
               {filter('Ambiance', mood, setMood, options(all, 'mood'))}
@@ -392,23 +380,22 @@ export default function Journal() {
           </section>
           <aside className="history-panel" aria-labelledby="history-panel-title">
             <div className="history-panel-heading">
-              <p className="eyebrow">TES ÉCOUTES</p>
+              <p className="eyebrow">À RÉÉCOUTER</p>
               <h2 id="history-panel-title">Historique d’écoute</h2>
-              <p>Les titres que tu as marqués « Déjà écouté ».</p>
+              <p>Les sélections conservées dans les anciennes archives.</p>
             </div>
-            {listenedItems.length ? <ol className="history-list" aria-label="Historique d’écoute défilant">
-              {listenedItems.map((item, index) => <li key={item.id}>
+            {archive.length ? <ol className="history-list" aria-label="Historique d’écoute défilant">
+              {archive.map((item, index) => <li key={item.id}>
                 <button type="button" className="history-entry" onClick={() => setSelected(item)}>
                   <span className="history-art"><Artwork item={item} index={index} /></span>
                   <span className="history-entry-copy">
                     <strong>{item.title}</strong>
                     <span>{item.creator || item.source}</span>
-                    {library.entries[item.id]?.listenedAt && <time dateTime={library.entries[item.id].listenedAt}>{dateLabel(library.entries[item.id].listenedAt!.slice(0, 10))}</time>}
                   </span>
                   <ArrowUpRight size={15} aria-hidden="true" />
                 </button>
               </li>)}
-            </ol> : <p className="history-empty">Aucune écoute pour le moment. Coche « Déjà écouté » dans la fiche d’un contenu pour commencer.</p>}
+            </ol> : <p className="history-empty">Aucun contenu archivé pour le moment.</p>}
             <a className="text-link history-full-link" href="#archive">Voir tout l’historique <ArrowRight size={15} /></a>
           </aside>
         </div>
@@ -453,10 +440,6 @@ export default function Journal() {
         <Player item={selected} />
         <div className="dialog-actions"><SourceLink item={selected}>{selected.format === 'Track' ? 'Rechercher sur Spotify' : (selected.format === 'Album' || !selected.embed ? 'Écouter sur ' : 'Ouvrir sur ') + selected.source}</SourceLink>{saveButton(selected)}</div>
         <div className="feedback">
-          <label><input type="checkbox" checked={!!currentEntry?.listened} onChange={event => {
-            const checked = event.target.checked;
-            updateEntry(selected.id, entry => ({ ...entry, listened: checked, listenedAt: checked ? new Date().toISOString() : undefined }));
-          }} /> Déjà écouté</label>
           <div className="dialog-reactions"><span>Ton avis</span>{reactionButtons(selected)}</div>
           {selected.format === 'Playlist' && selected.creator && <button className="text-link" aria-pressed={library.curators.includes(selected.creator)}
             onClick={() => favoriteCurator(selected.creator!)}><Music2 size={16} />{library.curators.includes(selected.creator) ? 'Retirer ce créateur des favoris' : 'Ajouter ce créateur aux favoris'}</button>}
