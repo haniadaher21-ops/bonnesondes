@@ -9,7 +9,7 @@ export function observationReport(report, diagnostics) {
     gaps:report.gaps,errors:report.errors,incremental:diagnostics.incremental,
     selected:Object.fromEntries(Object.entries(report.selected).map(([section,rows])=>[section,rows.map(row=>({
       id:row.item.id,title:row.item.title,creator:row.item.creator,source:row.item.source,provider:row.item.provider,
-      genre:row.item.genre,tags:row.item.tags ?? [],sourceId:row.item.sourceId,
+      genre:row.item.genre,tags:row.item.tags ?? [],sourceId:row.item.sourceId,mixKind:row.item.mixKind,
       url:row.item.url,sourceUrl:row.item.sourceUrl,releaseDate:row.item.releaseDate,
       editorialSource:row.item.editorialSource,editorialUrl:row.item.editorialUrl,
       editorialKind:row.item.editorialKind,editorialClaim:row.item.editorialClaim,
