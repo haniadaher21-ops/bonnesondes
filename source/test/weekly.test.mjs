@@ -7,7 +7,7 @@ import { legacyEdition } from '../scripts/editorial-files.mjs';
 import { discover } from '../scripts/discovery.mjs';
 import { linkedReleaseSources, primaryReleaseDate, verifyAlbums, verifyLives } from '../scripts/weekly-evidence.mjs';
 import { nextEditionMonday, weeklyShortlist } from '../scripts/weekly-ranking.mjs';
-import { livePerformer, excludesJazz, editorialEndorsement } from '../scripts/recommendation-policy.mjs';
+import { livePerformer, excludesJazz, editorialEndorsement, isFreshMusicMix } from '../scripts/recommendation-policy.mjs';
 
 const albumId = '0Fta5KudJiX6HpDWApUu8y';
 const labelUrl = 'https://www.subpop.com/releases/artist/record';
@@ -76,7 +76,7 @@ const album = (id, options = {}) => item(id, 'Album', { releaseDate: '2026-11-13
   verificationStatus: 'primary-verified', editorialSource:'Bandcamp Daily',
   editorialUrl:'https://daily.bandcamp.com/album-of-the-day/fixture-'+id.toLowerCase().replace(/[^a-z0-9]+/g,'-'),
   editorialKind:'curator-pick',editorialClaim:'Album of the Day',...options });
-const radio = (id, provider) => item(id, 'Radio show', {provider});
+const radio = (id, provider) => item(id, 'Radio show', {provider,mixKind:'dj-set',sourceId:'dj-'+id});
 const readyOptions = {
   sources: [], earlier: [legacyEdition], catalog: [], startsOn: nextEditionMonday(new Date('2026-11-18T19:00:00Z')), now: new Date('2026-11-18T19:00:00Z'),
 };
@@ -84,12 +84,12 @@ const completeCandidates = [
   album('Alpha'), album('Beta'), album('Gamma', {source: 'Autre label'}),
   album('Old', {releaseDate: '2025-11-13'}), album('Future', {releaseDate: '2026-11-20'}),
   item('Review', 'Album', {verificationStatus: 'release-date-needed'}),
-  item('NTS', 'Radio show', {url: 'https://www.nts.live/shows/show/episodes/replay', provider: 'NTS', date: '2025-01-01'}),
+  item('NTS', 'Radio show', {url: 'https://www.nts.live/shows/show/episodes/replay', provider: 'NTS',mixKind:'dj-set',sourceId:'nts-test',date: '2026-11-17'}),
   radio('Jazzafip', 'FIP'), radio('Nova Club', 'Radio Nova'),
   item('Playlist', 'Playlist', {url: 'https://open.spotify.com/playlist/' + playlistId, playlistOrigin: 'publisher-discovered'}),
-  item('Live', 'Live session', {minutes: 4.5, verificationStatus: 'performance-verified'}),
-  item('Live2', 'Live session', {minutes: 18, verificationStatus: 'performance-verified'}),
-  item('Live3', 'Live session', {minutes: 22, verificationStatus: 'performance-verified'}),
+  item('Live', 'Live session', {minutes: 4.5, sourceId:'npr',verificationStatus: 'performance-verified'}),
+  item('Live2', 'Live session', {minutes: 18, sourceId:'colors',verificationStatus: 'performance-verified'}),
+  item('Live3', 'Live session', {minutes: 22, sourceId:'kexp',verificationStatus: 'performance-verified'}),
   item('Unchecked', 'Live session'),
 ];
 
@@ -113,7 +113,7 @@ test('complete verified inputs give a valid draft and tastes change the radio an
   assert.equal(fip.draft.startsOn, manualDraft.startsOn);
   assert.equal(fip.draft.albumWindowStart, '2026-11-09');
   assert.equal(fip.draft.albumWindowStart, manualDraft.albumWindowStart);
-  assert.match(fip.draft.mixes[0].reason, /archive/);
+  assert.match(fip.draft.mixes[0].reason, /DJ set musical/);
   assert.deepEqual(fip.rejected.map(row => row.id), ['Future', 'Review', 'Jazzafip', 'Unchecked']);
   assert.ok(fip.rankings.some(row => row.item.id === 'Old'));
   assert.ok(!fip.draft.mixes.some(row => /jazz/i.test(row.title)));
@@ -216,14 +216,14 @@ test('verified artists are extracted from YouTube titles and never repeated acro
   assert.equal(livePerformer('Jorja Smith - Blue Lights | A COLORS SHOW'),'Jorja Smith');
   assert.equal(livePerformer('Rosalía: Tiny Desk Concert'),'Rosalía');
   assert.equal(livePerformer('Rachel Chinouriri - Pretty Girls (BBC Radio 1 Live Lounge)'),'Rachel Chinouriri');
-  const makeLive=(name,title)=>item(name,'Live session',{creator:livePerformer(title),title,minutes:6,verificationStatus:'performance-verified'});
+  const makeLive=(name,title)=>item(name,'Live session',{creator:livePerformer(title),title,sourceId: name.startsWith('slift')?'kexp':name,minutes:6,verificationStatus:'performance-verified'});
   const candidates=[
     makeLive('slift1','SLIFT - The Village (Live on KEXP)'),
     makeLive('slift2','SLIFT - Full Performance (Live on KEXP)'),
     makeLive('jorja','Jorja Smith - Blue Lights | A COLORS SHOW'),
     makeLive('rosalia','Rosalía: Tiny Desk Concert'),
     album('First'),album('Second'),album('Third'),
-    item('NTS','Radio show',{url:'https://www.nts.live/shows/show/episodes/other'}),
+    item('NTS','Radio show',{url:'https://www.nts.live/shows/show/episodes/other',mixKind:'dj-set',sourceId:'nts-test'}),
     radio('Nova Club','Radio Nova'),
     item('Playlist','Playlist',{url:'https://open.spotify.com/playlist/64WCJyxoGnhFHdDe6LYwNG'}),
   ];
@@ -294,4 +294,31 @@ test('a curator recommendation is not accepted merely by claiming a trusted publ
  const report=weeklyShortlist({...readyOptions,candidates:[untrusted],profile:emptyTasteProfile()});
  assert.equal(report.selected.albums.length,0);
  assert.equal(report.rejected[0].reason,'Aucune recommandation éditoriale vérifiée');
+});
+
+test('the weekly mix pool rejects interviews, old replays, talk shows and future broadcasts',()=>{
+ const base={format:'Radio show',mixKind:'dj-set',title:'Nova Danse : guest DJ set',date:'2026-11-20'};
+ assert.equal(isFreshMusicMix(base,'2026-11-23','2026-11-22'),true);
+ assert.equal(isFreshMusicMix({...base,date:'2026-11-15'},'2026-11-23','2026-11-22'),false);
+ assert.equal(isFreshMusicMix({...base,date:'2026-11-23'},'2026-11-23','2026-11-22'),false);
+ assert.equal(isFreshMusicMix({...base,title:'Interview de DJ'},'2026-11-23','2026-11-22'),false);
+ assert.equal(isFreshMusicMix({...base,title:'Invités dans Nova Club'},'2026-11-23','2026-11-22'),false);
+ assert.equal(isFreshMusicMix({...base,mixKind:undefined},'2026-11-23','2026-11-22'),false);
+ const candidates=[...completeCandidates,
+   radio('Nova talk','Radio Nova'),radio('Nova real','Radio Nova')].map(x=>x.id==='Nova talk'
+   ? {...x,title:'interview invité de la semaine',date:'2026-11-20'}:x);
+ const report=weeklyShortlist({...readyOptions,candidates,profile:emptyTasteProfile()});
+ assert.ok(!report.draft.mixes.some(x=>/interview/i.test(x.title)));
+ assert.ok(report.rejected.some(x=>x.id==='Nova talk'&&/DJ mix/.test(x.reason)));
+});
+
+test('three live performances must come from three distinct music studios',()=>{
+ const candidates=[...completeCandidates.filter(row=>row.format!=='Live session'),
+   ...['one','two','three','four'].map((id,index)=>item('Live '+id,'Live session',{
+     creator:'Artist '+id,sourceId:index===3?'colors':'npr',
+     minutes:10,verificationStatus:'performance-verified'}))];
+ const result=weeklyShortlist({...readyOptions,candidates,profile:emptyTasteProfile()});
+ assert.equal(result.selected.live.length,2);
+ assert.equal(result.gaps.live,1);
+ assert.equal(result.complete,false);
 });
