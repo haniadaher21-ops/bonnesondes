@@ -3,6 +3,7 @@ import {test} from 'node:test';
 import {collectYouTubeMixes,verifiedYouTubeMix,youtubeMixQueries} from '../scripts/youtube-mixes.mjs';
 import {isFreshMusicMix} from '../scripts/recommendation-policy.mjs';
 import {rollCandidates} from '../scripts/automation-policy.mjs';
+import {observationReport} from '../scripts/observation-report.mjs';
 
 const channelId='UC'+'A'.repeat(22);
 const channel=(subs=56000)=>({id:channelId,statistics:{subscriberCount:String(subs)}});
@@ -84,4 +85,22 @@ test('the real video must be timestamped before it enters the candidate rollup',
  const saved=rollCandidates([],[{...sample,collectedAt:now.toISOString()}],now);
  assert.equal(saved.length,1);
  assert.equal(saved[0].audienceVerified,true);
+});
+
+test('public preview preserves the verified YouTube audience evidence and embeddable player',()=>{
+ const candidate=verifiedYouTubeMix(video(),'2026-11-23','2026-11-22',channel());
+ const report=observationReport({
+  generatedAt:'2026-11-22T19:00:00Z',draft:{startsOn:'2026-11-23'},complete:true,
+  personalized:false,gaps:{},errors:[],selected:{youtube:[{
+    item:candidate,score:100,signals:[],publicReason:'Vrai DJ set reconnu',
+  }]},
+ },{
+  profileRevision:1,profileUpdatedAt:'2026-11-22T19:00:00Z',
+  profileSignalCounts:{},comparison:{},incremental:{},albumEvidence:[],
+  catalogues:[],sources:[],liveStatus:{},
+ });
+ assert.equal(report.selected.youtube[0].audienceVerified,true);
+ assert.equal(report.selected.youtube[0].embed.provider,'youtube');
+ assert.equal(report.selected.youtube[0].viewCount,12500);
+ assert.equal(report.selected.youtube[0].subscriberCount,56000);
 });
