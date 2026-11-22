@@ -68,7 +68,7 @@ export function validateEdition(edition, earlier = [], catalog = []) {
       continue;
     }
     const strictMixLineup=edition.mixPolicy==='nts-nova-youtube-v1';
-    const [min, max] = { albums: [3, 3], mixes: strictMixLineup ? [3,3] : [2, Infinity], playlists: [1, 1], live: [3, Infinity] }[group];
+    const [min, max] = { albums: [3, 3], mixes: strictMixLineup ? [3,5] : [2, Infinity], playlists: [1, 1], live: [3, Infinity] }[group];
     if (items.length < min || items.length > max) errors.push('Quota non respecté pour ' + group + '.');
     for (const item of items) {
       if (!item || item.format !== format || !text(item.id) || !text(item.title) || !text(item.source) || !text(item.reason)) {
@@ -123,6 +123,17 @@ export function validateEdition(edition, earlier = [], catalog = []) {
       && !/\b(?:electro|electronic|techno|edm|hard[ -]?house|tech[ -]?house|trance|dubstep)\b/i
         .test([item.title,item.mixStyle,...(item.tags??[])].join(' '))
       && sourceUrl(item.url)?.hostname==='www.youtube.com');
+    // Editorial FIP Tape journeys may supplement the NTS/Nova/YouTube trio.
+    // The supplement is allowlisted to verified episode URLs; arbitrary mixes
+    // cannot bypass the audience and style rules applied to YouTube.
+    const fipTapes=mixes.filter(item=>{
+      const url=sourceUrl(item?.url);
+      return item?.sourceId==='fip-tape' && item?.mixKind==='editorial-mixtape'
+        && item?.source==='FIP · Fip Tape'
+        && ['www.radiofrance.fr','radiofrance.fr'].includes(url?.hostname)
+        && /^\/fip\/podcasts\/fip-tape\/la-mixtape-de-[a-z0-9-]+-\d+\/?$/.test(url.pathname);
+    });
+    if(mixes.length!==3+fipTapes.length) errors.push('Les compléments aux mixes NTS, Nova et YouTube doivent être des épisodes FIP Tape vérifiés.');
     if(nova.length!==1)errors.push('Un vrai DJ set Radio Nova est obligatoire.');
     if(youtube.length!==1)errors.push('Un mix YouTube à audience vérifiée est obligatoire.');
     if(mixes.filter(item=>isNts(sourceUrl(item?.url))).length!==1)errors.push('Un unique mix NTS est obligatoire.');
