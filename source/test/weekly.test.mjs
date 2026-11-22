@@ -284,7 +284,7 @@ test('an older live matching tastes wins over a new unrelated live',()=>{
  const ranked=weeklyShortlist({...readyOptions,candidates,profile});
  const neutral=weeklyShortlist({...readyOptions,candidates,profile:emptyTasteProfile()});
  assert.equal(ranked.selected.live[0].item.id,'old');
- assert.ok(ranked.selected.live[0].score>ranked.selected.live[1].score);
+ assert.ok(ranked.selected.live[0].score>ranked.rankings.find(row=>row.item.id==='fresh').score);
  assert.equal(neutral.rankings.find(row=>row.item.id==='old').score,
    neutral.rankings.find(row=>row.item.id==='fresh').score);
 });
