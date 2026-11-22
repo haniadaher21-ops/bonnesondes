@@ -53,6 +53,7 @@ export function editorialEndorsement(item) {
     (['www.nova.fr','nova.fr'].includes(host) && /^\/news\/[a-z0-9-]*albums-immanquables-de-la-semaine[a-z0-9-]*\/?$/.test(path))
     || (host==='stereogum.com' && /^\/\d+\/album-of-the-week-[a-z0-9-]+\/reviews\/album-of-the-week\/?$/.test(path))
     || (host==='pitchfork.com' && /^\/story\/\d+-new-albums-you-should-listen-to-now-[a-z0-9-]+\/?$/.test(path))
+    || (['npr.org','www.npr.org'].includes(host) && /new-music-friday/.test(path))
   );
   if (!verified && !mediaPick) return;
   return {source:item.editorialSource,kind,url:url.origin+url.pathname,
