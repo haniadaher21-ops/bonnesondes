@@ -3,6 +3,8 @@ import { test } from 'node:test';
 import { discover, renderReport } from '../scripts/discovery.mjs';
 import { emptyTasteProfile, normalizeTasteProfile } from '../editorial/taste-profile.mjs';
 import configuredSources from '../editorial/sources.json' with {type:'json'};
+import { isDedicatedNovaMixEpisode } from '../scripts/nova-mixes.mjs';
+import { isNovaMix } from '../scripts/recommendation-policy.mjs';
 
 const rss = items => '<rss><channel>' + items.join('') + '</channel></rss>';
 const xmlItem = (title, url, extra = '') => '<item><title>' + title + '</title><link>' + url
@@ -164,4 +166,37 @@ test('Nova Club is no longer a DJ recommendation source, and Nova Danse is a ver
  assert.equal(r.candidates.length,1);
  assert.equal(r.candidates[0].mixKind,'dj-set');
  assert.equal(r.candidates[0].date,'2026-11-20');
+});
+
+
+test('Nova Club episodes qualify only when clearly devoted to musical DJ sets',async()=>{
+ const src=configuredSources.find(x=>x.id==='nova-club-mixes');
+ assert.ok(src?.mode==='automatic');
+ const base='https://podcasts.nova.fr/radio-nova-nova-club/';
+ const fixture=rss([
+  xmlItem('Les news : Âme, Bicep et autres nouveautés',base+'202611181700-les-news'),
+  xmlItem('Le Club du Vendredi : Thundercat et un mix de Melvin !',base+'202611171700-club-melvin'),
+  xmlItem('Mix Bob Sinclar et DJ Yellow dans le Nova Club !',base+'202611201800-bob-sinclar-yellow'),
+  xmlItem('Tout en mix ! BOUKAN RECORDS aux platines !',base+'202611191800-boukan-mix'),
+  xmlItem('CASSIUS : Mix plus interview',base+'202611181200-cassius-mix-interview'),
+ ]);
+ const result=await discover({sources:[src],fetcher:async url=>
+  new Response(url===src.feed?fixture:'<html>Radio Nova</html>')});
+ assert.equal(result.candidates.length,2);
+ assert.ok(result.candidates.every(x=>x.novaMixVerified===true && isNovaMix(x)));
+ assert.equal(isDedicatedNovaMixEpisode('Paf et Regelegorila sont nos invités !',src.mixSelection),false);
+});
+
+test('Worldmix and Teuf d’appart are music series; stale episodes remain rejected by weekly freshness',async()=>{
+ for(const id of ['nova-worldmix','nova-teuf-appart']){
+  const src=configuredSources.find(x=>x.id===id);
+  assert.equal(src?.mode,'automatic');
+  const title=id==='nova-worldmix'?'Worldmix : un mix caribéen':'Teuf d’appart avec Get A Room';
+  const url=src.url+'/202611181500-set';
+  const result=await discover({sources:[src],fetcher:async target=>
+    new Response(target===src.feed?rss([xmlItem(title,url)]):'<html>Nova DJ set</html>')});
+  assert.equal(result.candidates.length,1);
+  assert.equal(result.candidates[0].novaMixVerified,true);
+  assert.equal(isNovaMix(result.candidates[0]),true);
+ }
 });
