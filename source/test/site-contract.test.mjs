@@ -62,9 +62,9 @@ test('live discovery has verified official sources beyond the initial three', ()
 test('album cards omit recommendation provenance while preserving listening links and editorial detail',()=> {
   const cardMarkup=ui.slice(ui.indexOf('const cards = '),ui.indexOf('const options = ',ui.indexOf('const cards = ')));
   assert.ok(cardMarkup.includes('Écouter sur Spotify'));
-  assert.doesNotMatch(cardMarkup,/Recommandé par/);
-  assert.doesNotMatch(cardMarkup,/item\\.editorialSource/);
-  assert.match(ui,/selected\\.editorialUrl/);
+  assert.ok(!cardMarkup.includes('Recommandé par'));
+  assert.ok(!cardMarkup.includes('item.editorialSource'));
+  assert.ok(ui.includes('selected.editorialUrl'));
 });
 
 test('album covers and titles open Spotify, while curator citations remain secondary',()=>{
