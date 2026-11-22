@@ -100,8 +100,20 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     if(prior){record.tags ??= prior.tags; if(!record.url){record.url=prior.url;record.listeningProofUrl=prior.listeningProofUrl;record.listeningMappingUrl=prior.listeningMappingUrl;}}
   }
   const evidence = filterConflictingDates(await verifyAlbums(uniqueRecords,fetcher));
-  const albums=evidence.flatMap(row=>row.candidate?[{...row.candidate,collectedAt:date,
-    discoverySource:previous.find(item=>normalized(item.title)===normalized(row.candidate.title) && normalized(item.creator)===normalized(row.candidate.creator))?.provider}]:[]);
+  // Multiple verified primary sources can resolve to one Spotify album.
+  // Never let a plain label catalogue overwrite the stronger editorial citation.
+  const byListeningUrl=new Map();
+  for(const row of evidence) {
+    if(!row.candidate) continue;
+    const candidate={...row.candidate,collectedAt:date,
+      discoverySource:previous.find(item=>normalized(item.title)===normalized(row.candidate.title)
+        && normalized(item.creator)===normalized(row.candidate.creator))?.provider};
+    const url=canonicalUrl(candidate.url);
+    const older=byListeningUrl.get(url);
+    if(!older || (!older.editorialKind && candidate.editorialKind)
+      || (older.editorialKind==='curator-pick' && candidate.editorialKind==='critic-pick')) byListeningUrl.set(url,candidate);
+  }
+  const albums=[...byListeningUrl.values()];
   const albumKeys = new Set(albums.map(item => canonicalUrl(item.url)));
   // Never carry a past verification into this run if its primary source is unavailable.
   const base = previous.filter(item => !albumKeys.has(canonicalUrl(item.url))).map(item=>
