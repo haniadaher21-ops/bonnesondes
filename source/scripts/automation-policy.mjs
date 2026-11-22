@@ -3,7 +3,8 @@ import { normalized } from './weekly-evidence.mjs';
 
 const DAY = 86400000;
 const publicFields = ['id','title','creator','format','source','publisher','url','sourceUrl','artwork','date','minutes',
-  'mood','season','genre','embed','officialVideo','videoSourceUrl'];
+  'mood','season','genre','embed','officialVideo','videoSourceUrl',
+  'editorialSource','editorialUrl','editorialClaim'];
 
 export function editionForCycle(at) {
   const date = parisDate(at);
