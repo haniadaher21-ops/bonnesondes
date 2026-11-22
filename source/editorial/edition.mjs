@@ -107,7 +107,11 @@ export function validateEdition(edition, earlier = [], catalog = []) {
     const nova=mixes.filter(item=>item?.sourceId==='nova-danse' && item?.mixKind==='dj-set'
       && sourceUrl(item.url)?.hostname==='podcasts.nova.fr');
     const youtube=mixes.filter(item=>item?.mixKind==='curated-mix' && item?.embed?.provider==='youtube'
-      && item?.audienceVerified===true && sourceUrl(item.url)?.hostname==='www.youtube.com');
+      && item?.audienceVerified===true && Number.isSafeInteger(item.viewCount) && item.viewCount>=100000
+      && item?.mixStyleVerified===true && ['rnb','soul','blues','pop','light-house','funk'].includes(item.mixStyle)
+      && !/\b(?:electro|electronic|techno|edm|hard[ -]?house|tech[ -]?house|trance|dubstep)\b/i
+        .test([item.title,item.mixStyle,...(item.tags??[])].join(' '))
+      && sourceUrl(item.url)?.hostname==='www.youtube.com');
     if(nova.length!==1)errors.push('Un vrai DJ set Radio Nova est obligatoire.');
     if(youtube.length!==1)errors.push('Un mix YouTube à audience vérifiée est obligatoire.');
     if(mixes.filter(item=>isNts(sourceUrl(item?.url))).length!==1)errors.push('Un unique mix NTS est obligatoire.');
