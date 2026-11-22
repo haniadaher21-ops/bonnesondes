@@ -78,8 +78,9 @@ export function ecmRelease(html, sourceUrl) {
 }
 
 export async function collectAlbumCatalogues({startsOn, today, fetcher = fetch, catalogues = []}) {
-  // Editorial discovery may revisit proven catalogue records from recent years, not only new releases.
-  const windowStart = new Date(Date.parse(startsOn) - 4 * 365 * 86400000).toISOString().slice(0, 10);
+  // Only inspect recent albums. Historical reviews are not new releases.
+  // A small buffer captures dates close to the boundary for subsequent checks.
+  const windowStart = new Date(Date.parse(startsOn) - 30 * 86400000).toISOString().slice(0, 10);
   const sources = [
     {name: 'Ninja Tune', url: 'https://old.ninjatune.net/widget/releases/catalogue/page%3A1/view%3Alist/type%3Arecord', parse: ninjaCatalogue},
     {name: 'Sub Pop', url: 'https://www.subpop.com/releases', parse: subpopCatalogue},
