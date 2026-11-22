@@ -358,3 +358,10 @@ input[type=checkbox] { accent-color: var(--accent); }
   .radio-dock-with-video { right: auto; left: max(18px, env(safe-area-inset-left)); bottom: calc(285px + env(safe-area-inset-bottom)); }
   .video-dock-foot { flex-wrap: wrap; }
 }
+
+/* Le lecteur de podcast reste monté hors des onglets, comme le lecteur YouTube. */
+.mix-dock { z-index: 26; }
+.mix-dock-audio { width: calc(100% - 24px); margin: 7px 12px 11px; display: block; }
+.mix-dock-soundcloud { display: block; width: 100%; height: 166px; border: 0; background: #fff; }
+.mix-dock-error { margin: 0 12px 10px; font-size: 12px; color: #f0af92; }
+.mix-launch .video-launch-play { background: #bd2724; }
