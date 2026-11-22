@@ -58,31 +58,33 @@
         "reason": "Rap indépendant inventif, production de Blockhead et écriture d’Aesop Rock : un disque aventureux sorti le 13 novembre, chroniqué par Pitchfork."
       },
       {
-        "id": "spotify-6H6497odidXH5VRnynYQnV",
-        "title": "Mek Do & Mend",
-        "creator": "Wonky Logic",
-        "source": "Brownswood Recordings",
-        "provider": "Brownswood Recordings",
-        "url": "https://open.spotify.com/album/6H6497odidXH5VRnynYQnV",
-        "sourceUrl": "https://wonkylogic.bandcamp.com/album/mek-do-mend",
-        "artwork": "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02c092a88cfc2957a6eb43be2a",
-        "date": "2026-11-11",
-        "releaseDate": "2026-11-11",
+        "id": "spotify-7I8TcuLTY8CTwXqVys8GD3",
+        "title": "Secret Language",
+        "creator": "Krill",
+        "source": "Stereogum",
+        "provider": "Exploding in Sound Records",
+        "url": "https://open.spotify.com/album/7I8TcuLTY8CTwXqVys8GD3",
+        "sourceUrl": "https://wheretheresakrilltheresaway.bandcamp.com/album/secret-language",
+        "artwork": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02000000000000000000000000",
+        "date": "2026-11-13",
+        "releaseDate": "2026-11-13",
         "embed": {
           "provider": "spotify",
-          "id": "6H6497odidXH5VRnynYQnV"
+          "id": "7I8TcuLTY8CTwXqVys8GD3"
         },
-        "editorialSource": "Soul Bag",
-        "editorialUrl": "https://www.soulbag.fr/wonky-logic-mek-do-mend/",
-        "genre": "Funk",
-        "tags": [
-          "soul",
-          "funk",
-          "experimental"
-        ],
+        "editorialSource": "Stereogum",
+        "editorialUrl": "https://stereogum.com/2517187/album-of-the-week-krill-secret-language/reviews/album-of-the-week",
+        "editorialKind": "curator-pick",
+        "editorialClaim": "Album of the Week",
+        "editorialPublishedAt": "2026-11-10",
         "verificationStatus": "primary-verified",
+        "genre": "Indie rock",
+        "tags": [
+          "indie rock",
+          "alternative rock"
+        ],
         "format": "Album",
-        "reason": "Grooves organiques, influences soul et funk, production inventive : le premier album de Wonky Logic, paru le 11 novembre chez Brownswood."
+        "reason": "Le retour de Krill après plus de dix ans : guitares indie singulières et textes introspectifs, élu Album of the Week par Stereogum."
       }
     ],
     "mixes": [
