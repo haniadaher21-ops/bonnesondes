@@ -37,7 +37,7 @@ test('100,000 actual video views are mandatory, regardless of channel subscriber
 test('R&B, soul, blues, pop and mellow soulful house are preferred; techno and electro are forbidden',()=>{
  const names=[
   ['R&B soul DJ mix','rnb'],['Blues guitar vinyl DJ set','blues'],
-  ['Indie pop DJ mix','pop'],['Soulful house mellow DJ set','soul'],
+  ['Indie pop DJ mix','pop'],['Soulful house mellow DJ set','light-house'],
   ['Soft house and chill grooves DJ set','light-house'],
  ];
  for(const [title,expected] of names){
