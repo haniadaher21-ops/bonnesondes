@@ -180,6 +180,44 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
       cpSync(join(root,path),join(staging,path),{recursive:true,verbatimSymlinks:true,mode:constants.COPYFILE_FICLONE});
     }
     await writeFile(join(staging,'editorial/editions.json'),JSON.stringify([...editions,draft],null,2)+'\n');
+    // An explicitly requested preview is isolated from the published editorial JSON.
+    if (env.BONNES_ONDES_PREVIEW_DIR) {
+      if (mode !== 'observe') throw new Error('La prévisualisation ne doit jamais publier.');
+      const journalFile = join(staging,'app/journal.tsx');
+      let journal = await readFile(journalFile,'utf8');
+      const currentSelection = 'const updateEdition = () => setIssue(selectEdition(issues) ?? issues[0]);';
+      const previewSelection = 'const updateEdition = () => setIssue(issues.at(-1) ?? issues[0]);';
+      const libraryKey = "const storageKey = 'off-frequency.library.v1';";
+      if (!journal.includes(currentSelection) || !journal.includes(libraryKey)) throw new Error('Interface de prévisualisation à revoir.');
+      journal = journal.replace(currentSelection, previewSelection).replace(libraryKey,
+        "const storageKey = 'off-frequency.library.preview-2026-11-23.v1';");
+      await writeFile(journalFile,journal);
+
+      // The preview must not modify the visitor's real profile or remote Supabase data.
+      const syncFile = join(staging,'app/profile-sync.tsx');
+      const sync = await readFile(syncFile,'utf8');
+      const syncConfig = "const config = {url: process.env.NEXT_PUBLIC_SUPABASE_URL ?? '', publicKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? ''};";
+      if (!sync.includes(syncConfig)) throw new Error('Synchronisation de prévisualisation à revoir.');
+      await writeFile(syncFile,sync.replace(syncConfig,"const config = {url: '', publicKey: ''};"));
+      const tasteFile = join(staging,'editorial/taste-profile.mjs');
+      const taste = await readFile(tasteFile,'utf8');
+      const tasteKey = "export const tasteProfileKey = 'off-frequency.taste-profile.v1';";
+      if (!taste.includes(tasteKey)) throw new Error('Profil de prévisualisation à revoir.');
+      await writeFile(tasteFile,taste.replace(tasteKey,
+        "export const tasteProfileKey = 'off-frequency.taste-profile.preview-2026-11-23.v1';"));
+      const route = join(staging,'app/previsualisation/2026-11-23');
+      await mkdir(route,{recursive:true});
+      await writeFile(join(route,'page.tsx'),`import Journal from '../../journal';
+export default function PreviewEdition() {
+  return <>
+    <div style={{padding:'12px 18px',background:'#f5e8cf',color:'#242424',textAlign:'center',fontSize:14,fontWeight:600}}>
+      Prévisualisation de l’édition du 23 novembre 2026. La sélection publique actuelle reste inchangée.
+    </div>
+    <Journal />
+  </>;
+}
+`);
+    }
     // Preserve the reviewed Next configuration, including public Supabase auth configuration.
     const build = spawnSync(process.execPath,['node_modules/next/dist/bin/next','build'], {
       cwd:staging,env:{...env,NEXT_PUBLIC_BASE_PATH:'/bonnesondes'},encoding:'utf8',
@@ -194,6 +232,11 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     const decision = publicationDecision({at:now,startsOn,editions,complete:true,
       enabled:mode === 'publish' ? env.AUTO_PUBLISH_ENABLED : 'false',observations:state.dryRuns,fingerprint});
     if (mode === 'observe') {
+      if (env.BONNES_ONDES_PREVIEW_DIR) {
+        await readFile(join(staging,'out/previsualisation/2026-11-23/index.html'),'utf8');
+        await mkdir(env.BONNES_ONDES_PREVIEW_DIR,{recursive:true});
+        cpSync(join(staging,'out'),env.BONNES_ONDES_PREVIEW_DIR,{recursive:true});
+      }
       state.dryRuns.push({id:env.GITHUB_RUN_ID ?? date,at:date,complete:true,fingerprint,
         trigger:env.GITHUB_EVENT_NAME === 'schedule' ? 'schedule' : 'manual'});
       await saveState();
