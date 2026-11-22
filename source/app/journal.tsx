@@ -9,7 +9,7 @@ import { editionShelf } from '../editorial/shelves.mjs';
 import RadioTrack, { type OnAir } from './radio-track';
 import ProfileSync from './profile-sync';
 import TastePreferences from './taste-preferences';
-import { playableYouTubeId, youtubeEmbedSrc } from './youtube-player.mjs';
+import { playableYouTubeId, youtubeEmbedSrc, youtubeThumbnailCandidates } from './youtube-player.mjs';
 import { collectionRecommendations, restoreLibrary, toggleSaved, libraryStorageKey } from './library-store.mjs';
 
 const pages = [
@@ -90,9 +90,21 @@ function PersistentYouTubePlayer({ item, expanded, onResize, onClose }: {
 
 function Artwork({ item, index = 0 }: { item: Recommendation; index?: number }) {
   const [failed, setFailed] = useState(false);
+  const [thumbnailAttempt, setThumbnailAttempt] = useState(0);
+  const thumbnails = youtubeThumbnailCandidates(item.embed?.provider === 'youtube' ? item.embed.id : undefined);
+  // Use the actual video ID for every YouTube item. Live sessions previously
+  // had no artwork, and hqdefault (4:3) often leaves thick black letterboxing.
+  const artworkUrl = thumbnails.length ? thumbnails[thumbnailAttempt] : item.artwork;
+  const handleArtworkError = () => {
+    if (thumbnails.length && thumbnailAttempt < thumbnails.length - 1) {
+      setThumbnailAttempt(attempt => attempt + 1);
+    } else {
+      setFailed(true);
+    }
+  };
   return <div className={`artwork ${item.format === 'Album' ? 'artwork-album' : ''} artwork-${index % 3}`}>
-    {item.artwork && !failed
-      ? <img src={item.artwork} alt="" loading="lazy" onError={() => setFailed(true)} />
+    {artworkUrl && !failed
+      ? <img key={artworkUrl} src={artworkUrl} alt="" loading="lazy" onError={handleArtworkError} />
       : <Disc3 size={91} strokeWidth={0.65} aria-hidden="true" />}
   </div>;
 }

@@ -14,3 +14,14 @@ test('YouTube player uses a single direct embed with explicit user-started autop
   assert.equal(youtubeEmbedSrc('K6en74gqBSM'),
     'https://www.youtube.com/embed/K6en74gqBSM?autoplay=1&playsinline=1&rel=0');
 });
+
+test('video thumbnails use 16:9 YouTube images first, with reliable fallbacks',async()=>{
+  const {youtubeThumbnailCandidates}=await import('../app/youtube-player.mjs');
+  assert.deepEqual(youtubeThumbnailCandidates('XQoGtWdpKoA'),[
+    'https://i.ytimg.com/vi/XQoGtWdpKoA/hq720.jpg',
+    'https://i.ytimg.com/vi/XQoGtWdpKoA/mqdefault.jpg',
+    'https://i.ytimg.com/vi/XQoGtWdpKoA/hqdefault.jpg',
+  ]);
+  assert.deepEqual(youtubeThumbnailCandidates(undefined),[]);
+  assert.deepEqual(youtubeThumbnailCandidates('../../invalid'),[]);
+});
