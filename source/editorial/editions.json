@@ -25,45 +25,64 @@
         "editorialUrl": "https://daily.bandcamp.com/album-of-the-day/chastity-belt-all-my-friends-review",
         "editorialClaim": "Album of the Day",
         "format": "Album",
-        "reason": "Sélection « Album of the Day » de Bandcamp Daily, sortie originale vérifiée (2026-11-06)."
+        "reason": "Indie rock mélodique et guitares aériennes : une découverte Bandcamp Daily retenue pour sa pertinence, malgré trois jours hors de la fenêtre habituelle.",
+        "editorialException": true,
+        "editorialExceptionReason": "Choix éditorial retenu pour son adéquation aux goûts malgré trois jours hors de la fenêtre habituelle."
       },
       {
-        "id": "spotify-428KzGfU0jpgqpebyZmITs",
-        "title": "Appalachia",
-        "creator": "Emily Scott Robinson",
-        "source": "Bandcamp Daily",
-        "url": "https://open.spotify.com/album/428KzGfU0jpgqpebyZmITs",
-        "sourceUrl": "https://emilyscottrobinson.bandcamp.com/album/appalachia",
-        "artwork": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02c30eb1d1c8c871fb32c8e1e2",
-        "date": "2026-01-30",
+        "id": "spotify-0Fta5KudJiX6HpDWApUu8y",
+        "title": "Trouble Mountain",
+        "creator": "Aesop Rock & Blockhead",
+        "source": "Rhymesayers Entertainment",
+        "provider": "Rhymesayers Entertainment",
+        "url": "https://open.spotify.com/album/0Fta5KudJiX6HpDWApUu8y",
+        "sourceUrl": "https://rhymesayers.com/products/aesop-rock-x-blockhead-trouble-mountain-cd",
+        "artwork": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02f422d4f00a6598f569317843",
+        "date": "2026-11-13",
+        "releaseDate": "2026-11-13",
         "embed": {
           "provider": "spotify",
-          "id": "428KzGfU0jpgqpebyZmITs"
+          "id": "0Fta5KudJiX6HpDWApUu8y"
         },
-        "editorialSource": "Bandcamp Daily",
-        "editorialUrl": "https://daily.bandcamp.com/album-of-the-day/emily-scott-robinson-appalachia-review",
-        "editorialClaim": "Album of the Day",
+        "editorialSource": "Pitchfork",
+        "editorialUrl": "https://pitchfork.com/reviews/albums/aesop-rock-blockhead-trouble-mountain/",
+        "editorialKind": "critic-pick",
+        "editorialClaim": "Chronique Pitchfork",
+        "verificationStatus": "editor-verified",
+        "genre": "Hip-hop",
+        "tags": [
+          "alternative hip-hop",
+          "underground rap"
+        ],
         "format": "Album",
-        "reason": "Sélection « Album of the Day » de Bandcamp Daily, sortie originale vérifiée (2026-01-30)."
+        "reason": "Rap indépendant inventif, production de Blockhead et écriture d’Aesop Rock : un disque aventureux sorti le 13 novembre, chroniqué par Pitchfork."
       },
       {
-        "id": "spotify-7CagycYC4VgWeGPcs9BJZ5",
-        "title": "SAD",
-        "creator": "Ikonika",
-        "source": "Bandcamp Daily",
-        "url": "https://open.spotify.com/album/7CagycYC4VgWeGPcs9BJZ5",
-        "sourceUrl": "https://ikonika.bandcamp.com/album/sad",
-        "artwork": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e0223f1e6bf669474ae3a4da51d",
-        "date": "2025-11-28",
+        "id": "spotify-6H6497odidXH5VRnynYQnV",
+        "title": "Mek Do & Mend",
+        "creator": "Wonky Logic",
+        "source": "Brownswood Recordings",
+        "provider": "Brownswood Recordings",
+        "url": "https://open.spotify.com/album/6H6497odidXH5VRnynYQnV",
+        "sourceUrl": "https://wonkylogic.bandcamp.com/album/mek-do-mend",
+        "artwork": "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02c092a88cfc2957a6eb43be2a",
+        "date": "2026-11-11",
+        "releaseDate": "2026-11-11",
         "embed": {
           "provider": "spotify",
-          "id": "7CagycYC4VgWeGPcs9BJZ5"
+          "id": "6H6497odidXH5VRnynYQnV"
         },
-        "editorialSource": "Bandcamp Daily",
-        "editorialUrl": "https://daily.bandcamp.com/album-of-the-day/ikonika-sad-review",
-        "editorialClaim": "Album of the Day",
+        "editorialSource": "Soul Bag",
+        "editorialUrl": "https://www.soulbag.fr/wonky-logic-mek-do-mend/",
+        "genre": "Funk",
+        "tags": [
+          "soul",
+          "funk",
+          "experimental"
+        ],
+        "verificationStatus": "primary-verified",
         "format": "Album",
-        "reason": "Sélection « Album of the Day » de Bandcamp Daily, sortie originale vérifiée (2025-11-28)."
+        "reason": "Grooves organiques, influences soul et funk, production inventive : le premier album de Wonky Logic, paru le 11 novembre chez Brownswood."
       }
     ],
     "mixes": [
