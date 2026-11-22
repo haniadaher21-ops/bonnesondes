@@ -56,6 +56,7 @@ jobs:
           if(!url||!publicKey)throw new Error('Configuration publique absente ou invalide.');
           JS
       # Redéploie l'interface et l'illustration originale sans publier de nouvelle édition.
+      # Afficher les pochettes Spotify et les liens d'écoute prioritaires.
       - name: Générer l'export statique
         run: npm run build
         env:
