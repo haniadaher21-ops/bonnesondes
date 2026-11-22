@@ -87,7 +87,19 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
   // For albums, trusted editorial recommendations outrank release recency.
   const freshness = ['Album','Live session'].includes(item.format) ? 0 : age >= 0 ? Math.max(0, 28 - age) : 0;
   const novelty = item.playlistOrigin === 'publisher-discovered' ? (previouslySeen ? 16 : 32) : 0;
-  const quality = 18 + (item.creator ? 5 : 0) + (item.tracklistUrl ? 4 : 0);
+  // For YouTube, prefer a demonstrable selector/DJ and vinyl-oriented sets
+  // over generic compilations. This is title/channel evidence, not audio analysis.
+  const videoMix = item.mixKind === 'curated-mix';
+  const genuineSelector = /\bDJ\s+(?!set\b|mix\b|session\b)[\p{L}\p{N}]/iu.test(item.title??'')
+    || /^DJ\s+[\p{L}\p{N}]/iu.test(item.creator??'');
+  const vinylSelection = /\ball[\s-]?vinyl\b/i.test(item.title??'');
+  const trustedSession = /\b(?:Kiosk Radio|Boiler Room|HÖR Berlin|The Lot Radio|My Analog Journal)\b/i
+    .test([item.source,item.title].join(' '));
+  const genericCompilation = /\bbest\s+(?:vintage|soul|funk|old school).*\bmix\b/i.test(item.title??'');
+  const mixQuality = videoMix ? 45*Number(genuineSelector) + 25*Number(vinylSelection)
+    + 10*Number(/\bvinyl\b/i.test(item.title??''))
+    + 30*Number(trustedSession) - 15*Number(genericCompilation) : 0;
+  const quality = 18 + (item.creator ? 5 : 0) + (item.tracklistUrl ? 4 : 0) + mixQuality;
   const baseline = freshness + novelty + quality;
   const score = Math.round((baseline + affinity * tasteWeight) * 100) / 100;
 
