@@ -88,7 +88,7 @@ const radio = (id, provider) => item(id, 'Radio show', {
 });
 const youtubeMix=(id='YouTube mix',options={})=>item(id,'Radio show',{
  title:'All-vinyl DJ set | DJ Good Selector',creator:'DJ Good Selector',source:'YouTube · DJ Good Selector',
- sourceId:'youtube-mix-UC'+'A'.repeat(22),mixKind:'curated-mix',audienceVerified:true,viewCount:20000,subscriberCount:80000,
+ sourceId:'youtube-mix-UC'+'A'.repeat(22),mixKind:'curated-mix',audienceVerified:true,viewCount:150000,subscriberCount:80000,mixStyle:'soul',mixStyleVerified:true,
  url:'https://www.youtube.com/watch?v=3C01eaL5_Xw',sourceUrl:'https://www.youtube.com/channel/UC'+'A'.repeat(22),
  videoSourceUrl:'https://www.youtube.com/watch?v=3C01eaL5_Xw',
  officialVideo:true,embed:{provider:'youtube',id:'3C01eaL5_Xw'},
@@ -342,7 +342,7 @@ test('three live performances must come from three distinct music studios',()=>{
 
 test('an eligible YouTube music mix occupies the mandatory slot',()=>{
   const youtube=youtubeMix('Soul selection',{
-    creator:'Soul Vinyl Curator',source:'YouTube · Soul Vinyl Curator',provider:'YouTube',audienceVerified:true,
+    creator:'Soul Vinyl Curator',source:'YouTube · Soul Vinyl Curator',provider:'YouTube',audienceVerified:true,viewCount:150000,mixStyle:'soul',mixStyleVerified:true,
     sourceId:'youtube-mix-UC'+'A'.repeat(22),mixKind:'curated-mix',
     url:'https://www.youtube.com/watch?v=3C01eaL5_Xw',sourceUrl:'https://www.youtube.com/channel/UC'+'A'.repeat(22),
     videoSourceUrl:'https://www.youtube.com/watch?v=3C01eaL5_Xw',
@@ -358,7 +358,8 @@ test('a named vinyl DJ mix outranks a generic automated-looking YouTube compilat
  const channel=variant=>'UC'+variant.repeat(22);
  const youtube=(id,title,creator,variant)=>item(id,'Radio show',{
    title,creator,source:'YouTube · '+creator,provider:'YouTube',sourceId:'youtube-mix-'+channel(variant),
-   mixKind:'curated-mix',date:'2026-11-17',verificationStatus:'source-verified',audienceVerified:true,minutes:50,
+   mixKind:'curated-mix',date:'2026-11-17',verificationStatus:'source-verified',audienceVerified:true,
+   mixStyle:id==='Generic'?'funk':'rnb',mixStyleVerified:true,viewCount:150000,subscriberCount:80000,minutes:50,
    url:'https://www.youtube.com/watch?v='+('a'.repeat(10)+variant),
    sourceUrl:'https://www.youtube.com/channel/'+channel(variant),
    videoSourceUrl:'https://www.youtube.com/watch?v='+('a'.repeat(10)+variant),
@@ -386,4 +387,28 @@ test('Nova may use its last real DJ set from ten days ago',()=>{
  assert.equal(isFreshMusicMix({...older,date:'2026-11-08'},'2026-11-23','2026-11-22'),false);
  const r=weeklyShortlist({...readyOptions,candidates:[...completeCandidates.filter(x=>x.id!=='Nova Danse'),older],profile:emptyTasteProfile()});
  assert.equal(r.selected.nova[0].item.id,'Nova ten days');
+});
+
+test('YouTube slot refuses a highly subscribed channel video below 100k views',()=>{
+ const low=youtubeMix('Under 100k',{viewCount:99999,subscriberCount:900000});
+ const report=weeklyShortlist({...readyOptions,
+  candidates:[...completeCandidates.filter(x=>x.id!=='YouTube mix'),low],profile:emptyTasteProfile()});
+ assert.equal(report.selected.youtube.length,0);
+ assert.equal(report.gaps.youtube,1);
+ assert.ok(report.rejected.some(x=>x.id==='Under 100k'&&/100 000 vues/.test(x.reason)));
+});
+test('a popular electro video must not enter the weekly YouTube mix slot',()=>{
+ const electro=youtubeMix('Electro',{title:'Electro Techno DJ set',mixStyle:'rnb',viewCount:3000000});
+ const report=weeklyShortlist({...readyOptions,
+  candidates:[...completeCandidates.filter(x=>x.id!=='YouTube mix'),electro],
+  profile:emptyTasteProfile()});
+ assert.equal(report.selected.youtube.length,0);
+ assert.ok(report.rejected.some(x=>x.id==='Electro'&&/électro/.test(x.reason)));
+});
+test('a relevant soulful mix published months ago can qualify once it reaches 100k views',()=>{
+ const one=youtubeMix('Soulful older',{date:'2026-07-12',mixStyle:'soul',viewCount:285000});
+ const report=weeklyShortlist({...readyOptions,
+  candidates:[...completeCandidates.filter(x=>x.id!=='YouTube mix'),one],profile:emptyTasteProfile()});
+ assert.equal(report.selected.youtube[0].item.id,'Soulful older');
+ assert.equal(report.complete,true);
 });
