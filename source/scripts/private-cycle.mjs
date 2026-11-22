@@ -160,11 +160,18 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
 
   const lives = await verifyLives(candidates,sources,env.YOUTUBE_DATA_API_KEY,fetcher);
   const liveById = new Map(lives.items.map(item => [item.id,item]));
+  // A preview comparison can exclude a previously shown mix without altering the
+  // real candidate store or ordinary weekly recommendation rules.
+  const previewExcludedIds=new Set(env.BONNES_ONDES_PREVIEW_DIR
+    ? String(env.BONNES_ONDES_PREVIEW_EXCLUDE_YOUTUBE_IDS??'').split(',').filter(id=>/^[a-zA-Z0-9_-]{11}$/.test(id))
+    : []);
+  const rankedCandidates=candidates.filter(item=>!(item.mixKind==='curated-mix'
+    && previewExcludedIds.has(item.embed?.id))).map(item=>liveById.get(item.id)??item);
   const report = weeklyShortlist({
-    candidates:candidates.map(item => liveById.get(item.id) ?? item), sources:collection.sources,
+    candidates:rankedCandidates, sources:collection.sources,
     profile,earlier,catalog:legacyItems,startsOn,now,seen:Object.fromEntries(previous.map(item=>[canonicalUrl(item.url),item.firstSeenAt])),
   });
-  const neutral=weeklyShortlist({candidates:candidates.map(item=>liveById.get(item.id)??item),sources:collection.sources,
+  const neutral=weeklyShortlist({candidates:rankedCandidates,sources:collection.sources,
     profile:emptyTasteProfile(),earlier,catalog:legacyItems,startsOn,now,
     seen:Object.fromEntries(previous.map(item=>[canonicalUrl(item.url),item.firstSeenAt]))});
   const comparison=Object.fromEntries(Object.entries(report.selected).map(([section,rows])=>[section,{
