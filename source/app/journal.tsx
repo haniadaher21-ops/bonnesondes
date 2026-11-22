@@ -94,6 +94,40 @@ function PersistentYouTubePlayer({ item, expanded, onResize, onClose }: {
   </aside>;
 }
 
+function PersistentMixPlayer({ item, onClose }: { item: Recommendation | null; onClose: () => void }) {
+  const [failed, setFailed] = useState(false);
+  const audio = item?.audio;
+  const source = audio?.provider === 'podcast'
+    && ['proxycast.radiofrance.fr', 'audio.audiomeans.fr'].includes(new URL(audio.url).hostname)
+    ? audio.url : undefined;
+  const soundcloud = audio?.provider === 'soundcloud'
+    && new URL(audio.url).hostname === 'soundcloud.com'
+    ? 'https://w.soundcloud.com/player/?url=' + encodeURIComponent(audio.url)
+      + '&auto_play=true&hide_related=true&show_comments=false&show_reposts=false&visual=false'
+    : undefined;
+  if (!item || (!source && !soundcloud)) return null;
+  return <aside className="video-dock mix-dock" aria-label="Lecteur de mix persistant" role="region">
+    <div className="video-dock-bar">
+      <div className="video-dock-heading"><strong>Mix en cours</strong><span title={item.title}>{item.title}</span></div>
+      <div className="video-dock-controls">
+        <button type="button" className="video-dock-button" onClick={onClose}
+          title="Arrêter et fermer" aria-label="Arrêter le mix et fermer le lecteur"><X size={18} /></button>
+      </div>
+    </div>
+    {source
+      ? <audio key={item.id} className="mix-dock-audio" src={source}
+          autoPlay controls preload="metadata" onError={() => setFailed(true)} />
+      : <iframe key={item.id} className="mix-dock-soundcloud"
+          title={'Écouter ' + item.title + ' sur SoundCloud'}
+          src={soundcloud} allow="autoplay" loading="eager" />}
+    {failed && <p className="mix-dock-error" role="status">Lecture indisponible ici. Tu peux ouvrir l’épisode à sa source.</p>}
+    <div className="video-dock-foot">
+      <span>La lecture continue pendant la navigation.</span>
+      <a href={item.url} target="_blank" rel="noopener noreferrer">Source <ArrowUpRight size={13} /></a>
+    </div>
+  </aside>;
+}
+
 function Artwork({ item, index = 0 }: { item: Recommendation; index?: number }) {
   const [failed, setFailed] = useState(false);
   const [thumbnailAttempt, setThumbnailAttempt] = useState(0);
@@ -132,6 +166,7 @@ export default function Journal() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [selected, setSelected] = useState<Recommendation | null>(null);
   const [activeVideo, setActiveVideo] = useState<Recommendation | null>(null);
+  const [activeMix, setActiveMix] = useState<Recommendation | null>(null);
   const [videoExpanded, setVideoExpanded] = useState(false);
   const [station, setStation] = useState(stations[0]);
   const [radioOpen, setRadioOpen] = useState(false);
@@ -242,12 +277,23 @@ export default function Journal() {
     // Starting the same video again must not remount the iframe and lose position.
     setActiveVideo(current => current?.embed?.provider === 'youtube' && current.embed.id === id ? current : item);
     setVideoExpanded(false);
+    setActiveMix(null);
+    setRadioOpen(false);
+    setSelected(null);
+  };
+
+  const startMix = (item: Recommendation) => {
+    if (!item.audio) return;
+    setActiveMix(current => current?.id === item.id ? current : item);
+    setActiveVideo(null);
+    setVideoExpanded(false);
     setRadioOpen(false);
     setSelected(null);
   };
 
   const tune = (next: typeof station) => {
     setActiveVideo(null);
+    setActiveMix(null);
     setStation(next);
     setAudioError(false);
     setRadioOpen(true);
@@ -288,6 +334,14 @@ export default function Journal() {
             aria-pressed={activeVideo?.embed?.provider === 'youtube' && activeVideo.embed.id === item.embed.id}>
             <Artwork item={item} index={index} />
             <span className="video-launch-overlay"><span className="video-launch-play"><Play size={23} fill="currentColor" /></span>Lire ici</span>
+          </button>
+
+        : item.audio
+        ? <button type="button" className="video-launch mix-launch" onClick={() => startMix(item)}
+            aria-label={'Lire ' + item.title + ' dans le lecteur de mix persistant'}
+            aria-pressed={activeMix?.id === item.id}>
+            <Artwork item={item} index={index} />
+            <span className="video-launch-overlay"><span className="video-launch-play"><Play size={23} fill="currentColor" /></span>Écouter ici</span>
           </button>
         : withPlayers && item.embed ? <Player item={item} /> : item.format === 'Album' && item.url.startsWith('https://open.spotify.com/album/')
         ? <a className="album-cover-link" href={item.url} target="_blank" rel="noopener noreferrer" aria-label={'Écouter '+item.title+' sur Spotify'}><Artwork item={item} index={index} /></a>
@@ -371,7 +425,9 @@ export default function Journal() {
             <p className="feature-meta">{featured.source} {featured.date && ' / ' + dateLabel(featured.date)}</p>
             <p className="feature-note">{featured.note}</p>
             <div className="flex flex-wrap gap-3 items-center">
-              {featured.embed?.provider === 'youtube' && playableYouTubeId(featured.embed.id)
+              {featured.audio
+                ? <button className="primary" type="button" onClick={() => startMix(featured)}><Play size={15} fill="currentColor" /> Écouter le mix</button>
+                : featured.embed?.provider === 'youtube' && playableYouTubeId(featured.embed.id)
                 ? <button className="primary" type="button" onClick={() => startVideo(featured)}><Play size={15} fill="currentColor" /> Écouter le mix</button>
                 : <a className="primary" href={featured.url} target="_blank" rel="noopener noreferrer"><Play size={15} fill="currentColor" /> Écouter le mix</a>}
               {saveButton(featured, 'hero-save')}
@@ -526,6 +582,7 @@ export default function Journal() {
     <div className="shell"><ProfileSync library={library} recommendations={all} ready={ready} visible={page === 'preferences'} /></div>
     <footer className="shell footer"><a className="brand" href="#rotation"><img className="brand-mark" src={(process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/bonnes-ondes-mark.svg'} alt="" width="30" height="30" />Bonnes Ondes<span className="brand-dot">.</span></a><span>JOURNAL MUSICAL INDÉPENDANT</span></footer>
 
+    <PersistentMixPlayer key={activeMix?.id ?? 'empty'} item={activeMix} onClose={() => setActiveMix(null)} />
     <PersistentYouTubePlayer item={activeVideo} expanded={videoExpanded}
       onResize={() => setVideoExpanded(value => !value)} onClose={() => { setActiveVideo(null); setVideoExpanded(false); }} />
 
@@ -557,7 +614,9 @@ export default function Journal() {
         {(selected.date || selected.minutes) && <p className="metadata">{[selected.date && dateLabel(selected.date), selected.minutes && displayMinutes(selected.minutes)].filter(Boolean).join(' · ')}</p>}
         {selected.note && <p>{selected.note}</p>}
         {selected.reason && <div className="why"><p className="eyebrow">POURQUOI ON L’A CHOISI</p><p>{selected.reason}</p></div>}
-        {selected.embed?.provider === 'youtube'
+        {selected.audio
+          ? <button className="primary" type="button" onClick={() => startMix(selected)}><Play size={15} fill="currentColor" /> Écouter ici</button>
+          : selected.embed?.provider === 'youtube'
           ? <button className="primary" type="button" onClick={() => startVideo(selected)}>
               <Play size={15} fill="currentColor" /> Lire dans le lecteur YouTube
             </button>
