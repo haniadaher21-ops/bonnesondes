@@ -30,7 +30,7 @@ test('every edition has a dated permalink and home issue date links to it', () =
 
 test('the selected historical week shows its own complete editorial snapshot', () => {
   assert.match(source, /cards\(archivedIssue\.albums\)/);
-  assert.match(source, /cards\(archivedIssue\.mixes\)/);
+  assert.match(source, /cards\(archivedIssue\.mixes, true\)/);
   assert.match(source, /cards\(archivedIssue\.playlists, true\)/);
   assert.match(source, /cards\(archivedIssue\.live, true\)/);
   assert.match(source, /archivedIssue\.featured\.title/);
