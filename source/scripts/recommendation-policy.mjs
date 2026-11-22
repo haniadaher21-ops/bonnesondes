@@ -57,9 +57,19 @@ export function editorialEndorsement(item) {
 // A Nova Danse DJ set may be up to 14 days old if the station did not release a
 // new podcast last week. Its real date remains visible; never fabricate freshness.
 export function isNovaMix(item) {
-  return item?.format==='Radio show' && item?.mixKind==='dj-set'
-    && item.sourceId==='nova-danse'
-    && (item.provider==='Radio Nova' || /Radio Nova/i.test(item.source??''));
+  if(item?.format!=='Radio show'||item.mixKind!=='dj-set'
+    || !(item.provider==='Radio Nova'||/Radio Nova/i.test(item.source??'')))return false;
+  const paths={
+    'nova-danse':'/radio-nova-nova-danse/',
+    'nova-club-mixes':'/radio-nova-nova-club/',
+    'nova-worldmix':'/radio-nova-neo-geo-nova-le-worldmix/',
+    'nova-teuf-appart':'/teuf-dappart/',
+  };
+  const prefix=paths[item.sourceId];
+  const url=sourceUrl(item.url);
+  return !!prefix&&url?.hostname==='podcasts.nova.fr'&&url.pathname.startsWith(prefix)
+    && url.pathname.length>prefix.length
+    && (item.sourceId==='nova-danse'||item.novaMixVerified===true);
 }
 export function isNtsMix(item) {
   return item?.format==='Radio show' && item?.mixKind==='dj-set'
