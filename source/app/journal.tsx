@@ -238,7 +238,7 @@ export default function Journal() {
         {(item.mood || item.season || item.genre) && <p className="tags">{[item.genre, item.mood, item.season].filter(Boolean).join(' · ')}</p>}
         <div className="card-actions">
           <button onClick={() => setSelected(item)} className="text-link">Infos tracks <ArrowRight size={14} /></button>
-          <SourceLink item={item}>{item.format === 'Track' ? 'Rechercher sur Spotify' : item.format === 'Album' ? 'Écouter sur Spotify' : item.source}</SourceLink>
+          <SourceLink item={item}>{item.format === 'Track' ? 'Rechercher sur Spotify' : item.format === 'Album' ? 'Écouter sur Spotify' : item.embed?.provider==='youtube' ? 'Ouvrir sur YouTube' : item.source}</SourceLink>
         </div>
       </div>
     </article>)}
@@ -311,7 +311,7 @@ export default function Journal() {
           </div>
         </article>
         <Section label="DISQUES" title="Trois albums essentiels" id="essential-albums">{cards(issue.albums)}</Section>
-        <Section label="SUR LES ONDES" title="Mixes de la semaine">{cards(issue.mixes)}</Section>
+        <Section label="SUR LES ONDES" title="Mixes de la semaine">{cards(issue.mixes, true)}</Section>
         <Section label="SUR SPOTIFY" title="Les playlists de la semaine">{cards(issue.playlists, true)}</Section>
         <Section label="LIVE" title="Performances à découvrir">{cards(issue.live.slice(0, 3), true)}</Section>
       </>}
@@ -328,7 +328,7 @@ export default function Journal() {
           <Section label="DISQUES" title="Albums recommandés">{cards(archivedIssue.albums)}</Section>
           <Section label="SUR LES ONDES" title="Mixes de la semaine">
             <p className="edition-featured-note">Mix de la semaine : <strong>{archivedIssue.featured.title}</strong></p>
-            {cards(archivedIssue.mixes)}
+            {cards(archivedIssue.mixes, true)}
           </Section>
           <Section label="SUR SPOTIFY" title="Playlists">{cards(archivedIssue.playlists, true)}</Section>
           <Section label="LIVE" title="Performances à découvrir">{cards(archivedIssue.live, true)}</Section>
@@ -398,7 +398,7 @@ export default function Journal() {
 
       {page === 'mix' && <>
         <PageHeading label="SUR LES ONDES" title="Mix" />
-        {cards(issue.mixes)}
+        {cards(issue.mixes, true)}
       </>}
 
       {page === 'archive' && <>
