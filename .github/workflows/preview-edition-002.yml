@@ -47,7 +47,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[preview-edition-002]'))
     runs-on: ubuntu-latest
     timeout-minutes: 40
-    # Rebuild the isolated preview, including diagnostic counts for YouTube mixes; never publish the public edition.
+    # Rebuild the isolated preview with one verified listener-relevant YouTube mix when available; no automatic publication.
     steps:
       - uses: actions/checkout@v4
         with:
