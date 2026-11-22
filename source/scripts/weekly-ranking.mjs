@@ -170,7 +170,12 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
       const adjusted = entry => entry.score + 35 * Number(group.name==='otherRadio' && entry.item.embed?.provider==='youtube')
         - 18 * Number(localProviders.has(provider(entry))) - 6 * (providers.get(provider(entry)) ?? 0);
       remaining.sort((a, b) => adjusted(b) - adjusted(a));
-      const entry = remaining[0];
+      // At least one listener-appropriate YouTube mix deserves a place beside
+      // the NTS mix when a verified, recent curated set is available.
+      const youtubeAlternatives = group.name==='otherRadio'
+        ? remaining.filter(row=>row.item.mixKind==='curated-mix' && row.item.embed?.provider==='youtube'
+          && row.score>0) : [];
+      const entry = youtubeAlternatives[0] ?? remaining[0];
       if (!entry) break;
       const { item } = entry;
       chosen.push(entry);
