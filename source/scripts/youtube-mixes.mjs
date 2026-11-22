@@ -4,10 +4,10 @@ import {excludesJazz} from './recommendation-policy.mjs';
 // Search within the edition window, but prioritize real DJ sessions from
 // credible selectors. Popularity is a safeguard, not a substitute for taste.
 export const youtubeMixQueries=[
-  'Kiosk Radio My Analog Journal soul funk vinyl DJ set',
-  'Boiler Room HÖR Berlin Mixmag DJ set disco soul house',
-  '60s 70s rhythm soul vinyl DJ mix',
-  'eclectic soul funk jazz-free vinyl DJ session',
+  'Kiosk Radio DJ set',
+  'My Analog Journal vinyl dj mix',
+  'Boiler Room DJ set',
+  'soul funk disco eclectic vinyl DJ mix',
 ];
 const mixTitle=/\b(?:dj\s*(?:set|mix)|vinyl\s*(?:mix|set|session|selection)|(?:soul|funk|disco|rhythm)\s*(?:mix|playlist|selection)|(?:mixtape|mix tape|mixes|playlist)|boiler room|hör berlin|kiosk radio|the lot radio|my analog journal)\b/i;
 const notMix=/\b(?:interview|podcast|talk show|reaction|tutorial|how to|review|full album|official music video|visualizer|shorts?|trailer|teaser|single track|remix tutorial|news)\b/i;
