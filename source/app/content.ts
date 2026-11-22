@@ -18,6 +18,8 @@ export interface Recommendation {
   editorialUrl?: string;
   date?: string;
   minutes?: number;
+  mixStyle?: 'rnb'|'soul'|'blues'|'pop'|'light-house'|'funk';
+  viewCount?: number;
   mood?: string;
   season?: string;
   genre?: string;
