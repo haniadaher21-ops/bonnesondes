@@ -17,10 +17,10 @@ const spamTitle=/\b(?:best vintage funk mix|best soul music mix|no copyright mus
 const credibleCurators=/\b(?:Kiosk Radio|Boiler Room|HÖR Berlin|My Analog Journal|The Lot Radio|Mixmag|Soulection|DJ Mag|DJ HASEBE|R&B ONLY)\b/i;
 const genreRules=[
   ['rnb',/\b(?:r\s*&\s*b|rnb|rhythm\s*(?:and|&)\s*blues|slow jams?|new jack swing)\b/i],
+  ['light-house',/\b(?:(?:soulful|light|mellow|soft|chill|balearic|deep|organic|laid[ -]?back|funky|disco)[ -]?house|house[ -]?(?:soulful|grooves?|chill|mellow|balearic))\b/i],
   ['soul',/\b(?:neo[ -]?soul|northern soul|soul(?:ful)?|motown)\b/i],
   ['blues',/\b(?:blues|bluesy)\b/i],
   ['pop',/\b(?:indie[ -]?pop|dream[ -]?pop|pop)\b/i],
-  ['light-house',/\b(?:(?:soulful|light|mellow|soft|chill|balearic|deep|organic|laid[ -]?back|funky|disco)[ -]?house|house[ -]?(?:soulful|grooves?|chill|mellow|balearic))\b/i],
   ['funk',/\b(?:funk|boogie|disco|groove)\b/i],
 ];
 const durationSeconds=value=>{
