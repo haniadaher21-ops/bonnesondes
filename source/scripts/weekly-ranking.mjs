@@ -94,7 +94,8 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
   const evidence = {
     Album: endorsement ? 'Sélection « ' + endorsement.claim + ' » de ' + (endorsement.source??'un média musical')
       + ', sortie originale vérifiée (' + date + ')' : 'Aucune recommandation éditoriale attestée',
-    'Radio show': 'DJ set musical diffusé le ' + date + ' sur ' + (item.provider ?? item.source),
+    'Radio show': (item.mixKind==='curated-mix' ? 'Sélection musicale YouTube publiée le ' : 'DJ set musical diffusé le ')
+      + date + ' sur ' + (item.provider ?? item.source),
     Playlist: item.playlistOrigin === 'publisher-discovered' ? 'Lien vérifié et publié par ' + (item.creator ?? item.provider ?? 'le média source') : 'Playlist vérifiée sur Spotify',
     'Live session': 'Performance publiée par une chaîne officielle, vidéo intégrable de ' + Math.round(item.minutes * 60) + ' secondes',
   }[item.format];
@@ -164,7 +165,10 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
         return !ids.has(item.id) && !urls.has(key) && !(artist && item.format !== 'Playlist' && artists.has(artist))
           && !(performance && performances.has(performance));
       });
-      const adjusted = entry => entry.score - 18 * Number(localProviders.has(provider(entry))) - 6 * (providers.get(provider(entry)) ?? 0);
+      // Discovery can feature YouTube selectors as well as radio DJs. Prefer a
+      // different listening medium when its verified mix is comparably relevant.
+      const adjusted = entry => entry.score + 35 * Number(group.name==='otherRadio' && entry.item.embed?.provider==='youtube')
+        - 18 * Number(localProviders.has(provider(entry))) - 6 * (providers.get(provider(entry)) ?? 0);
       remaining.sort((a, b) => adjusted(b) - adjusted(a));
       const entry = remaining[0];
       if (!entry) break;
