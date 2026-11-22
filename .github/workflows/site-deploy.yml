@@ -56,7 +56,7 @@ jobs:
           if(!url||!publicKey)throw new Error('Configuration publique absente ou invalide.');
           JS
       # Redéploie l'interface et l'illustration originale sans publier de nouvelle édition.
-      # Tester les mixes R&B soul blues pop avec 100000 vues vérifiées et exclusion des styles électro.
+      # Vérifier les 100 000 vues par vidéo YouTube, les genres souhaités et les faux positifs de métadonnées.
       - name: Générer l'export statique
         run: npm run build
         env:
