@@ -51,7 +51,7 @@ function Player({ item }: { item: Recommendation }) {
 
 function Artwork({ item, index = 0 }: { item: Recommendation; index?: number }) {
   const [failed, setFailed] = useState(false);
-  return <div className={`artwork artwork-${index % 3}`}>
+  return <div className={`artwork ${item.format === 'Album' ? 'artwork-album' : ''} artwork-${index % 3}`}>
     {item.artwork && !failed
       ? <img src={item.artwork} alt="" loading="lazy" onError={() => setFailed(true)} />
       : <Disc3 size={91} strokeWidth={0.65} aria-hidden="true" />}
@@ -222,16 +222,19 @@ export default function Journal() {
 
   const cards = (items: Recommendation[], withPlayers = false, compact = false) => <div className={compact ? 'card-grid card-grid-compact' : 'card-grid'}>
     {items.map((item, index) => <article className={compact ? 'music-card music-card-compact' : 'music-card'} key={item.id}>
-      {withPlayers && item.embed ? <Player item={item} /> : <Artwork item={item} index={index} />}
+      {withPlayers && item.embed ? <Player item={item} /> : item.format === 'Album' && item.url.startsWith('https://open.spotify.com/album/')
+        ? <a className="album-cover-link" href={item.url} target="_blank" rel="noopener noreferrer" aria-label={'Écouter '+item.title+' sur Spotify'}><Artwork item={item} index={index} /></a>
+        : <Artwork item={item} index={index} />}
       <div className="card-body">
         <div className="flex justify-between items-center gap-2">
           <p className="eyebrow">{formatLabels[item.format]}{item.format !== 'Album' && <> <span aria-hidden="true">·</span> {item.source}</>}</p>
           <div className="card-feedback">{reactionButtons(item)}{saveButton(item)}</div>
         </div>
-        <h3><button onClick={() => setSelected(item)}>{item.title}</button></h3>
+        <h3>{item.format === 'Album' ? <a href={item.url} target="_blank" rel="noopener noreferrer" aria-label={'Écouter '+item.title+' sur Spotify'}>{item.title}</a> : <button onClick={() => setSelected(item)}>{item.title}</button>}</h3>
         {item.creator && <p className="creator">{[item.creator, item.publisher].filter(Boolean).join(' · ')}</p>}
         {(item.date || item.minutes) && <p className="metadata">{[item.date && dateLabel(item.date), item.minutes && displayMinutes(item.minutes)].filter(Boolean).join(' · ')}</p>}
         {item.note && <p className="card-note">{item.note}</p>}
+        {item.format === 'Album' && item.editorialSource && <p className="metadata">Recommandé par {item.editorialUrl ? <a href={item.editorialUrl} target="_blank" rel="noopener noreferrer">{item.editorialSource}</a> : item.editorialSource}</p>}
         {(item.mood || item.season || item.genre) && <p className="tags">{[item.genre, item.mood, item.season].filter(Boolean).join(' · ')}</p>}
         <div className="card-actions">
           <button onClick={() => setSelected(item)} className="text-link">Infos tracks <ArrowRight size={14} /></button>
@@ -482,7 +485,9 @@ export default function Journal() {
         {selected.note && <p>{selected.note}</p>}
         {selected.reason && <div className="why"><p className="eyebrow">POURQUOI ON L’A CHOISI</p><p>{selected.reason}</p></div>}
         <Player item={selected} />
-        <div className="dialog-actions"><SourceLink item={selected}>{selected.format === 'Track' ? 'Rechercher sur Spotify' : (selected.format === 'Album' || !selected.embed ? 'Écouter sur ' : 'Ouvrir sur ') + selected.source}</SourceLink>{saveButton(selected)}</div>
+        <div className="dialog-actions"><SourceLink item={selected}>{selected.format === 'Track' ? 'Rechercher sur Spotify' : selected.format === 'Album' ? 'Écouter sur Spotify' : (selected.embed ? 'Ouvrir sur ' : 'Écouter sur ') + selected.source}</SourceLink>
+          {selected.format === 'Album' && selected.editorialUrl && <a className="text-link" href={selected.editorialUrl} target="_blank" rel="noopener noreferrer">Lire la recommandation {selected.editorialSource ? '('+selected.editorialSource+')' : ''} <ArrowUpRight size={15} /></a>}
+          {saveButton(selected)}</div>
         <div className="feedback">
           <div className="dialog-reactions"><span>Ton avis</span>{reactionButtons(selected)}</div>
           {selected.format === 'Playlist' && selected.creator && <button className="text-link" aria-pressed={library.curators.includes(selected.creator)}
