@@ -22,17 +22,6 @@
     "itemPrefix": "/reviews/"
   },
   {
-    "id": "fip-jazz",
-    "name": "FIP · Club Jazzafip",
-    "provider": "FIP",
-    "format": "Radio show",
-    "mode": "automatic",
-    "method": "podcast-rss",
-    "url": "https://www.radiofrance.fr/fip/podcasts/club-jazzafip",
-    "feed": "https://radiofrance-podcast.net/podcast09/podcast_13d4ef2f-2aca-4331-949b-bc8da638d670.xml",
-    "itemPrefix": "/fip/podcasts/club-jazzafip/"
-  },
-  {
     "id": "nova-club",
     "name": "Radio Nova · Nova Club",
     "provider": "Radio Nova",
