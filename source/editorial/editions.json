@@ -25,45 +25,67 @@
         "editorialUrl": "https://daily.bandcamp.com/album-of-the-day/chastity-belt-all-my-friends-review",
         "editorialClaim": "Album of the Day",
         "format": "Album",
-        "reason": "Sélection « Album of the Day » de Bandcamp Daily, sortie originale vérifiée (2026-11-06)."
+        "reason": "Indie rock mélodique et guitares aériennes : une découverte Bandcamp Daily retenue pour sa pertinence, malgré trois jours hors de la fenêtre habituelle.",
+        "editorialException": true,
+        "editorialExceptionReason": "Choix éditorial retenu pour son adéquation aux goûts malgré trois jours hors de la fenêtre habituelle."
       },
       {
-        "id": "spotify-428KzGfU0jpgqpebyZmITs",
-        "title": "Appalachia",
-        "creator": "Emily Scott Robinson",
-        "source": "Bandcamp Daily",
-        "url": "https://open.spotify.com/album/428KzGfU0jpgqpebyZmITs",
-        "sourceUrl": "https://emilyscottrobinson.bandcamp.com/album/appalachia",
-        "artwork": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02c30eb1d1c8c871fb32c8e1e2",
-        "date": "2026-01-30",
+        "id": "spotify-0Fta5KudJiX6HpDWApUu8y",
+        "title": "Trouble Mountain",
+        "creator": "Aesop Rock & Blockhead",
+        "source": "Rhymesayers Entertainment",
+        "provider": "Rhymesayers Entertainment",
+        "url": "https://open.spotify.com/album/0Fta5KudJiX6HpDWApUu8y",
+        "sourceUrl": "https://rhymesayers.com/products/aesop-rock-x-blockhead-trouble-mountain-cd",
+        "artwork": "https://image-cdn-ak.spotifycdn.com/image/ab67616d00001e02f422d4f00a6598f569317843",
+        "date": "2026-11-13",
+        "releaseDate": "2026-11-13",
         "embed": {
           "provider": "spotify",
-          "id": "428KzGfU0jpgqpebyZmITs"
+          "id": "0Fta5KudJiX6HpDWApUu8y"
         },
-        "editorialSource": "Bandcamp Daily",
-        "editorialUrl": "https://daily.bandcamp.com/album-of-the-day/emily-scott-robinson-appalachia-review",
-        "editorialClaim": "Album of the Day",
+        "editorialSource": "Pitchfork",
+        "editorialUrl": "https://pitchfork.com/story/9-new-albums-you-should-listen-to-now-2hollis-armand-hammer-and-more/",
+        "editorialKind": "curator-pick",
+        "editorialClaim": "New albums you should listen to now",
+        "verificationStatus": "primary-verified",
+        "genre": "Hip-hop",
+        "tags": [
+          "alternative hip-hop",
+          "underground rap"
+        ],
         "format": "Album",
-        "reason": "Sélection « Album of the Day » de Bandcamp Daily, sortie originale vérifiée (2026-01-30)."
+        "reason": "Rap indépendant aux textures inventives et écriture dense, choisi parmi les albums à écouter de Pitchfork le 13 novembre.",
+        "editorialPublishedAt": "2026-11-13"
       },
       {
-        "id": "spotify-7CagycYC4VgWeGPcs9BJZ5",
-        "title": "SAD",
-        "creator": "Ikonika",
-        "source": "Bandcamp Daily",
-        "url": "https://open.spotify.com/album/7CagycYC4VgWeGPcs9BJZ5",
-        "sourceUrl": "https://ikonika.bandcamp.com/album/sad",
-        "artwork": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e0223f1e6bf669474ae3a4da51d",
-        "date": "2025-11-28",
+        "id": "spotify-7I8TcuLTY8CTwXqVys8GD3",
+        "title": "Secret Language",
+        "creator": "Krill",
+        "source": "Stereogum",
+        "provider": "Exploding in Sound Records",
+        "url": "https://open.spotify.com/album/7I8TcuLTY8CTwXqVys8GD3",
+        "sourceUrl": "https://wheretheresakrilltheresaway.bandcamp.com/album/secret-language",
+        "artwork": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02df2f0468f59199be4c40ce95",
+        "date": "2026-11-13",
+        "releaseDate": "2026-11-13",
         "embed": {
           "provider": "spotify",
-          "id": "7CagycYC4VgWeGPcs9BJZ5"
+          "id": "7I8TcuLTY8CTwXqVys8GD3"
         },
-        "editorialSource": "Bandcamp Daily",
-        "editorialUrl": "https://daily.bandcamp.com/album-of-the-day/ikonika-sad-review",
-        "editorialClaim": "Album of the Day",
+        "editorialSource": "Stereogum",
+        "editorialUrl": "https://stereogum.com/2517187/album-of-the-week-krill-secret-language/reviews/album-of-the-week",
+        "editorialKind": "curator-pick",
+        "editorialClaim": "Album of the Week",
+        "editorialPublishedAt": "2026-11-10",
+        "verificationStatus": "primary-verified",
+        "genre": "Indie rock",
+        "tags": [
+          "indie rock",
+          "alternative rock"
+        ],
         "format": "Album",
-        "reason": "Sélection « Album of the Day » de Bandcamp Daily, sortie originale vérifiée (2025-11-28)."
+        "reason": "Le retour de Krill après plus de dix ans : guitares indie singulières et textes introspectifs, élu Album of the Week par Stereogum."
       }
     ],
     "mixes": [

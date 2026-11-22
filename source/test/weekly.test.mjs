@@ -131,8 +131,8 @@ test('complete verified inputs give a valid draft and tastes change the radio an
   assert.equal(fip.draft.albumWindowStart, '2026-11-09');
   assert.equal(fip.draft.albumWindowStart, manualDraft.albumWindowStart);
   assert.match(fip.draft.mixes[0].reason, /DJ set musical/);
-  assert.deepEqual(fip.rejected.map(row => row.id), ['Future', 'Review', 'Jazzafip', 'Unchecked']);
-  assert.ok(fip.rankings.some(row => row.item.id === 'Old'));
+  assert.deepEqual(fip.rejected.map(row => row.id), ['Old', 'Future', 'Review', 'Jazzafip', 'Unchecked']);
+  assert.ok(fip.rejected.some(row => row.id === 'Old' && /14 derniers jours/.test(row.reason)));
   assert.ok(!fip.draft.mixes.some(row => /jazz/i.test(row.title)));
 });
 
@@ -147,7 +147,7 @@ test('feedback, duplicate artists, previously seen links and missing quotas are 
       curators: [],
     },
   } });
-  assert.deepEqual(result.gaps, {live: 1});
+  assert.deepEqual(result.gaps, {albums: 1, live: 1});
   assert.equal(result.selected.live.length, 2);
   assert.equal(result.complete, false);
   assert.equal(result.selected.nova[0].item.id, 'Nova Danse');
@@ -198,15 +198,27 @@ test('Monday editions become visible at Paris midnight in winter and summer', ()
   }
 });
 
-test('album recommendations may include old but verified releases, without a fourteen-day cut-off', () => {
+test('the 14-day album gate rejects old recommendations even with verified editorial citations', () => {
   const report = weeklyShortlist({ ...readyOptions, profile: emptyTasteProfile(), candidates: [
     album('Inside', { releaseDate: '2026-11-09' }),
     album('Outside', { releaseDate: '2022-11-08' }),
+    album('Last year', {releaseDate:'2025-11-28'}),
   ] });
   assert.equal(report.draft.albumWindowStart, '2026-11-09');
-  assert.deepEqual(report.draft.albums.map(item => item.id), ['Inside', 'Outside']);
-  assert.ok(!report.rejected.some(row => row.id === 'Outside'));
-  assert.equal(report.draft.albums[1].date, '2022-11-08');
+  assert.deepEqual(report.draft.albums.map(item => item.id), ['Inside']);
+  assert.ok(report.rejected.some(row => row.id === 'Outside' && /14 derniers jours/.test(row.reason)));
+  assert.ok(report.rejected.some(row => row.id === 'Last year' && /14 derniers jours/.test(row.reason)));
+});
+
+test('album source diversity is preferred over repeating one publication', () => {
+ const rows=[
+  album('A',{source:'Label A',editorialSource:'Bandcamp Daily'}),
+  album('B',{source:'Label B',editorialSource:'Bandcamp Daily'}),
+  album('C',{source:'Label C',editorialSource:'Pitchfork',editorialKind:'critic-pick',editorialUrl:'https://pitchfork.com/reviews/albums/artist-release'}),
+ ];
+ const report=weeklyShortlist({...readyOptions,candidates:rows,profile:emptyTasteProfile()});
+ assert.equal(report.selected.albums.length,3);
+ assert.equal(report.selected.albums[0].item.id,'C');
 });
 
 test('jazz does not enter albums, radio shows, mixes, playlists or verified live picks', () => {
@@ -249,14 +261,16 @@ test('verified artists are extracted from YouTube titles and never repeated acro
   assert.deepEqual(new Set(report.draft.live.map(row=>row.creator)).size,3);
 });
 
-test('a trusted editorially endorsed older album outranks a merely new release',()=>{
+test('recent editorially reviewed albums win over equally curated older releases',()=>{
  const candidates=[
   album('Recent',{releaseDate:'2026-11-18',creator:'New release'}),
-  album('Well reviewed',{releaseDate:'2021-06-01',creator:'Great artist',editorialKind:'critic-pick',editorialSource:'Pitchfork',editorialUrl:'https://pitchfork.com/reviews/albums/a'}),
+  album('Older inside window',{releaseDate:'2026-11-10',creator:'Another artist'}),
+  album('Well reviewed but stale',{releaseDate:'2021-06-01',creator:'Great artist',editorialKind:'critic-pick',editorialSource:'Pitchfork',editorialUrl:'https://pitchfork.com/reviews/albums/a'}),
  ];
  const report=weeklyShortlist({...readyOptions,candidates,profile:emptyTasteProfile()});
- assert.equal(report.selected.albums[0].item.id,'Well reviewed');
- assert.match(report.selected.albums[0].publicReason,/Pitchfork/);
+ assert.equal(report.selected.albums[0].item.id,'Recent');
+ assert.ok(report.rejected.some(row => row.id === 'Well reviewed but stale'));
+ assert.ok(report.rankings.find(row=>row.item.id==='Recent').score>report.rankings.find(row=>row.item.id==='Older inside window').score);
 });
 
 test('short publisher preferences match fuller programme names without matching partial words',()=>{

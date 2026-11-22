@@ -44,6 +44,18 @@ test('accepts a complete edition and refuses incomplete or unverifiable selectio
   }
 });
 
+test('album dates enforce a 14-day window with a short documented manual exception',()=>{
+  const stale=selection();
+  stale.albums[0].date='2025-11-28';
+  assert.match(validateEdition(stale,[legacyEdition]).join('\\n'),/Album trop ancien/);
+  stale.albums[0].editorialException=true;
+  stale.albums[0].editorialExceptionReason='An editorial exception for an older album';
+  stale.albums[0].editorialUrl='https://daily.bandcamp.com/album-of-the-day/example';
+  assert.match(validateEdition(stale,[legacyEdition]).join('\\n'),/Album trop ancien/);
+  stale.albums[0].date='2026-11-06';
+  assert.deepEqual(validateEdition(stale,[legacyEdition]),[]);
+});
+
 test('changes editions at midnight in Paris in winter and summer', () => {
   for (const [startsOn, midnight] of [['2026-11-23', '2026-11-22T23:00:00Z'], ['2027-07-12', '2027-07-11T22:00:00Z']]) {
     const next = { number: '002', startsOn };

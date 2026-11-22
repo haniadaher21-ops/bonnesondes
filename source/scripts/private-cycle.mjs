@@ -11,6 +11,7 @@ import { readRunnerProfile, syncRpc } from '../private-sync/client.mjs';
 import { collectAlbumCatalogues, readPublicPage } from './album-catalogues.mjs';
 import { collectYouTubeMixes } from './youtube-mixes.mjs';
 import { collectEditorialEndorsements } from './editorial-endorsements.mjs';
+import { collectMusicPress, matchMusicPress } from './music-press.mjs';
 import { discover } from './discovery.mjs';
 import { legacyEdition, legacyItems, publishedFile, readJson } from './editorial-files.mjs';
 import {filterConflictingDates} from './release-metadata.mjs';
@@ -47,11 +48,12 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     && Number.isFinite(Date.parse(snapshot.at)) && now.getTime()-Date.parse(snapshot.at)>=0
     && now.getTime()-Date.parse(snapshot.at)<(snapshot.status.some(row=>!['ok','empty'].includes(row.status))?3600000:6*3600000) && Array.isArray(snapshot.records) && Array.isArray(snapshot.status)
 ;
-  const [collection,catalogues,endorsements] = await Promise.all([
+  const [collection,catalogues,endorsements,press] = await Promise.all([
     discover({sources,profile,existing:known,now,fetcher}),
     cached ? Promise.resolve({records:snapshot.records,status:snapshot.status.map(row=>({...row,cachedAt:snapshot.at}))})
       : collectAlbumCatalogues({startsOn,today:parisDate(now),fetcher,catalogues:catalogueConfig}),
     collectEditorialEndorsements({fetcher}),
+    collectMusicPress(readJson(new URL('../editorial/music-press.json',import.meta.url)),{fetcher,today:parisDate(now)}),
   ]);
   const date = now.toISOString();
   if(!cached)state.albumCatalogueSnapshot={at:date,startsOn,fingerprint:catalogueFingerprint,
@@ -90,11 +92,21 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     editorialKind:item.editorialKind,editorialClaim:item.editorialClaim,
   }));
   const bySource=new Map();
-  for(const record of [...priorAlbums,...registered,...catalogues.records,...linked,...endorsements.records]) {
+  for(const record of [...priorAlbums,...registered,...catalogues.records,...linked,...press.records,...endorsements.records]) {
     bySource.set(record.sourceUrl,{...(bySource.get(record.sourceUrl)??{}),
       ...Object.fromEntries(Object.entries(record).filter(([,value])=>value!==undefined))});
   }
   const uniqueRecords=[...bySource.values()];
+  // A media mention is only a lead until independent release and Spotify
+  // identity have been verified against the primary source.
+  for(const record of uniqueRecords) {
+    const mention=matchMusicPress(record,press.mentions);
+    const priority=x=>x?.editorialClaim==='Album of the Week'?3
+      : x?.editorialClaim==='Best New Music'?3
+      : x?.editorialClaim==='Album of the Day'?3
+      : x?.editorialKind?1:0;
+    if(mention && priority(mention)>priority(record)) Object.assign(record,mention);
+  }
   const preferredSources=[...profile.favoritePublications,...profile.favoriteRadios,...profile.spotify.map(row=>row.name).filter(Boolean)].map(normalized);
   const preferredArtists=profile.favoriteArtists.map(normalized);
   const priority=record=>38*Number(preferredArtists.includes(normalized(record.creator)))
@@ -155,7 +167,7 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   state.dryRuns = state.dryRuns.filter(run => Date.parse(run.at) >= now.getTime()-14*86400000).slice(-30);
   if (mode === 'collect') {
     await saveState();
-    return {status:'collected', candidates:candidates.length, albums:albums.length,incremental,profileRevision:remote.revision, catalogues:catalogues.status};
+    return {status:'collected', candidates:candidates.length, albums:albums.length,incremental,profileRevision:remote.revision, catalogues:catalogues.status,press:press.status};
   }
 
   const lives = await verifyLives(candidates,sources,env.YOUTUBE_DATA_API_KEY,fetcher);
@@ -180,7 +192,7 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   }]));
   async function writeReport(build='not-run') {
     const result=observationReport(report,{profileRevision:remote.revision,profileUpdatedAt:remote.profileUpdatedAt,
-      profileSignalCounts,comparison,incremental,albumEvidence:evidence,catalogues:[...catalogues.status,...endorsements.status],sources:collection.sources,liveStatus:lives.status,
+      profileSignalCounts,comparison,incremental,albumEvidence:evidence,catalogues:[...catalogues.status,...endorsements.status,...press.status],sources:collection.sources,liveStatus:lives.status,
       youtubeMixes:youtubeMixSummary,build});
     if(env.BONNES_ONDES_OBSERVATION_DIR) {
       await mkdir(env.BONNES_ONDES_OBSERVATION_DIR,{recursive:true});

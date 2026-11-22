@@ -72,6 +72,7 @@ export async function verifyAlbums(records, fetcher = fetch) {
         releaseDate, releaseProofUrl: record.dateProofUrl ?? primary.href, date: releaseDate, dateKind: 'release', verificationStatus: 'primary-verified',
         embed: { provider: 'spotify', id: albumId }, listeningProofUrl:oembedUrl,listeningMappingUrl:record.url?record.listeningMappingUrl:listening.proof, tags:record.tags ?? [],
         editorialSource:record.editorialSource,editorialUrl:record.editorialUrl,editorialKind:record.editorialKind,editorialClaim:record.editorialClaim,
+        editorialPublishedAt:record.editorialPublishedAt,
       };
     } catch { /* A blocked or ambiguous source cannot confirm an original release. */ }
     results.push({ title: record.title, creator:record.creator, sourceUrl: record.sourceUrl, candidate, verifiedReleaseDate, ...(!candidate && {reason: failure}) });

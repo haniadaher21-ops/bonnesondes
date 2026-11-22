@@ -11,7 +11,14 @@ test('edition 002 is manually published today with the exact verified preview co
   assert.equal(item.startsOn,'2026-11-23');
   assert.equal(item.publishedAt,'2026-11-22');
   assert.deepEqual(validateEdition(item,[legacyEdition],legacyItems),[]);
-  assert.deepEqual(item.albums.map(x=>x.title),['All My Friends','Appalachia','SAD']);
+  assert.deepEqual(item.albums.map(x=>x.title),['All My Friends','Trouble Mountain','Secret Language']);
+  assert.deepEqual(item.albums.map(x=>x.creator),['Chastity Belt','Aesop Rock & Blockhead','Krill']);
+  assert.deepEqual(item.albums.map(x=>x.date),['2026-11-06','2026-11-13','2026-11-13']);
+  assert.equal(item.albums[0].editorialException,true);
+  assert.ok(item.albums[0].editorialExceptionReason.length>=20);
+  const staleAlbum=structuredClone(item);
+  staleAlbum.albums[2].date='2025-11-28';
+  assert.match(validateEdition(staleAlbum,[legacyEdition],legacyItems).join('\\n'),/Album trop ancien/);
   assert.deepEqual(item.mixes.slice(0,3).map(x=>x.sourceId),[
     'nts-can-you-feel-the-sun','nova-danse','youtube-mix-UC0QX1jatZgGGYkF7xXCcF8Q']);
   assert.equal(item.mixes.filter(isNtsMix).length,1);
