@@ -171,6 +171,7 @@ export default function Journal() {
   const [station, setStation] = useState(stations[0]);
   const [radioOpen, setRadioOpen] = useState(false);
   const [audioError, setAudioError] = useState(false);
+  const radioAudioRef = useRef<HTMLAudioElement>(null);
   const [playlistError, setPlaylistError] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [curator, setCurator] = useState('');
@@ -271,6 +272,18 @@ export default function Journal() {
     setCurator(''); setGenre(''); setSeason(''); setShelfMood('');
   };
 
+  // Keep the audio element mounted before a user clicks « Écouter »:
+  // calling play() in that same trusted event enables one-click listening.
+  const stopRadio = () => {
+    const audio = radioAudioRef.current;
+    if (audio) {
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+    }
+    setRadioOpen(false);
+  };
+
   const startVideo = (item: Recommendation) => {
     if (item.embed?.provider !== 'youtube' || !playableYouTubeId(item.embed.id)) return;
     const id = item.embed.id;
@@ -278,7 +291,7 @@ export default function Journal() {
     setActiveVideo(current => current?.embed?.provider === 'youtube' && current.embed.id === id ? current : item);
     setVideoExpanded(false);
     setActiveMix(null);
-    setRadioOpen(false);
+    stopRadio();
     setSelected(null);
   };
 
@@ -287,11 +300,24 @@ export default function Journal() {
     setActiveMix(current => current?.id === item.id ? current : item);
     setActiveVideo(null);
     setVideoExpanded(false);
-    setRadioOpen(false);
+    stopRadio();
     setSelected(null);
   };
 
   const tune = (next: typeof station) => {
+    const audio = radioAudioRef.current;
+    // Invoke play() synchronously from the click/change event, not in an effect
+    // after the panel mounts: otherwise browsers may require a second click.
+    if (audio) {
+      audio.pause();
+      if (next.stream) {
+        if (audio.getAttribute('src') !== next.stream) audio.src = next.stream;
+        void audio.play().catch(() => setAudioError(true));
+      } else {
+        audio.removeAttribute('src');
+        audio.load();
+      }
+    }
     setActiveVideo(null);
     setActiveMix(null);
     setStation(next);
@@ -587,19 +613,24 @@ export default function Journal() {
       onResize={() => setVideoExpanded(value => !value)} onClose={() => { setActiveVideo(null); setVideoExpanded(false); }} />
 
     <aside className={'radio-dock' + ((activeVideo || activeMix) ? ' radio-dock-with-video' : '')} aria-label="Lecteur radio">
-      {radioOpen && <div className="dock-expanded">
-        <div className="flex gap-2 items-center justify-between"><strong>{station.name}</strong><button className="icon-button" onClick={() => setRadioOpen(false)} aria-label="Fermer le lecteur radio"><X size={18} /></button></div>
-        <label className="filter">Station<select value={station.name} onChange={event => {
-          const next = stations.find(item => item.name === event.target.value);
-          if (next) tune(next);
-        }}>{stations.map(item => <option key={item.name}>{item.name}</option>)}</select></label>
-        {station.metadata && <RadioTrack key={station.name} metadata={station.metadata}
-          saveTrack={track => saveButton(currentRadioTrack(track, station.name), 'text-link radio-save', true)} />}
-        {station.stream && <audio key={station.stream} src={station.stream} controls preload="none" onError={() => setAudioError(true)} />}
-        {station.embed && <iframe className="radio-frame" title={station.name + ' en direct'} src={station.embed} allow="autoplay" />}
-        {audioError && <p role="status">Le flux n’a pas démarré. Essaie le lecteur de la station.</p>}
-        <SourceLink item={station}>Ouvrir le site de la radio</SourceLink>
-      </div>}
+      <div className="dock-expanded" hidden={!radioOpen}>
+        {radioOpen && <>
+          <div className="flex gap-2 items-center justify-between"><strong>{station.name}</strong><button className="icon-button" onClick={stopRadio} aria-label="Fermer le lecteur radio"><X size={18} /></button></div>
+          <label className="filter">Station<select value={station.name} onChange={event => {
+            const next = stations.find(item => item.name === event.target.value);
+            if (next) tune(next);
+          }}>{stations.map(item => <option key={item.name}>{item.name}</option>)}</select></label>
+          {station.metadata && <RadioTrack key={station.name} metadata={station.metadata}
+            saveTrack={track => saveButton(currentRadioTrack(track, station.name), 'text-link radio-save', true)} />}
+        </>}
+        <audio ref={radioAudioRef} controls preload="none" hidden={!radioOpen || !station.stream}
+          onError={() => setAudioError(true)} />
+        {radioOpen && <>
+          {!station.stream && station.embed && <iframe className="radio-frame" title={station.name + ' en direct'} src={station.embed} allow="autoplay" />}
+          {audioError && <p role="status">Le flux n’a pas démarré. Utilise Play dans le lecteur ou essaie le site de la station.</p>}
+          <SourceLink item={station}>Ouvrir le site de la radio</SourceLink>
+        </>}
+      </div>
       {!radioOpen && <button className="dock-toggle" onClick={() => tune(station)}><Headphones size={18} /> Lecteur radio <Plus size={15} /></button>}
     </aside>
 

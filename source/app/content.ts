@@ -75,9 +75,13 @@ export interface Station {
   metadata?: RadioMetadata;
   embed?: string;
 }
+// Official Radio France Open API liveStream values for the themed FIP channels.
+const fipStreams: Record<number, string> = {
+  64: 'fiprock', 65: 'fipjazz', 66: 'fipgroove', 74: 'fipelectro',
+};
 const fip = (name: string, station: number, description: string): Station => ({
   name, label: 'Radio France', description, url: 'https://www.radiofrance.fr/fip',
-  embed: 'https://embed.radiofrance.fr/fip/player?id_station=' + station,
+  stream: 'https://icecast.radiofrance.fr/' + fipStreams[station] + '-midfi.mp3?id=openapi',
   metadata: { provider: 'radio-france', endpoint: 'https://api.radiofrance.fr/livemeta/pull/' + station },
 });
 
