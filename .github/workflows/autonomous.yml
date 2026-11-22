@@ -7,9 +7,6 @@ on:
         type: choice
         options: [observe, collect, publish]
         default: observe
-  schedule:
-    - cron: '0 18 * * 0'
-      timezone: Europe/Paris
 permissions:
   contents: read
 concurrency:
