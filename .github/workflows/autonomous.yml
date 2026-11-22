@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   cycle:
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && vars.AUTO_PUBLISH_ENABLED == 'true')
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -54,10 +54,6 @@ jobs:
           set -euo pipefail
           mode="$REQUEST_MODE"
           if [ -z "$mode" ]; then mode=observe; fi
-          if [ "$EVENT_NAME" = schedule ]; then
-            mode=collect
-            if [ "$SCHEDULE" = '0 18 * * 0' ]; then mode=publish; fi
-          fi
           node scripts/private-cycle.mjs "$mode"
       - name: Enregistrer la release complète
         if: steps.prepare.outputs.status == 'ready' && vars.AUTO_PUBLISH_ENABLED == 'true' && github.ref == 'refs/heads/main'
