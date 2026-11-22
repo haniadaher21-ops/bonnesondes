@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import {createHash} from 'node:crypto';
 import { test } from 'node:test';
 
 const source = readFileSync(new URL('../app/journal.tsx', import.meta.url), 'utf8');
@@ -43,4 +44,13 @@ test('both publication paths append editions and changes to published data rebui
   assert.match(manualPublisher, /JSON\.stringify\(\[\.\.\.published, draft\], null, 2\)/);
   assert.match(autoPublisher, /JSON\.stringify\(\[\.\.\.editions,draft\],null,2\)/);
   assert.match(workflow, /source\/editorial\/editions\.json/);
+});
+
+test('archive edition links omit peripheral counters, and the mix uses the exact uploaded JPEG',()=>{
+  assert.doesNotMatch(source,/edition-list-counts/);
+  assert.doesNotMatch(source,/edition\.albums\.length\} albums/);
+  assert.match(source,/\/art\/mix-semaine\.jpg/);
+  const image=readFileSync(new URL('../public/art/mix-semaine.jpg',import.meta.url));
+  assert.equal(image.length,227114);
+  assert.equal(createHash('sha256').update(image).digest('hex'),'ee02a71b8300e12124e489b42206ac7916875dbc1d22f8bfca0c43bba8f37a13');
 });
