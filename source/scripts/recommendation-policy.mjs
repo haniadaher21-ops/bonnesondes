@@ -1,4 +1,5 @@
 import { normalized } from './release-metadata.mjs';
+import { sourceUrl } from '../editorial/edition.mjs';
 
 // Never infer a musical genre from the hosting radio or video channel alone.
 // For jazz-dedicated programmes and labels with mixed/undocumented metadata,
@@ -30,4 +31,23 @@ export function livePerformer(title, knownArtist) {
   const artist=candidates.find(x=>typeof x==='string' && x.trim().length>1)?.trim();
   if(!artist || /^(?:live|full performance|official|session|concert)$/i.test(artist))return;
   return artist;
+}
+
+
+// An album earns recommendation status only when a real editorial selection names
+// that specific album. Neither a label catalogue nor a routine review is sufficient.
+export function editorialEndorsement(item) {
+  if (item?.format !== 'Album' || !item?.editorialUrl || !item?.editorialKind) return;
+  const url = sourceUrl(item.editorialUrl);
+  if (!url || url.port) return;
+  const host=url.hostname.replace(/^www\./,'');
+  const path=url.pathname.toLowerCase();
+  const kind=item.editorialKind;
+  const verified =
+    (host==='daily.bandcamp.com' && path.startsWith('/album-of-the-day/') && kind==='curator-pick')
+    || (host==='bandcamp.substack.com' && /^\/p\/i-love-this-record(?:-|$)/.test(path) && kind==='curator-pick')
+    || (host==='pitchfork.com' && /^\/reviews\/albums\/[^/]+\/?$/.test(path) && kind==='critic-pick');
+  if (!verified) return;
+  return {source:item.editorialSource,kind,url:url.origin+url.pathname,
+    claim:item.editorialClaim??(kind==='critic-pick'?'Best New Music':'Sélection éditoriale')};
 }
