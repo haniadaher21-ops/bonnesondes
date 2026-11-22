@@ -74,6 +74,20 @@ export async function verifyAlbums(records, fetcher = fetch) {
   return results;
 }
 
+// Use only explicit genre tags supplied by the verified channel. Do not guess
+// that a video is soul, jazz or rap based on its channel or an artist's name.
+const musicStyles = ['jazz','soul','neo soul','funk','disco','house','techno','electronic','electronica',
+  'ambient','indie rock','psychedelic rock','rock','punk','post punk','hip hop','rap','r b',
+  'reggae','dub','afrobeat','afrobeats','folk','country','pop','experimental','dance'];
+function musicTags(snippet) {
+  const published = Array.isArray(snippet?.tags) ? snippet.tags.slice(0,50) : [];
+  const tagged = published.filter(value=>typeof value==='string').map(normalized);
+  return musicStyles.filter(style => {
+    const n=normalized(style);
+    return tagged.some(value => (' '+value+' ').includes(' '+n+' '));
+  });
+}
+
 function seconds(duration) {
   const match = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(duration ?? '');
   return match ? Number(match[1] ?? 0) * 3600 + Number(match[2] ?? 0) * 60 + Number(match[3] ?? 0) : 0;
@@ -101,7 +115,9 @@ export async function verifyLives(candidates, sources, key, fetcher = fetch) {
         if (!item || video.snippet?.channelId !== channels.get(item.sourceId) || video.status?.embeddable !== true
           || video.status.privacyStatus !== 'public' || video.snippet.liveBroadcastContent !== 'none' || duration <= 180
           || /\b(interview|shorts?|teaser|trailer|extrait|clip|official music video|behind the scenes)\b/i.test(title)) continue;
-        items.push({ ...item, title, creator: livePerformer(title,item.creator), minutes: duration / 60, verificationStatus: 'performance-verified' });
+        items.push({ ...item, title, creator: livePerformer(title,item.creator),
+          tags: [...new Set([...(item.tags ?? []), ...musicTags(video.snippet)])],
+          minutes: duration / 60, verificationStatus: 'performance-verified' });
       }
     }
   } catch {
