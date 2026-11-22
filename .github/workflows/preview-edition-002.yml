@@ -20,6 +20,11 @@ on:
       - 'source/editorial/sources.json'
       - 'source/editorial/album-catalogues.json'
       - 'source/test/weekly.test.mjs'
+      - 'source/test/edition-archives.test.mjs'
+      - 'source/scripts/automation-policy.mjs'
+      - 'source/app/journal.tsx'
+      - 'source/public/art/mix-semaine.jpg'
+      - 'art/mix-semaine.jpg'
       - 'source/test/editorial.test.mjs'
   workflow_dispatch:
 
@@ -72,7 +77,7 @@ jobs:
           node --input-type=module <<'JS'
           import {readFileSync} from 'node:fs';
           import {join} from 'node:path';
-          import {excludesJazz,editorialEndorsement} from './scripts/recommendation-policy.mjs';
+          import {excludesJazz,editorialEndorsement,isFreshMusicMix} from './scripts/recommendation-policy.mjs';
           const report=JSON.parse(readFileSync(join(process.env.BONNES_ONDES_OBSERVATION_DIR,'recommendations.json'),'utf8'));
           const rows=Object.values(report.selected).flat();
           if(!report.complete || rows.some(item=>excludesJazz(item))) throw new Error('Sélection incomplète ou jazz détecté.');
@@ -81,7 +86,14 @@ jobs:
           const lives=report.selected.live;
           const creators=lives.map(item=>item.creator?.normalize('NFKD').toLowerCase().trim()).filter(Boolean);
           if(lives.length!==3 || creators.length!==3 || new Set(creators).size!==3) throw new Error('Trois artistes différents sont obligatoires pour les lives.');
-          console.log(JSON.stringify({albums:report.selected.albums.map(x=>x.title),radio:report.selected.otherRadio.map(x=>x.title),live:report.selected.live.map(x=>x.creator)}));
+          const studios=lives.map(item=>item.sourceId??item.source);
+          if(new Set(studios).size!==3) throw new Error('Trois formats ou diffuseurs live différents sont requis.');
+          const djSets=[...report.selected.nts,...report.selected.otherRadio];
+          const date=report.generatedAt.slice(0,10);
+          if(djSets.length!==2 || djSets.some(item=>!isFreshMusicMix({...item,format:'Radio show'},report.startsOn,date)))
+            throw new Error('Deux véritables DJ sets de la semaine précédente sont obligatoires.');
+          if(new Set(djSets.map(item=>item.sourceId)).size!==2) throw new Error('Deux programmes DJ différents sont obligatoires.');
+          console.log(JSON.stringify({albums:report.selected.albums.map(x=>x.title),mixes:djSets.map(x=>({title:x.title,date:x.date,source:x.source})),live:lives.map(x=>({artist:x.creator,format:x.source}))}));
           JS
       - name: Mettre en ligne seulement la route de prévisualisation
         env:
