@@ -64,7 +64,8 @@ export function validateEdition(edition, earlier = [], catalog = []) {
       errors.push(group + ' doit être une liste.');
       continue;
     }
-    const [min, max] = { albums: [3, 3], mixes: [2, Infinity], playlists: [1, 1], live: [3, Infinity] }[group];
+    const strictMixLineup=edition.mixPolicy==='nts-nova-youtube-v1';
+    const [min, max] = { albums: [3, 3], mixes: strictMixLineup ? [3,3] : [2, Infinity], playlists: [1, 1], live: [3, Infinity] }[group];
     if (items.length < min || items.length > max) errors.push('Quota non respecté pour ' + group + '.');
     for (const item of items) {
       if (!item || item.format !== format || !text(item.id) || !text(item.title) || !text(item.source) || !text(item.reason)) {
@@ -102,7 +103,15 @@ export function validateEdition(edition, earlier = [], catalog = []) {
   }
   const mixes = Array.isArray(edition.mixes) ? edition.mixes : [];
   if (!mixes.some(item => isNts(sourceUrl(item?.url)))) errors.push('Un épisode NTS est obligatoire.');
-  // A genuine, recent set from a second NTS DJ programme is preferable to a Nova talk show.
+  if (edition.mixPolicy === 'nts-nova-youtube-v1') {
+    const nova=mixes.filter(item=>item?.sourceId==='nova-danse' && item?.mixKind==='dj-set'
+      && sourceUrl(item.url)?.hostname==='podcasts.nova.fr');
+    const youtube=mixes.filter(item=>item?.mixKind==='curated-mix' && item?.embed?.provider==='youtube'
+      && item?.audienceVerified===true && sourceUrl(item.url)?.hostname==='www.youtube.com');
+    if(nova.length!==1)errors.push('Un vrai DJ set Radio Nova est obligatoire.');
+    if(youtube.length!==1)errors.push('Un mix YouTube à audience vérifiée est obligatoire.');
+    if(mixes.filter(item=>isNts(sourceUrl(item?.url))).length!==1)errors.push('Un unique mix NTS est obligatoire.');
+  }
   if (!mixes.some(item => item?.id === edition.featuredId && isNts(sourceUrl(item.url)))) errors.push('Le mix vedette doit être un épisode NTS sélectionné.');
   return errors;
 }
