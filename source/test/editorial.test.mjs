@@ -31,7 +31,7 @@ test('accepts a complete edition and refuses incomplete or unverifiable selectio
   twoLives.live = twoLives.live.slice(0, 2);
   assert.match(validateEdition(twoLives, [legacyEdition]).join('\n'), /Quota non respecté pour live/);
   const draft = selection();
-  draft.albums[0].date = '2026-10-20';
+  draft.albums[0].date = '2026-12-20';
   draft.albums[1].date = '2026-11-31';
   draft.albums[2].id = draft.albums[0].id;
   draft.albums[1].url = 'javascript:alert(1)';
@@ -39,7 +39,7 @@ test('accepts a complete edition and refuses incomplete or unverifiable selectio
   draft.live[0].embed = { provider: 'youtube', id: 'xL1yyEflGlo' };
   draft.playlists[0].reason = '';
   const errors = validateEdition(draft, [legacyEdition]).join('\n');
-  for (const expectation of [/hors fenêtre/, /Date invalide/, /HTTPS/, /Doublon/, /Quota/, /épisode NTS/, /Lecteur invalide/, /raison/]) {
+  for (const expectation of [/future/, /Date invalide/, /HTTPS/, /Doublon/, /Quota/, /épisode NTS/, /Lecteur invalide/, /raison/]) {
     assert.match(errors, expectation);
   }
 });
