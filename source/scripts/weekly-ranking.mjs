@@ -1,17 +1,15 @@
 import { canonicalUrl, editionItems, isoDate, parisDate, sourceUrl, validateEdition } from '../editorial/edition.mjs';
 import { spotifyPlaylistId } from './discovery-feeds.mjs';
 import { normalized } from './weekly-evidence.mjs';
-import { excludesJazz, editorialEndorsement, isFreshMusicMix } from './recommendation-policy.mjs';
+import { excludesJazz, editorialEndorsement, isFreshMusicMix, isNovaMix, isNtsMix, isYouTubeMix } from './recommendation-policy.mjs';
 
 const DAY = 86400000;
 const addDays = (date, days) => new Date(Date.parse(date) + days * DAY).toISOString().slice(0, 10);
-const radioNts = item => /^https:\/\/(?:www\.)?nts\.live\/shows\/[^/]+\/episodes\/[^/]+$/.test(canonicalUrl(item.url));
 const groups = [
   { name: 'albums', count: 3, max: 3, match: item => item.format === 'Album' },
-  { name: 'nts', count: 1, max: 1, match: item => item.format === 'Radio show' && radioNts(item) },
-  // Prefer a different station when one published a DJ set this week.
-  // If Nova Danse has no new set, a different NTS DJ programme beats a talk show.
-  { name: 'otherRadio', count: 1, max: 1, match: item => item.format === 'Radio show' },
+  { name: 'nts', count: 1, max: 1, match: isNtsMix },
+  { name: 'nova', count: 1, max: 1, match: isNovaMix },
+  { name: 'youtube', count: 1, max: 1, match: isYouTubeMix },
   { name: 'playlists', count: 1, max: 1, match: item => item.format === 'Playlist' },
   { name: 'live', count: 3, max: 3, match: item => item.format === 'Live session' },
 ];
@@ -106,7 +104,7 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
   const evidence = {
     Album: endorsement ? 'Sélection « ' + endorsement.claim + ' » de ' + (endorsement.source??'un média musical')
       + ', sortie originale vérifiée (' + date + ')' : 'Aucune recommandation éditoriale attestée',
-    'Radio show': (item.mixKind==='curated-mix' ? 'Sélection musicale YouTube publiée le ' : 'DJ set musical diffusé le ')
+    'Radio show': (item.mixKind==='curated-mix' ? 'Sélection YouTube d’un DJ établi publiée le ' : 'DJ set musical diffusé le ')
       + date + ' sur ' + (item.provider ?? item.source),
     Playlist: item.playlistOrigin === 'publisher-discovered' ? 'Lien vérifié et publié par ' + (item.creator ?? item.provider ?? 'le média source') : 'Playlist vérifiée sur Spotify',
     'Live session': 'Performance publiée par une chaîne officielle, vidéo intégrable de ' + Math.round(item.minutes * 60) + ' secondes',
@@ -124,6 +122,7 @@ function exclusion(item, today, startsOn) {
   }
   if (item.format === 'Live session' && !normalized(item.creator)) return 'Artiste de la performance non identifié';
   if (item.format === 'Radio show' && !['source-verified', 'editor-verified'].includes(item.verificationStatus)) return 'Replay individuel à vérifier';
+  if (item.format === 'Radio show' && item.mixKind==='curated-mix' && !isYouTubeMix(item)) return 'Audience et crédibilité du DJ YouTube non vérifiées';
   if (item.format === 'Radio show' && !isFreshMusicMix(item,startsOn,today)) return 'Pas un DJ mix musical de la semaine précédente';
   if (item.format === 'Playlist' && (!spotifyPlaylistId(item.url) || item.verificationStatus !== 'source-verified' || !item.creator)) return 'Lien ou curateur non vérifié';
   if (item.format === 'Live session' && item.verificationStatus !== 'performance-verified') return 'Durée ou caractère officiel de la session à vérifier';
@@ -169,7 +168,7 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
         // For live discoveries, each pick must use a different format/studio.
         // For DJ sets, two episodes from the same series aren't diverse enough.
         if (group.name==='live' && localProviders.has(provider(entry))) return false;
-        if (group.name==='otherRadio' && item.sourceId && usedMixPrograms.has(item.sourceId)) return false;
+        if (['nts','nova','youtube'].includes(group.name) && item.sourceId && usedMixPrograms.has(item.sourceId)) return false;
         if (chosen.length >= group.count && localProviders.has(provider(entry))) return false;
         const key = canonicalUrl(item.url);
         const artist = normalized(item.creator);
@@ -177,17 +176,10 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
         return !ids.has(item.id) && !urls.has(key) && !(artist && item.format !== 'Playlist' && artists.has(artist))
           && !(performance && performances.has(performance));
       });
-      // Discovery can feature YouTube selectors as well as radio DJs. Prefer a
-      // different listening medium when its verified mix is comparably relevant.
-      const adjusted = entry => entry.score + 35 * Number(group.name==='otherRadio' && entry.item.embed?.provider==='youtube')
+      const adjusted = entry => entry.score
         - 18 * Number(localProviders.has(provider(entry))) - 6 * (providers.get(provider(entry)) ?? 0);
-      remaining.sort((a, b) => adjusted(b) - adjusted(a));
-      // At least one listener-appropriate YouTube mix deserves a place beside
-      // the NTS mix when a verified, recent curated set is available.
-      const youtubeAlternatives = group.name==='otherRadio'
-        ? remaining.filter(row=>row.item.mixKind==='curated-mix' && row.item.embed?.provider==='youtube'
-          && row.score>0) : [];
-      const entry = youtubeAlternatives[0] ?? remaining[0];
+      remaining.sort((a,b)=>adjusted(b)-adjusted(a));
+      const entry = remaining[0];
       if (!entry) break;
       const { item } = entry;
       chosen.push(entry);
@@ -208,7 +200,8 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
   const draft = {
     number: String(Number(previous?.number ?? 1) + 1).padStart(3, '0'),
     startsOn, label: 'semaine du ' + startsOn, albumWindowStart, featuredId: picks('nts')[0]?.id,
-    albums: picks('albums'), mixes: [...picks('nts'), ...picks('otherRadio')], playlists: picks('playlists'), live: picks('live'),
+    mixPolicy:'nts-nova-youtube-v1',
+    albums: picks('albums'), mixes: [...picks('nts'), ...picks('nova'), ...picks('youtube')], playlists: picks('playlists'), live: picks('live'),
   };
   const gaps = Object.fromEntries(groups.filter(group => selected[group.name].length < group.count)
     .map(group => [group.name, group.count - selected[group.name].length]));
