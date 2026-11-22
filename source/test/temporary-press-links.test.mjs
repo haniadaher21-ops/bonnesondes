@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import {readPublicPage} from '../scripts/album-catalogues.mjs';
-import {bandcampLinks} from '../scripts/bandcamp-albums.mjs';
+import {bandcampLinks,bandcampAlbum} from '../scripts/bandcamp-albums.mjs';
 import {musicPressMentions,musicPressAlbumReferences} from '../scripts/music-press.mjs';
 test('inspect outgoing primary album references from real curated articles',{timeout:55000},async()=>{
  const pages=[
@@ -18,4 +18,27 @@ test('inspect outgoing primary album references from real curated articles',{tim
     direct:musicPressAlbumReferences(html,url,mentions).slice(0,12).map(x=>({creator:x.creator,title:x.title,sourceUrl:x.sourceUrl,url:x.url}))};
  }));
  console.log('PRESS_PRIMARY_LINK_PROBE',JSON.stringify(results));
+});
+
+test('check exact album releases and Spotify alternate ids',{timeout:40000},async()=>{
+ const albums=[
+   ['Krill','https://wheretheresakrilltheresaway.bandcamp.com/album/secret-language'],
+   ['Aesop Rock & Blockhead','https://aesoprock.bandcamp.com/album/trouble-mountain'],
+ ];
+ const rows=await Promise.all(albums.map(async([name,url])=>{
+  try {
+   const html=await readPublicPage(url);
+   const release=bandcampAlbum(html,url,name);
+   return {name,parsed:!!release,title:release?.title,creator:release?.creator,date:release?.releaseDate};
+  }catch(error){return {name,error:String(error)}}
+ }));
+ const ids=['0Fta5KudJiX6HpDWApUu8y','0QGtOoyctKBPjgs7ihFxLv'];
+ const embeds=await Promise.all(ids.map(async id=>{
+  try{
+   const resp=await fetch('https://open.spotify.com/oembed?url='+encodeURIComponent('https://open.spotify.com/album/'+id),{signal:AbortSignal.timeout(9000)});
+   const x=await resp.json();
+   return {id,status:resp.status,title:x.title};
+  }catch(error){return {id,error:String(error)}}
+ }));
+ console.log('ALBUM_RELEASE_VERIFICATION',JSON.stringify({rows,embeds}));
 });
