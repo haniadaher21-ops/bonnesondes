@@ -338,3 +338,21 @@ test('an eligible recent YouTube music mix can replace the second NTS set',()=>{
   assert.equal(report.selected.otherRadio[0].item.id,'Soul selection');
   assert.deepEqual(report.draft.mixes.map(x=>x.id),['NTS','Soul selection']);
 });
+
+test('a named vinyl DJ mix outranks a generic automated-looking YouTube compilation',()=>{
+ const channel=variant=>'UC'+variant.repeat(22);
+ const youtube=(id,title,creator,variant)=>item(id,'Radio show',{
+   title,creator,source:'YouTube · '+creator,provider:'YouTube',sourceId:'youtube-mix-'+channel(variant),
+   mixKind:'curated-mix',date:'2026-11-17',verificationStatus:'source-verified',minutes:50,
+   url:'https://www.youtube.com/watch?v='+('a'.repeat(10)+variant),
+   sourceUrl:'https://www.youtube.com/channel/'+channel(variant),
+   videoSourceUrl:'https://www.youtube.com/watch?v='+('a'.repeat(10)+variant),
+   embed:{provider:'youtube',id:'a'.repeat(10)+variant},officialVideo:true,
+ });
+ const generic=youtube('Generic','Best Vintage Funk Mix 2026','Music Mixes','A');
+ const real=youtube('Actual DJ','All-vinyl 80s R&B Soul Hip Hop DJ Mix | DJ Tommy Samuel','DJ Tommy Samuel','B');
+ const result=weeklyShortlist({...readyOptions,candidates:[...completeCandidates,generic,real],profile:emptyTasteProfile()});
+ assert.equal(result.selected.otherRadio[0].item.id,'Actual DJ');
+ assert.ok(result.rankings.find(row=>row.item.id==='Actual DJ').score
+   > result.rankings.find(row=>row.item.id==='Generic').score);
+});
