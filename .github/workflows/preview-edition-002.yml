@@ -16,6 +16,8 @@ on:
       - 'source/test/incremental-discovery.test.mjs'
       - 'source/scripts/album-catalogues.mjs'
       - 'source/scripts/discovery.mjs'
+      - 'source/scripts/discovery-feeds.mjs'
+      - 'source/scripts/nova-mixes.mjs'
       - 'source/scripts/youtube-mixes.mjs'
       - 'source/test/youtube-mixes.test.mjs'
       - 'source/app/content.ts'
@@ -47,7 +49,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[preview-edition-002]'))
     runs-on: ubuntu-latest
     timeout-minutes: 40
-    # Require 100000 video views and soul/R&B/blues/pop/light-house evidence, keeping publication manual.
+    # Test a *different* 100k+ view soul/R&B YouTube mix, and inspect other Nova podcasts. No publication.
     steps:
       - uses: actions/checkout@v4
         with:
@@ -72,6 +74,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
           AUTO_PUBLISH_ENABLED: 'false'
           BONNES_ONDES_PREVIEW_DIR: ${{ runner.temp }}/bonnes-ondes-preview
+          BONNES_ONDES_PREVIEW_EXCLUDE_YOUTUBE_IDS: 'K6en74gqBSM'
           BONNES_ONDES_OBSERVATION_DIR: ${{ runner.temp }}/bonnes-ondes-observation
         run: node scripts/private-cycle.mjs observe
       - name: Contrôler les choix réels avant toute prévisualisation
@@ -105,6 +108,7 @@ jobs:
             throw new Error('Un mix NTS est obligatoire.');
           if(report.selected.nova.length!==1 || !isNovaMix({...report.selected.nova[0],format:'Radio show'}))
             throw new Error('Un mix Nova Danse est obligatoire.');
+          if(report.selected.youtube.some(x=>x.embed?.id==='K6en74gqBSM')) throw new Error('Le mix de comparaison doit être différent de Nia.');
           if(report.selected.youtube.length!==1 || !isYouTubeMix({...report.selected.youtube[0],format:'Radio show'})
              || report.selected.youtube[0].viewCount<100000 || report.selected.youtube[0].subscriberCount<2500
              || report.selected.youtube[0].mixStyleVerified!==true
