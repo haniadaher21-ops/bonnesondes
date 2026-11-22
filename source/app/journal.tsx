@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { ArrowDown, ArrowRight, ArrowUpRight, Bookmark, Disc3, Headphones, Heart, Menu, Music2, Play, Plus, Radio, ThumbsDown, X } from 'lucide-react';
+import { ArrowDown, ArrowRight, ArrowUpRight, Bookmark, Disc3, Headphones, Heart, Maximize2, Menu, Minimize2, Music2, Play, Plus, Radio, ThumbsDown, X } from 'lucide-react';
 import { archive, catalog, issues, live, parsePlaylist, personalPlaylist, playlists, stations, type Format, type Recommendation } from './content';
 
 import { selectEdition } from '../editorial/edition.mjs';
@@ -9,6 +9,7 @@ import { editionShelf } from '../editorial/shelves.mjs';
 import RadioTrack, { type OnAir } from './radio-track';
 import ProfileSync from './profile-sync';
 import TastePreferences from './taste-preferences';
+import { playableYouTubeId, youtubeEmbedSrc } from '../scripts/youtube-player.mjs';
 
 const pages = [
   ['rotation', 'Sélection'], ['radio', 'Radios'], ['playlists', 'Playlists'],
@@ -39,14 +40,46 @@ function SourceLink({ item, children }: { item: { url: string }; children: React
 }
 
 function Player({ item }: { item: Recommendation }) {
-  if (!item.embed) return null;
-  const { provider, id } = item.embed;
-  const spotify = provider === 'spotify';
-  return <iframe className={spotify ? 'spotify-frame' : 'youtube-frame'} loading="lazy"
+  if (item.embed?.provider !== 'spotify') return null;
+  return <iframe className="spotify-frame" loading="lazy"
     title={'Lecteur : ' + item.title}
-    src={spotify ? 'https://open.spotify.com/embed/' + (item.format === 'Album' ? 'album/' : 'playlist/') + id + '?locale=fr' : 'https://www.youtube-nocookie.com/embed/' + id + '?hl=fr'}
-    allow={spotify ? 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture' : 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share'}
+    src={'https://open.spotify.com/embed/' + (item.format === 'Album' ? 'album/' : 'playlist/') + item.embed.id + '?locale=fr'}
+    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
     allowFullScreen />;
+}
+
+function PersistentYouTubePlayer({ item, expanded, onResize, onClose }: {
+  item: Recommendation | null; expanded: boolean; onResize: () => void; onClose: () => void;
+}) {
+  const videoId = item?.embed?.provider === 'youtube' ? item.embed.id : null;
+  const src = videoId ? youtubeEmbedSrc(videoId) : undefined;
+  if (!src || !item) return null;
+  // One iframe, outside the conditionally rendered tabs: changing #mix / #live /
+  // #radio never destroys it or resets the playhead.
+  return <aside className={'video-dock' + (expanded ? ' video-dock-expanded' : '')}
+    aria-label="Lecteur YouTube persistant" role="region">
+    <div className="video-dock-bar">
+      <div className="video-dock-heading"><strong>Vidéo en cours</strong><span title={item.title}>{item.title}</span></div>
+      <div className="video-dock-controls">
+        <button type="button" className="video-dock-button" onClick={onResize}
+          title={expanded ? 'Réduire le lecteur' : 'Agrandir le lecteur'}
+          aria-label={expanded ? 'Réduire le lecteur YouTube' : 'Agrandir le lecteur YouTube'}>
+          {expanded ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
+        </button>
+        <button type="button" className="video-dock-button" onClick={onClose}
+          title="Arrêter et fermer" aria-label="Arrêter la vidéo et fermer le lecteur YouTube"><X size={18} /></button>
+      </div>
+    </div>
+    <iframe key={videoId} className="video-dock-iframe"
+      title={'Lecteur YouTube : ' + item.title}
+      src={src} loading="eager" referrerPolicy="strict-origin-when-cross-origin"
+      allow="autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen; web-share"
+      allowFullScreen />
+    <div className="video-dock-foot">
+      <span>Le son continue quand tu changes de rubrique.</span>
+      <a href={item.url} target="_blank" rel="noopener noreferrer">Ouvrir sur YouTube <ArrowUpRight size={13} /></a>
+    </div>
+  </aside>;
 }
 
 function Artwork({ item, index = 0 }: { item: Recommendation; index?: number }) {
@@ -74,6 +107,8 @@ export default function Journal() {
   const [storageMessage, setStorageMessage] = useState('');
   const [mobileOpen, setMobileOpen] = useState(false);
   const [selected, setSelected] = useState<Recommendation | null>(null);
+  const [activeVideo, setActiveVideo] = useState<Recommendation | null>(null);
+  const [videoExpanded, setVideoExpanded] = useState(false);
   const [station, setStation] = useState(stations[0]);
   const [radioOpen, setRadioOpen] = useState(false);
   const [audioError, setAudioError] = useState(false);
@@ -187,7 +222,18 @@ export default function Journal() {
     setCurator(''); setGenre(''); setSeason(''); setShelfMood('');
   };
 
+  const startVideo = (item: Recommendation) => {
+    if (item.embed?.provider !== 'youtube' || !playableYouTubeId(item.embed.id)) return;
+    const id = item.embed.id;
+    // Starting the same video again must not remount the iframe and lose position.
+    setActiveVideo(current => current?.embed?.provider === 'youtube' && current.embed.id === id ? current : item);
+    setVideoExpanded(false);
+    setRadioOpen(false);
+    setSelected(null);
+  };
+
   const tune = (next: typeof station) => {
+    setActiveVideo(null);
     setStation(next);
     setAudioError(false);
     setRadioOpen(true);
@@ -222,7 +268,14 @@ export default function Journal() {
 
   const cards = (items: Recommendation[], withPlayers = false, compact = false) => <div className={compact ? 'card-grid card-grid-compact' : 'card-grid'}>
     {items.map((item, index) => <article className={compact ? 'music-card music-card-compact' : 'music-card'} key={item.id}>
-      {withPlayers && item.embed ? <Player item={item} /> : item.format === 'Album' && item.url.startsWith('https://open.spotify.com/album/')
+      {item.embed?.provider === 'youtube' && playableYouTubeId(item.embed.id)
+        ? <button type="button" className="video-launch" onClick={() => startVideo(item)}
+            aria-label={'Lire ' + item.title + ' dans le lecteur YouTube persistant'}
+            aria-pressed={activeVideo?.embed?.provider === 'youtube' && activeVideo.embed.id === item.embed.id}>
+            <Artwork item={item} index={index} />
+            <span className="video-launch-overlay"><span className="video-launch-play"><Play size={23} fill="currentColor" /></span>Lire ici</span>
+          </button>
+        : withPlayers && item.embed ? <Player item={item} /> : item.format === 'Album' && item.url.startsWith('https://open.spotify.com/album/')
         ? <a className="album-cover-link" href={item.url} target="_blank" rel="noopener noreferrer" aria-label={'Écouter '+item.title+' sur Spotify'}><Artwork item={item} index={index} /></a>
         : <Artwork item={item} index={index} />}
       <div className="card-body">
@@ -303,7 +356,9 @@ export default function Journal() {
             <p className="feature-meta">{featured.source} {featured.date && ' / ' + dateLabel(featured.date)}</p>
             <p className="feature-note">{featured.note}</p>
             <div className="flex flex-wrap gap-3 items-center">
-              <a className="primary" href={featured.url} target="_blank" rel="noopener noreferrer"><Play size={15} fill="currentColor" /> Écouter le mix</a>
+              {featured.embed?.provider === 'youtube' && playableYouTubeId(featured.embed.id)
+                ? <button className="primary" type="button" onClick={() => startVideo(featured)}><Play size={15} fill="currentColor" /> Écouter le mix</button>
+                : <a className="primary" href={featured.url} target="_blank" rel="noopener noreferrer"><Play size={15} fill="currentColor" /> Écouter le mix</a>}
               {saveButton(featured, 'hero-save')}
               {reactionButtons(featured)}
             </div>
@@ -456,7 +511,10 @@ export default function Journal() {
     <div className="shell"><ProfileSync library={library} recommendations={all} ready={ready} visible={page === 'preferences'} /></div>
     <footer className="shell footer"><a className="brand" href="#rotation"><img className="brand-mark" src={(process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/bonnes-ondes-mark.svg'} alt="" width="30" height="30" />Bonnes Ondes<span className="brand-dot">.</span></a><span>JOURNAL MUSICAL INDÉPENDANT</span></footer>
 
-    <aside className="radio-dock" aria-label="Lecteur radio">
+    <PersistentYouTubePlayer item={activeVideo} expanded={videoExpanded}
+      onResize={() => setVideoExpanded(value => !value)} onClose={() => { setActiveVideo(null); setVideoExpanded(false); }} />
+
+    <aside className={'radio-dock' + (activeVideo ? ' radio-dock-with-video' : '')} aria-label="Lecteur radio">
       {radioOpen && <div className="dock-expanded">
         <div className="flex gap-2 items-center justify-between"><strong>{station.name}</strong><button className="icon-button" onClick={() => setRadioOpen(false)} aria-label="Fermer le lecteur radio"><X size={18} /></button></div>
         <label className="filter">Station<select value={station.name} onChange={event => {
@@ -484,7 +542,11 @@ export default function Journal() {
         {(selected.date || selected.minutes) && <p className="metadata">{[selected.date && dateLabel(selected.date), selected.minutes && displayMinutes(selected.minutes)].filter(Boolean).join(' · ')}</p>}
         {selected.note && <p>{selected.note}</p>}
         {selected.reason && <div className="why"><p className="eyebrow">POURQUOI ON L’A CHOISI</p><p>{selected.reason}</p></div>}
-        <Player item={selected} />
+        {selected.embed?.provider === 'youtube'
+          ? <button className="primary" type="button" onClick={() => startVideo(selected)}>
+              <Play size={15} fill="currentColor" /> Lire dans le lecteur YouTube
+            </button>
+          : <Player item={selected} />}
         <div className="dialog-actions"><SourceLink item={selected}>{selected.format === 'Track' ? 'Rechercher sur Spotify' : selected.format === 'Album' ? 'Écouter sur Spotify' : (selected.embed ? 'Ouvrir sur ' : 'Écouter sur ') + selected.source}</SourceLink>
           {selected.format === 'Album' && selected.editorialUrl && <a className="text-link" href={selected.editorialUrl} target="_blank" rel="noopener noreferrer">Lire la recommandation {selected.editorialSource ? '('+selected.editorialSource+')' : ''} <ArrowUpRight size={15} /></a>}
           {saveButton(selected)}</div>

@@ -58,3 +58,31 @@ test('album covers and titles open Spotify, while curator citations remain secon
   assert.match(ui,/selected\.editorialUrl/);
   assert.doesNotMatch(ui,/\(selected\.format === 'Album' \|\| !selected\.embed \? 'Écouter sur '\)/);
 });
+
+
+test('YouTube videos launch a single persistent floating iframe, not a new inline player per tab',()=>{
+  assert.match(ui,/const \[activeVideo, setActiveVideo\] = useState<Recommendation \| null>\(null\)/);
+  assert.match(ui,/setActiveVideo\(current => current\?\.embed\?\.provider === 'youtube'/);
+  assert.match(ui,/className="video-launch" onClick=\{\(\) => startVideo\(item\)\}/);
+  assert.match(ui,/className="video-dock-iframe"/);
+  assert.match(ui,/referrerPolicy="strict-origin-when-cross-origin"/);
+  assert.match(ui,/loading="eager"/);
+  assert.match(ui,/allow="autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen; web-share"/);
+  assert.match(ui,/key=\{videoId\}/);
+  assert.match(ui,/onClose=\{\(\) => \{ setActiveVideo\(null\)/);
+  assert.match(ui,/setRadioOpen\(false\)/);
+  assert.match(ui,/setActiveVideo\(null\);\s*setStation\(next\)/);
+  assert.doesNotMatch(ui,/www\.youtube-nocookie\.com\/embed/);
+  assert.ok(ui.indexOf('<PersistentYouTubePlayer item={activeVideo}')>ui.indexOf('</main>'),
+    'The persistent YouTube iframe must live after main, outside conditional pages');
+  const readHash=ui.slice(ui.indexOf('const readHash = () => {'),ui.indexOf("window.addEventListener('hashchange'"));
+  assert.doesNotMatch(readHash,/setActiveVideo|setVideoExpanded/,'Hash navigation cannot reset playback');
+});
+
+test('mini-player controls remain accessible even while the user browses other sections',()=>{
+  assert.match(ui,/Réduire le lecteur YouTube/);
+  assert.match(ui,/Agrandir le lecteur YouTube/);
+  assert.match(ui,/Arrêter la vidéo et fermer le lecteur YouTube/);
+  assert.match(ui,/onClick=\{\(\) => startVideo\(selected\)\}/);
+  assert.match(ui,/radio-dock-with-video/);
+});

@@ -320,3 +320,31 @@ input[type=checkbox] { accent-color: var(--accent); }
 .taste-profile-actions input {
   display: block;
 }
+
+
+/* The YouTube iframe is mounted once in the Journal shell, outside the hash-routed
+   cards. Resizing or switching sections never reloads it. */
+.video-launch { display: block; position: relative; width: 100%; border: 0; padding: 0; color: #fff; background: #171512; text-align: center; cursor: pointer; }
+.video-launch .artwork { aspect-ratio: 16 / 9; }
+.video-launch .artwork img { transition: opacity .2s ease; }
+.video-launch:hover .artwork img, .video-launch:focus-visible .artwork img { opacity: .65; }
+.video-launch:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.video-launch-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 7px; color: white; font-size: 13px; font-weight: 700; text-shadow: 0 1px 5px #000; background: linear-gradient(0deg, #0005, transparent 55%); pointer-events: none; }
+.video-launch-play { display: grid; place-items: center; width: 58px; height: 42px; background: #bd2724; border-radius: 11px; box-shadow: 0 2px 14px #0006; }
+.video-dock { position: fixed; z-index: 25; right: max(14px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom)); width: min(384px, calc(100vw - 28px)); background: #171512; color: #fff4e6; border: 1px solid #66584a; box-shadow: 0 7px 38px #0007; }
+.video-dock-expanded { width: min(660px, calc(100vw - 28px)); }
+.video-dock-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 9px 8px 12px; }
+.video-dock-heading { display: grid; min-width: 0; gap: 3px; }
+.video-dock-heading strong { font-size: 12px; font-weight: 750; }
+.video-dock-heading span { font-size: 11px; color: #dbccba; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.video-dock-controls { display: flex; gap: 2px; flex: none; }
+.video-dock-button { display: inline-grid; place-items: center; min-width: 32px; min-height: 32px; color: #fff4e6; background: transparent; border: 1px solid transparent; }
+.video-dock-button:hover, .video-dock-button:focus-visible { color: white; border-color: #b69b82; background: #40382f; }
+.video-dock-iframe { display: block; width: 100%; min-height: 200px; aspect-ratio: 16 / 9; border: 0; background: black; }
+.video-dock-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 11px; font-size: 10px; color: #dbccba; }
+.video-dock-foot a { display: inline-flex; align-items: center; gap: 3px; color: #fff4e6; white-space: nowrap; text-decoration: underline; text-underline-offset: 2px; }
+.radio-dock-with-video { right: auto; left: max(18px, env(safe-area-inset-left)); }
+@media (max-width: 720px) {
+  .radio-dock-with-video { right: auto; left: max(18px, env(safe-area-inset-left)); bottom: calc(285px + env(safe-area-inset-bottom)); }
+  .video-dock-foot { flex-wrap: wrap; }
+}
