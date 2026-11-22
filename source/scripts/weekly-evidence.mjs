@@ -61,8 +61,13 @@ export async function verifyAlbums(records, fetcher = fetch) {
       if (normalized(metadata.title) !== normalized(record.title)
         || metadata.provider_name && metadata.provider_name !== 'Spotify'
         || canonicalUrl(metadata.iframe_url) !== 'https://open.spotify.com/embed/album/' + albumId) throw new Error();
+      const cover = sourceUrl(metadata.thumbnail_url);
+      const trustedCover = cover && (cover.hostname === 'i.scdn.co' || cover.hostname.endsWith('.scdn.co')
+        || cover.hostname === 'spotifycdn.com' || cover.hostname.endsWith('.spotifycdn.com'));
+      // Spotify oEmbed provides the cover for the exact verified album ID.
       candidate = {
         id: 'spotify-' + albumId, title: record.title, creator: record.creator, source: record.label,
+        ...(trustedCover && {artwork:cover.href}),
         provider: record.label, format: 'Album', url: spotify.href, sourceUrl: primary.href,
         releaseDate, releaseProofUrl: record.dateProofUrl ?? primary.href, date: releaseDate, dateKind: 'release', verificationStatus: 'primary-verified',
         embed: { provider: 'spotify', id: albumId }, listeningProofUrl:oembedUrl,listeningMappingUrl:record.url?record.listeningMappingUrl:listening.proof, tags:record.tags ?? [],
