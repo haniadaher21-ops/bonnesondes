@@ -51,6 +51,10 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
   signal(source, item.format === 'Album' ? 8 : item.format==='Live session'?24:32, 'Source parmi tes préférées');
   signal(curatedSource, 65, 'Média ou curateur recommandé dans ton profil');
   signal(endorsement, endorsement?.kind==='critic-pick'?82:68, 'Véritable sélection éditoriale vérifiée');
+  const editorialAge=isoDate(item.editorialPublishedAt)
+    ? (Date.parse(today)-Date.parse(item.editorialPublishedAt))/DAY : undefined;
+  signal(endorsement && editorialAge>=0 && editorialAge<=30,
+    Math.max(0, 18-Math.floor(editorialAge/2)), 'Sélection de presse publiée dans le dernier mois');
   signal(matchingValue(profile.explore, attributes), item.format==='Live session'?60:28, 'Genre ou ambiance à explorer');
   signal(matchingValue(profile.avoid, attributes), item.format==='Live session'?-110:-65, 'Genre ou ambiance que tu préfères éviter');
   const followsPlaylist = profile.spotify.some(entry => entry.kind === 'playlist' && canonicalUrl(entry.url) === canonicalUrl(item.url));
