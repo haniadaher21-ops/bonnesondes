@@ -6,6 +6,16 @@ on:
       - '.github/workflows/preview-edition-002.yml'
       - 'source/scripts/private-cycle.mjs'
       - 'source/test/workflow-schedules.test.mjs'
+      - 'source/scripts/weekly-ranking.mjs'
+      - 'source/scripts/recommendation-policy.mjs'
+      - 'source/scripts/weekly-evidence.mjs'
+      - 'source/scripts/album-catalogues.mjs'
+      - 'source/scripts/discovery.mjs'
+      - 'source/editorial/edition.mjs'
+      - 'source/editorial/sources.json'
+      - 'source/editorial/album-catalogues.json'
+      - 'source/test/weekly.test.mjs'
+      - 'source/test/editorial.test.mjs'
   workflow_dispatch:
 
 permissions:
