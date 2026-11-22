@@ -58,10 +58,10 @@ export async function collectYouTubeMixes({startsOn,today,profile={},key,fetcher
   const found=new Set(),errors=[];
   for(const q of queries){
     const params=new URLSearchParams({part:'snippet',type:'video',videoDuration:'long',order:'date',
-      maxResults:'12',publishedAfter:after,publishedBefore:before,q,key});
+      maxResults:'12',publishedAfter:after,publishedBefore:before,q});
     try{
       const response=await fetcher('https://www.googleapis.com/youtube/v3/search?'+params.toString(),
-        {signal:AbortSignal.timeout(10000),redirect:'error'});
+        {signal:AbortSignal.timeout(10000),redirect:'error',headers:{'x-goog-api-key':key}});
       if(!response.ok)throw new Error('YouTube search '+response.status);
       const data=await response.json();
       if(!Array.isArray(data.items))throw new Error('YouTube search unexpected payload');
@@ -71,10 +71,10 @@ export async function collectYouTubeMixes({startsOn,today,profile={},key,fetcher
   const items=[];
   const ids=[...found].slice(0,50);
   if(ids.length){
-    const params=new URLSearchParams({part:'snippet,status,contentDetails',id:ids.join(','),key});
+    const params=new URLSearchParams({part:'snippet,status,contentDetails',id:ids.join(',')});
     try{
       const response=await fetcher('https://www.googleapis.com/youtube/v3/videos?'+params.toString(),
-        {signal:AbortSignal.timeout(15000),redirect:'error'});
+        {signal:AbortSignal.timeout(15000),redirect:'error',headers:{'x-goog-api-key':key}});
       if(!response.ok)throw new Error('YouTube video verification '+response.status);
       const payload=await response.json();
       if(!Array.isArray(payload.items))throw new Error('YouTube videos unexpected payload');
