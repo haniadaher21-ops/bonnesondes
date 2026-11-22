@@ -49,8 +49,9 @@ test('R&B, soul, blues, pop and mellow soulful house are preferred; techno and e
    assert.equal(verifiedYouTubeMix(video('3C01eaL5_Xw',title),
      '2026-11-23','2026-11-22',channel()),undefined,title);
  }
- assert.equal(verifiedYouTubeMix(video('3C01eaL5_Xw','DJ set without genre evidence'),
-  '2026-11-23','2026-11-22',channel()),undefined);
+ const noStyle=video('3C01eaL5_Xw','DJ set without genre evidence');
+ noStyle.snippet.tags=[];
+ assert.equal(verifiedYouTubeMix(noStyle,'2026-11-23','2026-11-22',channel()),undefined);
 });
 test('reject fake audiences, tiny channels, nine views and unknown subscriber counts',()=>{
  assert.equal(verifiedYouTubeMix(video('3C01eaL5_Xw',undefined,undefined,undefined,9),'2026-11-23','2026-11-22',channel(2)),undefined);
