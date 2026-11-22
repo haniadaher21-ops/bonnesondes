@@ -39,7 +39,8 @@ test('live verification checks duration, public embed, channel and performance m
     assert.equal(options.headers['x-goog-api-key'], 'test');
     return Response.json({items: ids.map((id, index) => ({
       id, snippet: {channelId: index === 3 ? 'UCother' : 'UCverified', liveBroadcastContent: 'none',
-        title: index === 4 ? 'Artist interview' : 'Official performance'},
+        title: index === 4 ? 'Artist interview' : 'Official performance',
+        tags: index === 0 ? ['indie rock','official live'] : []},
       status: {privacyStatus: 'public', embeddable: index !== 2},
       contentDetails: {duration: index === 1 ? 'PT40S' : 'PT4M'},
     }))});
@@ -47,6 +48,9 @@ test('live verification checks duration, public embed, channel and performance m
   const result = await verifyLives(candidates, sources, 'test', mock);
   assert.deepEqual(result.items.map(item => item.id), ['youtube-aaaaaaaaaaa']);
   assert.equal(result.items[0].minutes, 4);
+  assert.ok(result.items[0].tags.includes('indie rock'));
+  assert.ok(result.items[0].tags.includes('rock'));
+  assert.equal(excludesJazz({...result.items[0],tags:['jazz']}),true);
   assert.equal((await verifyLives(candidates, sources, undefined, mock)).items.length, 0);
 });
 
