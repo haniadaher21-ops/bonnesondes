@@ -57,7 +57,7 @@ test('a radio begins playing on the same click and never waits for a newly mount
   assert.ok(journal.includes('audio.pause()'));
   assert.ok(css.includes('.dock-expanded[hidden] { display: none; }'));
   assert.ok(css.includes('.dock-expanded audio[hidden] { display: none; }'));
-  assert.doesNotMatch(journal, /<audio key=\\{station\\.stream\\}/);
+  assert.ok(!journal.includes('<audio key={station.stream}'));
 });
 
 test('the four themed FIP stations use their documented direct Radio France streams', () => {
