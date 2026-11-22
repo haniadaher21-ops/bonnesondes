@@ -5,7 +5,7 @@ import { isFreshMusicMix, isNtsMix, isNovaMix, isYouTubeMix } from './recommenda
 const DAY = 86400000;
 const publicFields = ['id','title','creator','format','source','publisher','url','sourceUrl','artwork','date','minutes',
   'mood','season','genre','embed','officialVideo','videoSourceUrl','mixKind','sourceId',
-  'audienceVerified','viewCount','subscriberCount','curatorEstablished',
+  'audienceVerified','viewCount','subscriberCount','curatorEstablished','mixStyle','mixStyleVerified',
   'editorialSource','editorialUrl','editorialClaim'];
 
 export function editionForCycle(at) {
