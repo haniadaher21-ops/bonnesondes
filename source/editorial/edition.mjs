@@ -102,7 +102,7 @@ export function validateEdition(edition, earlier = [], catalog = []) {
   }
   const mixes = Array.isArray(edition.mixes) ? edition.mixes : [];
   if (!mixes.some(item => isNts(sourceUrl(item?.url)))) errors.push('Un épisode NTS est obligatoire.');
-  if (!mixes.some(item => sourceUrl(item?.url) && !isNts(sourceUrl(item.url)))) errors.push('Un mix d’une autre source est obligatoire.');
+  // A genuine, recent set from a second NTS DJ programme is preferable to a Nova talk show.
   if (!mixes.some(item => item?.id === edition.featuredId && isNts(sourceUrl(item.url)))) errors.push('Le mix vedette doit être un épisode NTS sélectionné.');
   return errors;
 }
