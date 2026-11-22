@@ -1,6 +1,7 @@
 import { readPublicPage } from './album-catalogues.mjs';
 import { normalized } from './release-metadata.mjs';
 import { isoDate } from '../editorial/edition.mjs';
+import { bandcampLinks } from './bandcamp-albums.mjs';
 import { parseFeed } from './discovery-feeds.mjs';
 
 // Articles published within the previous month are leads, not proof that an
@@ -116,6 +117,39 @@ export function nprMusicFridayMentions(xml,source,today) {
   return mentions;
 }
 
+// When a press article itself links to an artist's original Bandcamp album,
+// the link can become a genuine discovery lead. Align each link to its
+// heading, and let verifyAlbums independently check the primary release date,
+// album identity, Spotify link and artwork before it can rank.
+export function musicPressAlbumReferences(html, articleUrl, mentions) {
+  if (typeof html !== 'string' || !Array.isArray(mentions)) return [];
+  const sections = [...html.matchAll(/<h2\b[^>]*>([\s\S]*?)<\/h2>/gi)];
+  const records = [];
+  for (let i = 0; i < sections.length; i++) {
+    const head = text(sections[i][1]).replace(/\s*\[[^\]]+\]\s*$/, '');
+    const parsed = head.match(/^(.+?):\s*(.+)$/);
+    if (!parsed) continue;
+    const creator = parsed[1].trim(), title = parsed[2].trim();
+    const mention = mentions.find(m => m.title && titleKey(m.title) === titleKey(title)
+      && titleKey(m.creator) === titleKey(creator));
+    if (!mention) continue;
+    const section = html.slice(sections[i].index + sections[i][0].length,
+      sections[i+1]?.index ?? html.length);
+    const bandcamp = bandcampLinks(section, articleUrl);
+    // Ambiguous sections (e.g. two related reissues) must not be mapped
+    // automatically to a single album.
+    if (bandcamp.length !== 1) continue;
+    const ids = [...new Set([...section.matchAll(/https:\/\/open\.spotify\.com\/(?:intl-[a-z]+\/)?album\/([a-zA-Z0-9]{22})/gi)].map(m=>m[1]))];
+    const albumUrl = ids.length === 1 ? 'https://open.spotify.com/album/' + ids[0] : undefined;
+    records.push({
+      title,creator,sourceUrl:bandcamp[0],method:'bandcamp-album',
+      label:mention.editorialSource??'Musical press', ...mention,
+      ...(albumUrl && {url:albumUrl}),
+    });
+  }
+  return records.slice(0,8);
+}
+
 export function matchMusicPress(record, mentions) {
   const artist=titleKey(record.creator??''), title=titleKey(record.title??'');
   if(!artist||!title)return;
@@ -125,7 +159,7 @@ export function matchMusicPress(record, mentions) {
 }
 
 export async function collectMusicPress(sources,{fetcher=fetch,today=new Date().toISOString().slice(0,10)}={}) {
-  const mentions=[],status=[];
+  const mentions=[],records=[],status=[];
   for(const source of sources) {
     if(source.mode!=='automatic') {
       status.push({source:source.name,status:source.mode==='existing'?'handled-elsewhere':'manual-review',articles:0,mentions:0});
@@ -146,6 +180,7 @@ export async function collectMusicPress(sources,{fetcher=fetch,today=new Date().
           const article=await readPublicPage(url,fetcher);
           const items=musicPressMentions(article,source,url,today);
           examined++; verified+=items.length; mentions.push(...items);
+          records.push(...musicPressAlbumReferences(article,url,items));
         } catch { /* A blocked or changed article cannot be treated as endorsement. */ }
       }
       status.push({source:source.name,status:verified?'ok':links.length?'empty':'no-articles',
@@ -155,5 +190,5 @@ export async function collectMusicPress(sources,{fetcher=fetch,today=new Date().
         reason:String(error.message??error).slice(0,160)});
     }
   }
-  return {mentions,status};
+  return {mentions,records,status};
 }
