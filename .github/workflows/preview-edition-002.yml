@@ -16,6 +16,11 @@ on:
       - 'source/test/incremental-discovery.test.mjs'
       - 'source/scripts/album-catalogues.mjs'
       - 'source/scripts/discovery.mjs'
+      - 'source/scripts/youtube-mixes.mjs'
+      - 'source/test/youtube-mixes.test.mjs'
+      - 'source/app/content.ts'
+      - 'source/app/globals.css'
+      - 'source/test/site-contract.test.mjs'
       - 'source/editorial/edition.mjs'
       - 'source/editorial/sources.json'
       - 'source/editorial/album-catalogues.json'
@@ -84,6 +89,9 @@ jobs:
           if(!report.complete || rows.some(item=>excludesJazz(item))) throw new Error('Sélection incomplète ou jazz détecté.');
           if(report.selected.albums.length!==3 || report.selected.albums.some(item=>!editorialEndorsement({...item,format:'Album'})))
             throw new Error('Trois albums avec recommandations éditoriales explicites et vérifiables obligatoires.');
+          if(report.selected.albums.some(item=>!item.artwork || !item.artwork.startsWith('https://')
+            || !/^https:\/\/open\.spotify\.com\/album\/[a-zA-Z0-9]{22}$/.test(item.url)))
+            throw new Error('Chaque album doit afficher sa pochette officielle et pointer vers Spotify.');
           const lives=report.selected.live;
           const creators=lives.map(item=>item.creator?.normalize('NFKD').toLowerCase().trim()).filter(Boolean);
           if(lives.length!==3 || creators.length!==3 || new Set(creators).size!==3) throw new Error('Trois artistes différents sont obligatoires pour les lives.');
