@@ -1,6 +1,6 @@
 [
   {
-    "name": "Brownswood \u00b7 jours de sortie",
+    "name": "Brownswood · jours de sortie",
     "url": "https://brownswoodrecordings.com/",
     "method": "release-day-news",
     "label": "Brownswood Recordings"
@@ -64,11 +64,6 @@
   {
     "name": "Tru Thoughts",
     "url": "https://tru-thoughts.bandcamp.com/music",
-    "method": "bandcamp"
-  },
-  {
-    "name": "Jazz re:freshed",
-    "url": "https://jazzrefreshed.bandcamp.com/music",
     "method": "bandcamp"
   }
 ]
