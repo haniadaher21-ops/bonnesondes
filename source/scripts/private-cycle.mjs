@@ -9,6 +9,7 @@ import { canonicalUrl, editionItems, parisDate } from '../editorial/edition.mjs'
 import { emptyTasteProfile, normalizeTasteProfile } from '../editorial/taste-profile.mjs';
 import { readRunnerProfile, syncRpc } from '../private-sync/client.mjs';
 import { collectAlbumCatalogues, readPublicPage } from './album-catalogues.mjs';
+import { collectEditorialEndorsements } from './editorial-endorsements.mjs';
 import { discover } from './discovery.mjs';
 import { legacyEdition, legacyItems, publishedFile, readJson } from './editorial-files.mjs';
 import {filterConflictingDates} from './release-metadata.mjs';
@@ -44,29 +45,38 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     && Number.isFinite(Date.parse(snapshot.at)) && now.getTime()-Date.parse(snapshot.at)>=0
     && now.getTime()-Date.parse(snapshot.at)<(snapshot.status.some(row=>!['ok','empty'].includes(row.status))?3600000:6*3600000) && Array.isArray(snapshot.records) && Array.isArray(snapshot.status)
 ;
-  const [collection,catalogues] = await Promise.all([
+  const [collection,catalogues,endorsements] = await Promise.all([
     discover({sources,profile,existing:known,now,fetcher}),
     cached ? Promise.resolve({records:snapshot.records,status:snapshot.status.map(row=>({...row,cachedAt:snapshot.at}))})
       : collectAlbumCatalogues({startsOn,today:parisDate(now),fetcher,catalogues:catalogueConfig}),
+    collectEditorialEndorsements({fetcher}),
   ]);
   const date = now.toISOString();
   if(!cached)state.albumCatalogueSnapshot={at:date,startsOn,fingerprint:catalogueFingerprint,
     records:catalogues.records.map(({evidenceHtml,...record})=>record),status:catalogues.status};
   const previous = rollCandidates(state.candidates,collection.candidates,now);
   const registered = readJson(new URL('../editorial/album-sources.json',import.meta.url));
-  const linked = previous.filter(item => item.format === 'Album' && item.creator)
-    .flatMap(item => (item.primaryReleaseUrls ?? []).map(sourceUrl => ({
-      title:item.title,creator:item.creator,label:new URL(sourceUrl).hostname,sourceUrl,
-      editorialSource:item.provider ?? item.source,
-      editorialUrl:item.url,
-      editorialKind:item.sourceId==='pitchfork-best' ? 'critic-pick' : 'review',
-    }))).slice(0,40);
+  const linked = previous.filter(item => item.format === 'Album' && item.creator && item.editorialKind)
+    .flatMap(item => [
+      ...(item.primaryReleaseUrls ?? []).map(sourceUrl => ({
+        title:item.title,creator:item.creator,label:new URL(sourceUrl).hostname,sourceUrl,
+        editorialSource:item.editorialSource,editorialUrl:item.editorialUrl,
+        editorialKind:item.editorialKind,editorialClaim:item.editorialClaim,
+      })),
+      ...(item.editorialKind==='curator-pick' ? (item.bandcampUrls ?? []).map(sourceUrl => ({
+        title:item.title,creator:item.creator,label:'Bandcamp Notes',sourceUrl,
+        method:'bandcamp-album',editorialSource:item.editorialSource,editorialUrl:item.editorialUrl,
+        editorialKind:item.editorialKind,editorialClaim:item.editorialClaim,
+      })) : []),
+    ]).slice(0,45);
   const priorAlbums=previous.filter(item=>item.format==='Album' && item.releaseProofUrl).map(item=>({
     title:item.title,creator:item.creator,label:item.source,sourceUrl:item.sourceUrl,url:item.url,listeningMappingUrl:item.listeningMappingUrl,
     method:item.sourceUrl.includes('.bandcamp.com/')?'bandcamp-album':undefined,
+    editorialSource:item.editorialSource,editorialUrl:item.editorialUrl,
+    editorialKind:item.editorialKind,editorialClaim:item.editorialClaim,
   }));
   const bySource=new Map();
-  for(const record of [...linked,...priorAlbums,...registered,...catalogues.records]) {
+  for(const record of [...priorAlbums,...registered,...catalogues.records,...linked,...endorsements.records]) {
     bySource.set(record.sourceUrl,{...(bySource.get(record.sourceUrl)??{}),
       ...Object.fromEntries(Object.entries(record).filter(([,value])=>value!==undefined))});
   }
@@ -74,8 +84,9 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   const preferredSources=[...profile.favoritePublications,...profile.favoriteRadios,...profile.spotify.map(row=>row.name).filter(Boolean)].map(normalized);
   const preferredArtists=profile.favoriteArtists.map(normalized);
   const priority=record=>38*Number(preferredArtists.includes(normalized(record.creator)))
-    +50*Number(preferredSources.includes(normalized(record.label)))
-    +36*Number(record.editorialKind==='critic-pick')+12*Number(record.editorialKind==='review')
+    +8*Number(preferredSources.includes(normalized(record.label)))
+    +60*Number(preferredSources.includes(normalized(record.editorialSource)))
+    +90*Number(record.editorialKind==='critic-pick')+70*Number(record.editorialKind==='curator-pick')
     +22*Number((record.tags??[]).some(tag=>profile.explore.map(normalized).includes(normalized(tag))));
   uniqueRecords.sort((a,b)=>priority(b)-priority(a)||a.sourceUrl.localeCompare(b.sourceUrl));
   for(const record of uniqueRecords) {
@@ -133,7 +144,7 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   }]));
   async function writeReport(build='not-run') {
     const result=observationReport(report,{profileRevision:remote.revision,profileUpdatedAt:remote.profileUpdatedAt,
-      profileSignalCounts,comparison,incremental,albumEvidence:evidence,catalogues:catalogues.status,sources:collection.sources,liveStatus:lives.status,build});
+      profileSignalCounts,comparison,incremental,albumEvidence:evidence,catalogues:[...catalogues.status,...endorsements.status],sources:collection.sources,liveStatus:lives.status,build});
     if(env.BONNES_ONDES_OBSERVATION_DIR) {
       await mkdir(env.BONNES_ONDES_OBSERVATION_DIR,{recursive:true});
       await writeFile(join(env.BONNES_ONDES_OBSERVATION_DIR,'recommendations.json'),JSON.stringify(result,null,2)+'\n',{mode:0o600});
@@ -146,6 +157,8 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     sources,albumCatalogues:readJson(new URL('../editorial/album-catalogues.json',import.meta.url)),albums:registered,profileRevision:remote.revision,
     ranking:await readFile(new URL('./weekly-ranking.mjs',import.meta.url),'utf8'),
     evidence:await readFile(new URL('./weekly-evidence.mjs',import.meta.url),'utf8'),
+    editorial:await readFile(new URL('./editorial-endorsements.mjs',import.meta.url),'utf8'),
+    recommendationPolicy:await readFile(new URL('./recommendation-policy.mjs',import.meta.url),'utf8'),
     catalogues:await readFile(new URL('./album-catalogues.mjs',import.meta.url),'utf8'),
     cycle:await readFile(new URL('./private-cycle.mjs',import.meta.url),'utf8'),
     links:await readFile(new URL('./album-links.mjs',import.meta.url),'utf8'),
