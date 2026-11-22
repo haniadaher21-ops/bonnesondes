@@ -22,6 +22,13 @@ test('edition 002 is manually published today with the exact verified preview co
     ['fip-tape-james-blake-7762098','La mixtape de James Blake','2026-10-08','fip-tape'],
   ]);
   assert.ok(item.mixes.slice(3).every(x=>x.url.startsWith('https://www.radiofrance.fr/fip/podcasts/fip-tape/')));
+  // Every mix currently shown has its official episode thumbnail, not an icon fallback.
+  assert.ok(item.mixes.every(x=>x.artwork?.startsWith('https://')));
+  assert.equal(item.mixes[1].artwork,'https://assets.voxeus.com/podcasts/assets/images/rs/episode/256/b3f968098869702de1abce2c7345c26e3594b6dc/69c15e4f-d57a-4d27-8cdc-c98fd2c7b261/6e501dc4b799a8436666ccff909e65e18102c05d.png');
+  assert.deepEqual(item.mixes.slice(3).map(x=>x.artwork),[
+    'https://www.radiofrance.fr/pikapi/images/e9dd2af8-857b-4877-80dc-08b4f0ad070e/800x800',
+    'https://www.radiofrance.fr/pikapi/images/77211fb5-7875-4dd4-b42d-784c79233f0e/800x800',
+  ]);
   const unverified = structuredClone(item);
   unverified.mixes[3].url='https://example.org/not-a-fip-tape';
   assert.match(validateEdition(unverified,[legacyEdition],legacyItems).join('\\n'),/FIP Tape vérifiés/);

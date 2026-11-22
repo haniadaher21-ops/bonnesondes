@@ -90,7 +90,8 @@
         "mixKind": "dj-set",
         "sourceId": "nova-danse",
         "format": "Radio show",
-        "reason": "DJ set musical diffusé le 2026-11-13 sur Radio Nova."
+        "reason": "DJ set musical diffusé le 2026-11-13 sur Radio Nova.",
+        "artwork": "https://assets.voxeus.com/podcasts/assets/images/rs/episode/256/b3f968098869702de1abce2c7345c26e3594b6dc/69c15e4f-d57a-4d27-8cdc-c98fd2c7b261/6e501dc4b799a8436666ccff909e65e18102c05d.png"
       },
       {
         "id": "youtube-XQoGtWdpKoA",
@@ -129,7 +130,8 @@
         "mixKind": "editorial-mixtape",
         "sourceId": "fip-tape",
         "format": "Radio show",
-        "reason": "Deux heures de voyage musical à travers les radios et les influences de l’univers Grand Theft Auto, imaginées par FIP."
+        "reason": "Deux heures de voyage musical à travers les radios et les influences de l’univers Grand Theft Auto, imaginées par FIP.",
+        "artwork": "https://www.radiofrance.fr/pikapi/images/e9dd2af8-857b-4877-80dc-08b4f0ad070e/800x800"
       },
       {
         "id": "fip-tape-james-blake-7762098",
@@ -142,7 +144,8 @@
         "mixKind": "editorial-mixtape",
         "sourceId": "fip-tape",
         "format": "Radio show",
-        "reason": "Un parcours musical dans l’univers de James Blake, de ses inspirations à ses propres compositions, proposé par l’équipe de FIP."
+        "reason": "Un parcours musical dans l’univers de James Blake, de ses inspirations à ses propres compositions, proposé par l’équipe de FIP.",
+        "artwork": "https://www.radiofrance.fr/pikapi/images/77211fb5-7875-4dd4-b42d-784c79233f0e/800x800"
       }
     ],
     "playlists": [
