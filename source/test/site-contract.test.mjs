@@ -49,3 +49,12 @@ test('live discovery has verified official sources beyond the initial three', ()
     assert.equal(source.format,'Live session');
   }
 });
+
+test('album covers and titles open Spotify, while curator citations remain secondary',()=>{
+  assert.match(ui,/item\.format === 'Album' && item\.url\.startsWith\('https:\/\/open\.spotify\.com\/album\/'\)/);
+  assert.match(ui,/className="album-cover-link"/);
+  assert.match(ui,/Écouter sur Spotify/);
+  assert.match(ui,/Lire la recommandation/);
+  assert.match(ui,/selected\.editorialUrl/);
+  assert.doesNotMatch(ui,/\(selected\.format === 'Album' \|\| !selected\.embed \? 'Écouter sur '\)/);
+});
