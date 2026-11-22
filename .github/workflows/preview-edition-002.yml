@@ -106,8 +106,10 @@ jobs:
           if(report.selected.nova.length!==1 || !isNovaMix({...report.selected.nova[0],format:'Radio show'}))
             throw new Error('Un mix Nova Danse est obligatoire.');
           if(report.selected.youtube.length!==1 || !isYouTubeMix({...report.selected.youtube[0],format:'Radio show'})
-             || report.selected.youtube[0].viewCount<250 || report.selected.youtube[0].subscriberCount<2500)
-            throw new Error('Un mix YouTube provenant d’une chaîne crédible est obligatoire.');
+             || report.selected.youtube[0].viewCount<100000 || report.selected.youtube[0].subscriberCount<2500
+             || report.selected.youtube[0].mixStyleVerified!==true
+             || !['rnb','soul','blues','pop','light-house','funk'].includes(report.selected.youtube[0].mixStyle))
+            throw new Error('Un mix YouTube R&B/soul/blues/pop/house douce avec 100000 vues vérifiées est obligatoire.');
           if(new Set(djSets.map(item=>item.sourceId)).size!==3) throw new Error('Trois sources de mixes distinctes obligatoires.');
           console.log(JSON.stringify({albums:report.selected.albums.map(x=>x.title),
             mixes:djSets.map(x=>({title:x.title,date:x.date,source:x.source,views:x.viewCount,subscribers:x.subscriberCount})),
