@@ -49,7 +49,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[preview-edition-002]'))
     runs-on: ubuntu-latest
     timeout-minutes: 40
-    # Test a *different* 100k+ view soul/R&B YouTube mix, and inspect other Nova podcasts. No publication.
+    # Preview the persistent floating YouTube player with a different 100k+ R&B DJ mix. No public edition publication.
     steps:
       - uses: actions/checkout@v4
         with:
