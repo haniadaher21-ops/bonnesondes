@@ -56,7 +56,7 @@ jobs:
           if(!url||!publicKey)throw new Error('Configuration publique absente ou invalide.');
           JS
       # Redéploie l'interface et l'illustration originale sans publier de nouvelle édition.
-      # Vérifier les 100 000 vues par vidéo YouTube, les genres souhaités et les faux positifs de métadonnées.
+      # Vérifier aussi que les favoris d'une édition passée restent visibles dans Ma collection après rotation.
       - name: Générer l'export statique
         run: npm run build
         env:
