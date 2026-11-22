@@ -7,7 +7,7 @@ import { legacyEdition } from '../scripts/editorial-files.mjs';
 import { discover } from '../scripts/discovery.mjs';
 import { linkedReleaseSources, primaryReleaseDate, verifyAlbums, verifyLives } from '../scripts/weekly-evidence.mjs';
 import { nextEditionMonday, weeklyShortlist } from '../scripts/weekly-ranking.mjs';
-import { livePerformer, excludesJazz } from '../scripts/recommendation-policy.mjs';
+import { livePerformer, excludesJazz, editorialEndorsement } from '../scripts/recommendation-policy.mjs';
 
 const albumId = '0Fta5KudJiX6HpDWApUu8y';
 const labelUrl = 'https://www.subpop.com/releases/artist/record';
@@ -72,7 +72,10 @@ const item = (id, format, options = {}) => ({
   sourceUrl: 'https://publisher.test/' + id, url: 'https://publisher.test/content/' + id,
   verificationStatus: 'source-verified', date: '2026-11-17', ...options,
 });
-const album = (id, options = {}) => item(id, 'Album', { releaseDate: '2026-11-13', verificationStatus: 'primary-verified', ...options });
+const album = (id, options = {}) => item(id, 'Album', { releaseDate: '2026-11-13',
+  verificationStatus: 'primary-verified', editorialSource:'Bandcamp Daily',
+  editorialUrl:'https://daily.bandcamp.com/album-of-the-day/fixture-'+id.toLowerCase().replace(/[^a-z0-9]+/g,'-'),
+  editorialKind:'curator-pick',editorialClaim:'Album of the Day',...options });
 const radio = (id, provider) => item(id, 'Radio show', {provider});
 const readyOptions = {
   sources: [], earlier: [legacyEdition], catalog: [], startsOn: nextEditionMonday(new Date('2026-11-18T19:00:00Z')), now: new Date('2026-11-18T19:00:00Z'),
@@ -254,4 +257,40 @@ test('short publisher preferences match fuller programme names without matching 
  assert.ok(ranked(preferred,'Favourite label album')>ranked(neutral,'Favourite label album'));
  assert.ok(ranked(preferred,'Live KEXP')>ranked(neutral,'Live KEXP'));
  assert.ok(!preferred.rankings.some(row=>row.item.id==='Other label album' && row.signals.length));
+});
+
+test('label catalogue presence is not an editorial recommendation',()=>{
+ const rows=[album('Catalog only',{editorialKind:undefined,editorialUrl:undefined,source:'Brownswood Recordings'}),
+   album('Ordinary review',{editorialKind:'review',editorialSource:'Pitchfork',editorialUrl:'https://pitchfork.com/reviews/albums/ordinary-review'}),
+   album('Fake recommendation',{editorialKind:'critic-pick',editorialSource:'Pitchfork',editorialUrl:'https://publisher.test/fiction'}),
+   album('Curated',{editorialKind:'curator-pick'})];
+ const ranked=weeklyShortlist({...readyOptions,candidates:rows,profile:emptyTasteProfile()});
+ assert.deepEqual(ranked.selected.albums.map(row=>row.item.id),['Curated']);
+ assert.equal(ranked.rejected.length,3);
+ assert.ok(ranked.rejected.every(row=>/recommandation éditoriale/.test(row.reason)));
+ assert.equal(editorialEndorsement(rows[0]),undefined);
+});
+
+test('an older live matching tastes wins over a new unrelated live',()=>{
+ const live=(id,age,creator,genre,source='KEXP · Live on KEXP')=>item(id,'Live session',{
+  creator,source,sourceId:'kexp-live',genre,date:age,
+  minutes:12,verificationStatus:'performance-verified'});
+ const candidates=[
+  live('fresh','2026-11-18','Other','Metal'),
+  live('old','2018-05-16','Khruangbin','funk','NPR Music · Tiny Desk Concert'),
+ ];
+ const profile={...emptyTasteProfile(),favoriteArtists:['Khruangbin'],explore:['funk']};
+ const ranked=weeklyShortlist({...readyOptions,candidates,profile});
+ const neutral=weeklyShortlist({...readyOptions,candidates,profile:emptyTasteProfile()});
+ assert.equal(ranked.selected.live[0].item.id,'old');
+ assert.ok(ranked.selected.live[0].score>ranked.selected.live[1].score);
+ assert.equal(neutral.rankings.find(row=>row.item.id==='old').score,
+   neutral.rankings.find(row=>row.item.id==='fresh').score);
+});
+
+test('a curator recommendation is not accepted merely by claiming a trusted publisher name',()=>{
+ const untrusted=album('Claimed',{editorialUrl:'https://daily.bandcamp.com/genres/jazz',editorialKind:'curator-pick'});
+ const report=weeklyShortlist({...readyOptions,candidates:[untrusted],profile:emptyTasteProfile()});
+ assert.equal(report.selected.albums.length,0);
+ assert.equal(report.rejected[0].reason,'Aucune recommandation éditoriale vérifiée');
 });
