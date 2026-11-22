@@ -53,14 +53,28 @@ export function editorialEndorsement(item) {
 }
 
 
-// A mix is a recent continuous musical DJ set, not a spoken music program.
-// Edition 002 goes live on Monday: the eligible shows aired the previous Mon–Sun.
+// Three intentionally separate editorial sources: NTS, Radio Nova and YouTube.
+// A Nova Danse DJ set may be up to 14 days old if the station did not release a
+// new podcast last week. Its real date remains visible; never fabricate freshness.
+export function isNovaMix(item) {
+  return item?.format==='Radio show' && item?.mixKind==='dj-set'
+    && item.sourceId==='nova-danse'
+    && (item.provider==='Radio Nova' || /Radio Nova/i.test(item.source??''));
+}
+export function isNtsMix(item) {
+  return item?.format==='Radio show' && item?.mixKind==='dj-set'
+    && /^https:\/\/(?:www\.)?nts\.live\/shows\/[^/]+\/episodes\/[^/]+$/.test(
+      new URL(item?.url??'https://invalid.local').origin + new URL(item?.url??'https://invalid.local').pathname);
+}
+export function isYouTubeMix(item) {
+  return item?.format==='Radio show' && item?.mixKind==='curated-mix'
+    && item.embed?.provider==='youtube' && item.audienceVerified===true;
+}
 const spokenProgram = /(?:\binterview\b|\btalk(?:show)?\b|\bnews\b|\bpodcast\b|\bdiscussion\b|\bchronique\b|\binvité(?:e|s|es)?\b|\binvitée\b|\bmatinale\b|\bentretien\b)/i;
 export function isFreshMusicMix(item, startsOn, today) {
   if(item?.format!=='Radio show' || !['dj-set','curated-mix'].includes(item.mixKind) || !isoDate(item.date)
-    || !isoDate(startsOn) || !isoDate(today)) return false;
-  const min=new Date(Date.parse(startsOn)-7*86400000).toISOString().slice(0,10);
+    || !isoDate(startsOn) || !isoDate(today) || spokenProgram.test(item.title??''))return false;
+  const min=new Date(Date.parse(startsOn)-(isNovaMix(item)?14:7)*86400000).toISOString().slice(0,10);
   const max=new Date(Date.parse(startsOn)-86400000).toISOString().slice(0,10);
-  return item.date>=min && item.date<=max && item.date<=today
-    && !spokenProgram.test(item.title??'');
+  return item.date>=min && item.date<=max && item.date<=today;
 }
