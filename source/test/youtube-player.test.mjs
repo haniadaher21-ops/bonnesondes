@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {playableYouTubeId,youtubeEmbedSrc} from '../scripts/youtube-player.mjs';
+import {playableYouTubeId,youtubeEmbedSrc} from '../app/youtube-player.mjs';
 
 test('only a valid YouTube video ID can initialize the persistent player',()=>{
   assert.equal(playableYouTubeId('K6en74gqBSM'),true);

@@ -9,7 +9,7 @@ import { editionShelf } from '../editorial/shelves.mjs';
 import RadioTrack, { type OnAir } from './radio-track';
 import ProfileSync from './profile-sync';
 import TastePreferences from './taste-preferences';
-import { playableYouTubeId, youtubeEmbedSrc } from '../scripts/youtube-player.mjs';
+import { playableYouTubeId, youtubeEmbedSrc } from './youtube-player.mjs';
 
 const pages = [
   ['rotation', 'Sélection'], ['radio', 'Radios'], ['playlists', 'Playlists'],
