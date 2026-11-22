@@ -78,7 +78,11 @@
         "mixKind": "dj-set",
         "sourceId": "nts-can-you-feel-the-sun",
         "format": "Radio show",
-        "reason": "DJ set musical diffusé le 2026-11-19 sur NTS."
+        "reason": "DJ set musical diffusé le 2026-11-19 sur NTS.",
+        "audio": {
+          "provider": "soundcloud",
+          "url": "https://soundcloud.com/user-202286394-991268468/can-you-feel-the-sun-w-isaac"
+        }
       },
       {
         "id": "nova-danse:/radio-nova-nova-danse/202611132200-nova-danse-1tbsp-x-miki",
@@ -91,7 +95,11 @@
         "sourceId": "nova-danse",
         "format": "Radio show",
         "reason": "DJ set musical diffusé le 2026-11-13 sur Radio Nova.",
-        "artwork": "https://assets.voxeus.com/podcasts/assets/images/rs/episode/256/b3f968098869702de1abce2c7345c26e3594b6dc/69c15e4f-d57a-4d27-8cdc-c98fd2c7b261/6e501dc4b799a8436666ccff909e65e18102c05d.png"
+        "artwork": "https://assets.voxeus.com/podcasts/assets/images/rs/episode/256/b3f968098869702de1abce2c7345c26e3594b6dc/69c15e4f-d57a-4d27-8cdc-c98fd2c7b261/6e501dc4b799a8436666ccff909e65e18102c05d.png",
+        "audio": {
+          "provider": "podcast",
+          "url": "https://audio.audiomeans.fr/file/KxuSEmOxMG/e5729cc2-f059-41cb-8552-01c3802cb973.mp3?_=1794836884"
+        }
       },
       {
         "id": "youtube-XQoGtWdpKoA",
@@ -131,7 +139,11 @@
         "sourceId": "fip-tape",
         "format": "Radio show",
         "reason": "Deux heures de voyage musical à travers les radios et les influences de l’univers Grand Theft Auto, imaginées par FIP.",
-        "artwork": "https://www.radiofrance.fr/pikapi/images/e9dd2af8-857b-4877-80dc-08b4f0ad070e/800x800"
+        "artwork": "https://www.radiofrance.fr/pikapi/images/e9dd2af8-857b-4877-80dc-08b4f0ad070e/800x800",
+        "audio": {
+          "provider": "podcast",
+          "url": "https://proxycast.radiofrance.fr/35099478-7c72-4f9e-a6de-1b928400e9e5/6da709ab-470a-4054-97cd-b1241f9fedaa/5de7de64-fac1-4057-bc56-976f0aef3335/26749-12.11.2026-ITEMA_24749536-2026Y52935S0316-NET_MFP_BEBDBF56-30F4-44A3-B047-3F87B7AF3FC7-21-0b7194ced57f346ba01324af57501daa.mp3"
+        }
       },
       {
         "id": "fip-tape-james-blake-7762098",
@@ -145,7 +157,11 @@
         "sourceId": "fip-tape",
         "format": "Radio show",
         "reason": "Un parcours musical dans l’univers de James Blake, de ses inspirations à ses propres compositions, proposé par l’équipe de FIP.",
-        "artwork": "https://www.radiofrance.fr/pikapi/images/77211fb5-7875-4dd4-b42d-784c79233f0e/800x800"
+        "artwork": "https://www.radiofrance.fr/pikapi/images/77211fb5-7875-4dd4-b42d-784c79233f0e/800x800",
+        "audio": {
+          "provider": "podcast",
+          "url": "https://proxycast.radiofrance.fr/35099478-7c72-4f9e-a6de-1b928400e9e5/6da709ab-470a-4054-97cd-b1241f9fedaa/0245b979-5554-4e82-bf33-cb5268cd6e4e/26749-08.10.2026-ITEMA_24703769-2026Y52935S0281-NET_MFP_B2FBFB82-2249-4D38-9C46-97E3407A5453-21-2d2501daa0641ebf17eab05b30fc1ab2.mp3"
+        }
       }
     ],
     "playlists": [

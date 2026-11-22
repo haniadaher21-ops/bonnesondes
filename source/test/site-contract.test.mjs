@@ -80,12 +80,25 @@ test('YouTube videos launch a single persistent floating iframe, not a new inlin
   assert.match(ui,/key=\{videoId\}/);
   assert.match(ui,/onClose=\{\(\) => \{ setActiveVideo\(null\)/);
   assert.match(ui,/setRadioOpen\(false\)/);
-  assert.match(ui,/setActiveVideo\(null\);\s*setStation\(next\)/);
+  assert.ok(ui.includes('setActiveVideo(null);') && ui.includes('setActiveMix(null);') && ui.includes('setStation(next);'));
   assert.doesNotMatch(ui,/www\.youtube-nocookie\.com\/embed/);
   assert.ok(ui.indexOf('<PersistentYouTubePlayer item={activeVideo}')>ui.indexOf('</main>'),
     'The persistent YouTube iframe must live after main, outside conditional pages');
   const readHash=ui.slice(ui.indexOf('const readHash = () => {'),ui.indexOf("window.addEventListener('hashchange'"));
   assert.doesNotMatch(readHash,/setActiveVideo|setVideoExpanded/,'Hash navigation cannot reset playback');
+});
+
+test('four non-YouTube mixes have a persistent listening dock', () => {
+  for (const expected of [
+    'function PersistentMixPlayer',
+    'className="mix-dock-audio"',
+    'className="mix-dock-soundcloud"',
+    '<PersistentMixPlayer key={activeMix?.id',
+    'setActiveMix(null)',
+    'Écouter ici',
+    'onClick={() => startMix(item)}',
+    'setActiveMix(current => current?.id === item.id',
+  ]) assert.ok(ui.includes(expected), expected);
 });
 
 test('mini-player controls remain accessible even while the user browses other sections',()=>{
