@@ -7,6 +7,7 @@ import { legacyEdition } from '../scripts/editorial-files.mjs';
 import { discover } from '../scripts/discovery.mjs';
 import { linkedReleaseSources, primaryReleaseDate, verifyAlbums, verifyLives } from '../scripts/weekly-evidence.mjs';
 import { nextEditionMonday, weeklyShortlist } from '../scripts/weekly-ranking.mjs';
+import { livePerformer, excludesJazz } from '../scripts/recommendation-policy.mjs';
 
 const albumId = '0Fta5KudJiX6HpDWApUu8y';
 const labelUrl = 'https://www.subpop.com/releases/artist/record';
@@ -96,7 +97,7 @@ test('complete verified inputs give a valid draft and tastes change the radio an
   assert.equal(nova.complete, true);
   assert.equal(fip.selected.live.length, 3);
   assert.equal(nova.draft.live.length, 3);
-  assert.equal(fip.selected.otherRadio[0].item.id, 'Jazzafip');
+  assert.equal(fip.selected.otherRadio[0].item.id, 'Nova Club');
   assert.equal(nova.selected.otherRadio[0].item.id, 'Nova Club');
   assert.equal(fip.draft.albums[0].id, 'Beta');
   assert.equal(nova.draft.albums[0].id, 'Alpha');
@@ -106,7 +107,9 @@ test('complete verified inputs give a valid draft and tastes change the radio an
   assert.equal(fip.draft.albumWindowStart, '2026-11-09');
   assert.equal(fip.draft.albumWindowStart, manualDraft.albumWindowStart);
   assert.match(fip.draft.mixes[0].reason, /archive/);
-  assert.deepEqual(fip.rejected.map(row => row.id), ['Old', 'Future', 'Review', 'Unchecked']);
+  assert.deepEqual(fip.rejected.map(row => row.id), ['Future', 'Review', 'Jazzafip', 'Unchecked']);
+  assert.ok(fip.rankings.some(row => row.item.id === 'Old'));
+  assert.ok(!fip.draft.mixes.some(row => /jazz/i.test(row.title)));
 });
 
 test('feedback, duplicate artists, previously seen links and missing quotas are reported', () => {
@@ -120,24 +123,24 @@ test('feedback, duplicate artists, previously seen links and missing quotas are 
       curators: [],
     },
   } });
-  assert.deepEqual(result.gaps, {albums: 1, live: 1});
+  assert.deepEqual(result.gaps, {live: 1});
   assert.equal(result.selected.live.length, 2);
   assert.equal(result.complete, false);
-  assert.equal(result.selected.otherRadio[0].item.id, 'Jazzafip');
-  assert.match(result.selected.otherRadio[0].reason, /Coup de cœur/);
+  assert.equal(result.selected.otherRadio[0].item.id, 'Nova Club');
+  assert.match(result.selected.otherRadio[0].reason, /Pas pour moi/);
   assert.ok(result.rankings.find(row => row.item.id === 'Beta').previouslySeen);
 });
 
 test('hearts and thumbs-down affect future artists without penalizing an unrelated source', () => {
   const options = {...readyOptions, candidates: [
-    album('Fresh loved', {creator:'Future Star',genre:'Jazz'}),
+    album('Fresh loved', {creator:'Future Star',genre:'Soul'}),
     album('Fresh disliked', {creator:'Avoid Artist',genre:'Folk'}),
     album('Unrelated', {creator:'Someone Else',genre:'Rock'}),
   ]};
   const profile = {
     ...emptyTasteProfile(),
     signals: {curators:[], items:[
-      {id:'old-loved', saved:false, reaction:'Loved', creator:'Future Star', genre:'Jazz'},
+      {id:'old-loved', saved:false, reaction:'Loved', creator:'Future Star', genre:'Soul'},
       {id:'old-disliked', saved:false, reaction:'Not for me', creator:'Avoid Artist', genre:'Folk'},
     ]},
   };
@@ -171,12 +174,63 @@ test('Monday editions become visible at Paris midnight in winter and summer', ()
   }
 });
 
-test('the album window includes Monday two weeks before the edition', () => {
+test('album recommendations may include old but verified releases, without a fourteen-day cut-off', () => {
   const report = weeklyShortlist({ ...readyOptions, profile: emptyTasteProfile(), candidates: [
     album('Inside', { releaseDate: '2026-11-09' }),
-    album('Outside', { releaseDate: '2026-11-08' }),
+    album('Outside', { releaseDate: '2022-11-08' }),
   ] });
   assert.equal(report.draft.albumWindowStart, '2026-11-09');
-  assert.deepEqual(report.draft.albums.map(item => item.id), ['Inside']);
-  assert.equal(report.rejected[0].id, 'Outside');
+  assert.deepEqual(report.draft.albums.map(item => item.id), ['Inside', 'Outside']);
+  assert.ok(!report.rejected.some(row => row.id === 'Outside'));
+  assert.equal(report.draft.albums[1].date, '2022-11-08');
+});
+
+test('jazz does not enter albums, radio shows, mixes, playlists or verified live picks', () => {
+  const candidates=[
+    album('Jazz record',{genre:'Jazz',source:'Preferred label'}),
+    album('Experimental jazz',{tags:['free jazz']}),
+    album('ECM record',{source:'ECM',provider:'ECM'}),
+    album('Soul record',{genre:'Soul'}),
+    radio('Jazzafip replay','FIP'),
+    radio('Nova replay','Radio Nova'),
+    item('Jazz playlist','Playlist',{genre:'Jazz',url:'https://open.spotify.com/playlist/64WCJyxoGnhFHdDe6LYwNG'}),
+    item('Jazz live','Live session',{genre:'Jazz',minutes:24,verificationStatus:'performance-verified'}),
+  ];
+  const report=weeklyShortlist({...readyOptions,candidates,profile:{...emptyTasteProfile(),favoriteRadios:['FIP'],favoritePublications:['ECM']}});
+  assert.deepEqual(report.selected.albums.map(row=>row.item.id),['Soul record']);
+  assert.deepEqual(report.selected.otherRadio.map(row=>row.item.id),['Nova replay']);
+  assert.ok(report.rejected.filter(row=>row.reason==='Jazz exclu des recommandations').length>=5);
+  assert.equal(excludesJazz({format:'Album',source:'ECM',title:'No genre supplied'}),true);
+});
+
+test('verified artists are extracted from YouTube titles and never repeated across live videos', () => {
+  assert.equal(livePerformer('SLIFT - The Village (Live on KEXP)'), 'SLIFT');
+  assert.equal(livePerformer('SLIFT - Full Performance (Live on KEXP)'), 'SLIFT');
+  assert.equal(livePerformer('Jorja Smith - Blue Lights | A COLORS SHOW'),'Jorja Smith');
+  assert.equal(livePerformer('Rosalía: Tiny Desk Concert'),'Rosalía');
+  assert.equal(livePerformer('Rachel Chinouriri - Pretty Girls (BBC Radio 1 Live Lounge)'),'Rachel Chinouriri');
+  const makeLive=(name,title)=>item(name,'Live session',{creator:livePerformer(title),title,minutes:6,verificationStatus:'performance-verified'});
+  const candidates=[
+    makeLive('slift1','SLIFT - The Village (Live on KEXP)'),
+    makeLive('slift2','SLIFT - Full Performance (Live on KEXP)'),
+    makeLive('jorja','Jorja Smith - Blue Lights | A COLORS SHOW'),
+    makeLive('rosalia','Rosalía: Tiny Desk Concert'),
+    album('First'),album('Second'),album('Third'),
+    item('NTS','Radio show',{url:'https://www.nts.live/shows/show/episodes/other'}),
+    radio('Nova Club','Radio Nova'),
+    item('Playlist','Playlist',{url:'https://open.spotify.com/playlist/64WCJyxoGnhFHdDe6LYwNG'}),
+  ];
+  const report=weeklyShortlist({...readyOptions,candidates,profile:emptyTasteProfile()});
+  assert.equal(report.selected.live.length,3);
+  assert.deepEqual(new Set(report.draft.live.map(row=>row.creator)).size,3);
+});
+
+test('a trusted editorially endorsed older album outranks a merely new release',()=>{
+ const candidates=[
+  album('Recent',{releaseDate:'2026-11-18',creator:'New release'}),
+  album('Well reviewed',{releaseDate:'2021-06-01',creator:'Great artist',editorialKind:'critic-pick',editorialSource:'Pitchfork',editorialUrl:'https://pitchfork.com/reviews/albums/a'}),
+ ];
+ const report=weeklyShortlist({...readyOptions,candidates,profile:emptyTasteProfile()});
+ assert.equal(report.selected.albums[0].item.id,'Well reviewed');
+ assert.match(report.selected.albums[0].publicReason,/Pitchfork/);
 });
