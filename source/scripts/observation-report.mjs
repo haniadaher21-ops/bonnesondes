@@ -20,7 +20,8 @@ export function observationReport(report, diagnostics) {
     }))])),
     albumEvidence:diagnostics.albumEvidence.map(row=>({title:row.title,creator:row.creator,sourceUrl:row.sourceUrl,
       verifiedReleaseDate:row.verifiedReleaseDate,eligible:!!row.candidate,reason:row.reason})),
-    albumCatalogues:diagnostics.catalogues,sourceCoverage:diagnostics.sources.filter(row=>!row.sourceId.startsWith('spotify-follow-')),
+    albumCatalogues:diagnostics.catalogues,youtubeMixes:diagnostics.youtubeMixes,
+    sourceCoverage:diagnostics.sources.filter(row=>!row.sourceId.startsWith('spotify-follow-')),
     liveStatus:diagnostics.liveStatus,build:diagnostics.build ?? 'not-run',publicationEnabled:false,
   };
 }
