@@ -88,6 +88,17 @@ test('YouTube videos launch a single persistent floating iframe, not a new inlin
   assert.doesNotMatch(readHash,/setActiveVideo|setVideoExpanded/,'Hash navigation cannot reset playback');
 });
 
+test('all four non-YouTube mixes play through a persistent in-site audio player', () => {
+  assert.match(ui, /function PersistentMixPlayer/);
+  assert.match(ui, /className="mix-dock-audio"/);
+  assert.match(ui, /className="mix-dock-soundcloud"/);
+  assert.match(ui, /<PersistentMixPlayer key=\\{activeMix\\?\\.id/);
+  assert.match(ui, /setActiveMix\\(null\\)/);
+  assert.match(ui, /Écouter ici/);
+  assert.match(ui, /onClick=\\{\\(\\) => startMix\\(item\\)\\}/);
+  assert.match(ui, /setActiveMix\\(current => current\\?\\.id === item\\.id/);
+});
+
 test('mini-player controls remain accessible even while the user browses other sections',()=>{
   assert.match(ui,/Réduire le lecteur YouTube/);
   assert.match(ui,/Agrandir le lecteur YouTube/);
