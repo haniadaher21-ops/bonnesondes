@@ -17,6 +17,7 @@ const durationSeconds=value=>{
   return m ? Number(m[1]??0)*86400+Number(m[2]??0)*3600+Number(m[3]??0)*60+Number(m[4]??0) : 0;
 };
 const videoId=value=>typeof value==='string' && /^[\w-]{11}$/.test(value);
+const channelIdValid=value=>typeof value==='string' && /^UC[\w-]{22}$/.test(value);
 const weekStart=startsOn=>new Date(Date.parse(startsOn)-7*86400000).toISOString().slice(0,10);
 
 export function verifiedYouTubeMix(video, startsOn, today) {
@@ -27,7 +28,7 @@ export function verifiedYouTubeMix(video, startsOn, today) {
   const channelId=snippet.channelId;
   const channelTitle=snippet.channelTitle?.trim();
   const length=durationSeconds(contentDetails.duration);
-  if(!videoId(id)||!videoId(channelId)||!isoDate(date)||!title||!channelTitle
+  if(!videoId(id)||!channelIdValid(channelId)||!isoDate(date)||!title||!channelTitle
     || !isoDate(startsOn)||!isoDate(today)||date<weekStart(startsOn)||date>=startsOn||date>today
     || status.privacyStatus!=='public'||status.embeddable!==true||length<20*60
     || !mixTitle.test(title)||notMix.test(title)||snippet.liveBroadcastContent==='live')return;
