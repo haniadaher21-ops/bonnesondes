@@ -1,4 +1,4 @@
 :HL["/bonnesondes/_next/static/chunks/30y8u8p4tm_0v.css","style"]
 2:[["children",{"s":"__PAGE__","h":160}]]
 1:[["children",{"s":"/_not-found","h":96,"c":"$Q2"}]]
-0:{"b":"VLSSioYX3pyW4i7Se5y6e","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
+0:{"b":"ajsv1zUkvgA2EXfuyZtjf","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
