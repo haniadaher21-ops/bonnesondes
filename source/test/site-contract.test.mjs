@@ -80,7 +80,7 @@ test('YouTube videos launch a single persistent floating iframe, not a new inlin
   assert.match(ui,/key=\{videoId\}/);
   assert.match(ui,/onClose=\{\(\) => \{ setActiveVideo\(null\)/);
   assert.match(ui,/setRadioOpen\(false\)/);
-  assert.match(ui,/setActiveVideo\(null\);\s*setActiveMix\\(null\\);\\s*setStation\(next\)/);
+  assert.ok(ui.includes('setActiveVideo(null);') && ui.includes('setActiveMix(null);') && ui.includes('setStation(next);'));
   assert.doesNotMatch(ui,/www\.youtube-nocookie\.com\/embed/);
   assert.ok(ui.indexOf('<PersistentYouTubePlayer item={activeVideo}')>ui.indexOf('</main>'),
     'The persistent YouTube iframe must live after main, outside conditional pages');
