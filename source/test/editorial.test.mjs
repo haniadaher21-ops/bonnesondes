@@ -229,3 +229,15 @@ test('a returning recommendation keeps its stable ID and fills in missing metada
     { ...active.playlists[0], genre: older.genre },
   ]);
 });
+
+
+test('an explicitly early-published edition goes live on Sunday, stays unchanged Monday, and has no early effect on other editions',()=>{
+  const early={...selection(),publishedAt:'2026-11-22'};
+  const issues=[legacyEdition,early];
+  assert.equal(selectEdition(issues,new Date('2026-11-21T22:59:59Z')),legacyEdition);
+  assert.equal(selectEdition(issues,new Date('2026-11-21T23:00:00Z')),early);
+  assert.equal(selectEdition(issues,new Date('2026-11-22T21:00:00Z')),early);
+  assert.equal(selectEdition(issues,new Date('2026-11-22T23:00:00Z')),early);
+  const regular={...selection()};
+  assert.equal(selectEdition([legacyEdition,regular],new Date('2026-11-22T20:00:00Z')),legacyEdition);
+});

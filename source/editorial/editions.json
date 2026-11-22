@@ -1,1 +1,199 @@
-[]
+[
+  {
+    "number": "002",
+    "startsOn": "2026-11-23",
+    "publishedAt": "2026-11-22",
+    "label": "semaine du 2026-11-23",
+    "albumWindowStart": "2026-11-09",
+    "featuredId": "nts-canyoufeelthesun-w-call-super-parris-19th-november-2026",
+    "mixPolicy": "nts-nova-youtube-v1",
+    "albums": [
+      {
+        "id": "spotify-41WGyCiHdCzGgAOLKTKWP1",
+        "title": "All My Friends",
+        "creator": "Chastity Belt",
+        "source": "Bandcamp Daily",
+        "url": "https://open.spotify.com/album/41WGyCiHdCzGgAOLKTKWP1",
+        "sourceUrl": "https://chastity-belt.bandcamp.com/album/all-my-friends",
+        "artwork": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e0208046179412e6e836de6e3de",
+        "date": "2026-11-06",
+        "embed": {
+          "provider": "spotify",
+          "id": "41WGyCiHdCzGgAOLKTKWP1"
+        },
+        "editorialSource": "Bandcamp Daily",
+        "editorialUrl": "https://daily.bandcamp.com/album-of-the-day/chastity-belt-all-my-friends-review",
+        "editorialClaim": "Album of the Day",
+        "format": "Album",
+        "reason": "Sélection « Album of the Day » de Bandcamp Daily, sortie originale vérifiée (2026-11-06)."
+      },
+      {
+        "id": "spotify-428KzGfU0jpgqpebyZmITs",
+        "title": "Appalachia",
+        "creator": "Emily Scott Robinson",
+        "source": "Bandcamp Daily",
+        "url": "https://open.spotify.com/album/428KzGfU0jpgqpebyZmITs",
+        "sourceUrl": "https://emilyscottrobinson.bandcamp.com/album/appalachia",
+        "artwork": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e02c30eb1d1c8c871fb32c8e1e2",
+        "date": "2026-01-30",
+        "embed": {
+          "provider": "spotify",
+          "id": "428KzGfU0jpgqpebyZmITs"
+        },
+        "editorialSource": "Bandcamp Daily",
+        "editorialUrl": "https://daily.bandcamp.com/album-of-the-day/emily-scott-robinson-appalachia-review",
+        "editorialClaim": "Album of the Day",
+        "format": "Album",
+        "reason": "Sélection « Album of the Day » de Bandcamp Daily, sortie originale vérifiée (2026-01-30)."
+      },
+      {
+        "id": "spotify-7CagycYC4VgWeGPcs9BJZ5",
+        "title": "SAD",
+        "creator": "Ikonika",
+        "source": "Bandcamp Daily",
+        "url": "https://open.spotify.com/album/7CagycYC4VgWeGPcs9BJZ5",
+        "sourceUrl": "https://ikonika.bandcamp.com/album/sad",
+        "artwork": "https://image-cdn-fa.spotifycdn.com/image/ab67616d00001e0223f1e6bf669474ae3a4da51d",
+        "date": "2025-11-28",
+        "embed": {
+          "provider": "spotify",
+          "id": "7CagycYC4VgWeGPcs9BJZ5"
+        },
+        "editorialSource": "Bandcamp Daily",
+        "editorialUrl": "https://daily.bandcamp.com/album-of-the-day/ikonika-sad-review",
+        "editorialClaim": "Album of the Day",
+        "format": "Album",
+        "reason": "Sélection « Album of the Day » de Bandcamp Daily, sortie originale vérifiée (2025-11-28)."
+      }
+    ],
+    "mixes": [
+      {
+        "id": "nts-canyoufeelthesun-w-call-super-parris-19th-november-2026",
+        "title": "CAN YOU FEEL THE SUN W/ Isaac Kniveton",
+        "source": "NTS Radio",
+        "url": "https://www.nts.live/shows/canyoufeelthesun-w-call-super-parris/episodes/canyoufeelthesun-w-call-super-parris-19th-november-2026",
+        "sourceUrl": "https://www.nts.live/api/v2/shows/canyoufeelthesun-w-call-super-parris/episodes",
+        "artwork": "https://media.ntslive.co.uk/resize/400x400/ebb2fdd7-9db7-4ec5-aaa2-b09f04821bbc_1794960000.jpeg",
+        "date": "2026-11-19",
+        "mixKind": "dj-set",
+        "sourceId": "nts-can-you-feel-the-sun",
+        "format": "Radio show",
+        "reason": "DJ set musical diffusé le 2026-11-19 sur NTS."
+      },
+      {
+        "id": "nova-danse:/radio-nova-nova-danse/202611132200-nova-danse-1tbsp-x-miki",
+        "title": "Nova Danse : 1tbsp X Miki",
+        "source": "Radio Nova · Nova Danse",
+        "url": "https://podcasts.nova.fr/radio-nova-nova-danse/202611132200-nova-danse-1tbsp-x-miki",
+        "sourceUrl": "https://podcasts.nova.fr/radio-nova-nova-danse/feed/rss/website.xml",
+        "date": "2026-11-13",
+        "mixKind": "dj-set",
+        "sourceId": "nova-danse",
+        "format": "Radio show",
+        "reason": "DJ set musical diffusé le 2026-11-13 sur Radio Nova."
+      },
+      {
+        "id": "youtube-XQoGtWdpKoA",
+        "title": "Late Night R&B Mix | Partynextdoor, SZA, Leon Thomas, Jhene Aiko, Giveon, Odeal, Karri, Isaiah Falls",
+        "creator": "DJ BOON",
+        "source": "YouTube · DJ BOON",
+        "url": "https://www.youtube.com/watch?v=XQoGtWdpKoA",
+        "sourceUrl": "https://www.youtube.com/channel/UC0QX1jatZgGGYkF7xXCcF8Q",
+        "artwork": "https://i.ytimg.com/vi/XQoGtWdpKoA/hqdefault.jpg",
+        "date": "2026-09-30",
+        "minutes": 45.583333333333336,
+        "embed": {
+          "provider": "youtube",
+          "id": "XQoGtWdpKoA"
+        },
+        "mixKind": "curated-mix",
+        "sourceId": "youtube-mix-UC0QX1jatZgGGYkF7xXCcF8Q",
+        "audienceVerified": true,
+        "viewCount": 4217269,
+        "subscriberCount": 6630,
+        "mixStyle": "rnb",
+        "mixStyleVerified": true,
+        "format": "Radio show",
+        "officialVideo": true,
+        "videoSourceUrl": "https://www.youtube.com/watch?v=XQoGtWdpKoA",
+        "reason": "Mix R&B mis en ligne le 2026-09-30 sur YouTube ; 4 217 269 vues vérifiées."
+      }
+    ],
+    "playlists": [
+      {
+        "id": "spotify-60VayqPuLXaftoj2Wrqpti",
+        "title": "New This Week",
+        "creator": "KEXP",
+        "source": "Spotify",
+        "url": "https://open.spotify.com/playlist/60VayqPuLXaftoj2Wrqpti",
+        "sourceUrl": "https://kexp.org/about/submission-guidelines/",
+        "embed": {
+          "provider": "spotify",
+          "id": "60VayqPuLXaftoj2Wrqpti"
+        },
+        "sourceId": "kexp-selections",
+        "format": "Playlist",
+        "reason": "Lien vérifié et publié par KEXP."
+      }
+    ],
+    "live": [
+      {
+        "id": "youtube-fnIu25lXXY8",
+        "title": "Sampha: NPR Music Tiny Desk Concert",
+        "creator": "Sampha",
+        "source": "NPR Music · Tiny Desk Concert",
+        "url": "https://www.youtube.com/watch?v=fnIu25lXXY8",
+        "sourceUrl": "https://www.youtube.com/@nprmusic",
+        "date": "2017-03-28",
+        "minutes": 15.633333333333333,
+        "embed": {
+          "provider": "youtube",
+          "id": "fnIu25lXXY8"
+        },
+        "sourceId": "npr-tiny-desk",
+        "format": "Live session",
+        "officialVideo": true,
+        "videoSourceUrl": "https://www.youtube.com/watch?v=fnIu25lXXY8",
+        "reason": "Performance publiée par une chaîne officielle, vidéo intégrable de 938 secondes."
+      },
+      {
+        "id": "youtube-0PsOJ_fRckg",
+        "title": "Khruangbin - Full Performance (Live on KEXP)",
+        "creator": "Khruangbin",
+        "source": "KEXP · Live on KEXP",
+        "url": "https://www.youtube.com/watch?v=0PsOJ_fRckg",
+        "sourceUrl": "https://www.youtube.com/@kexp",
+        "date": "2026-01-20",
+        "minutes": 35.71666666666667,
+        "embed": {
+          "provider": "youtube",
+          "id": "0PsOJ_fRckg"
+        },
+        "sourceId": "kexp-live",
+        "format": "Live session",
+        "officialVideo": true,
+        "videoSourceUrl": "https://www.youtube.com/watch?v=0PsOJ_fRckg",
+        "reason": "Performance publiée par une chaîne officielle, vidéo intégrable de 2143 secondes."
+      },
+      {
+        "id": "youtube-A3qCdlJOPbI",
+        "title": "Gretta Ray - ‘Every Aching Minute’ (live for Like A Version)",
+        "creator": "Gretta Ray",
+        "source": "triple j · Like A Version",
+        "url": "https://www.youtube.com/watch?v=A3qCdlJOPbI",
+        "sourceUrl": "https://www.youtube.com/feeds/videos.xml?channel_id=UCd2KNtfphz8HvYzM4pwtHmg",
+        "date": "2026-11-19",
+        "minutes": 5.333333333333333,
+        "embed": {
+          "provider": "youtube",
+          "id": "A3qCdlJOPbI"
+        },
+        "sourceId": "triple-j",
+        "format": "Live session",
+        "officialVideo": true,
+        "videoSourceUrl": "https://www.youtube.com/watch?v=A3qCdlJOPbI",
+        "reason": "Performance publiée par une chaîne officielle, vidéo intégrable de 320 secondes."
+      }
+    ]
+  }
+]

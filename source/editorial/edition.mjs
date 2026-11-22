@@ -11,7 +11,10 @@ export function parisDate(date) {
  */
 export function selectEdition(editions, at = new Date()) {
   const day = parisDate(at);
-  return editions.filter(edition => edition.startsOn <= day)
+  // A manually approved edition may be released the preceding Sunday.
+  // Regular editions retain the normal Monday-midnight Europe/Paris rollover.
+  return editions.filter(edition => edition.startsOn <= day
+    || (isoDate(edition.publishedAt) && edition.publishedAt <= day))
     .sort((a, b) => b.startsOn.localeCompare(a.startsOn))[0];
 }
 
