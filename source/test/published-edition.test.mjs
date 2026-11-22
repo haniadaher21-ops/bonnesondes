@@ -24,6 +24,16 @@ test('edition 002 is manually published today with the exact verified preview co
   assert.ok(item.mixes.slice(3).every(x=>x.url.startsWith('https://www.radiofrance.fr/fip/podcasts/fip-tape/')));
   // Every mix currently shown has its official episode thumbnail, not an icon fallback.
   assert.ok(item.mixes.every(x=>x.artwork?.startsWith('https://')));
+  assert.deepEqual(item.mixes.filter(x=>x.audio).map(x=>[x.id,x.audio.provider]),[
+    ['nts-canyoufeelthesun-w-call-super-parris-19th-november-2026','soundcloud'],
+    ['nova-danse:/radio-nova-nova-danse/202611132200-nova-danse-1tbsp-x-miki','podcast'],
+    ['fip-tape-gta-8454740','podcast'],
+    ['fip-tape-james-blake-7762098','podcast'],
+  ]);
+  const invalidAudio=structuredClone(item);
+  invalidAudio.mixes[3].audio.url='https://example.com/other.mp3';
+  assert.match(validateEdition(invalidAudio,[legacyEdition],legacyItems).join('\\n'),/Lecteur audio non vérifié/);
+
   assert.equal(item.mixes[1].artwork,'https://assets.voxeus.com/podcasts/assets/images/rs/episode/256/b3f968098869702de1abce2c7345c26e3594b6dc/69c15e4f-d57a-4d27-8cdc-c98fd2c7b261/6e501dc4b799a8436666ccff909e65e18102c05d.png');
   assert.deepEqual(item.mixes.slice(3).map(x=>x.artwork),[
     'https://www.radiofrance.fr/pikapi/images/e9dd2af8-857b-4877-80dc-08b4f0ad070e/800x800',
