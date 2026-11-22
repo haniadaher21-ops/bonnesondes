@@ -15,6 +15,7 @@ import { legacyEdition, legacyItems, publishedFile, readJson } from './editorial
 import {filterConflictingDates} from './release-metadata.mjs';
 import { verifyAlbums, verifyLives, normalized } from './weekly-evidence.mjs';
 import { weeklyShortlist } from './weekly-ranking.mjs';
+import { editorialEndorsement } from './recommendation-policy.mjs';
 import {publicProviderFetcher} from './provider-policy.mjs';
 import {observationReport,renderObservation} from './observation-report.mjs';
 import { editionForCycle, publicationDecision, publicEdition, rollCandidates } from './automation-policy.mjs';
@@ -99,7 +100,10 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
       && normalized(item.creator)===normalized(record.creator) && normalized(item.title)===normalized(record.title));
     if(prior){record.tags ??= prior.tags; if(!record.url){record.url=prior.url;record.listeningProofUrl=prior.listeningProofUrl;record.listeningMappingUrl=prior.listeningMappingUrl;}}
   }
-  const evidence = filterConflictingDates(await verifyAlbums(uniqueRecords,fetcher));
+  // The edition is now curated-first: unendorsed label releases should not
+  // consume Spotify/MusicBrainz verification budget or displace actual picks.
+  const endorsedRecords=uniqueRecords.filter(record=>editorialEndorsement({...record,format:'Album'}));
+  const evidence = filterConflictingDates(await verifyAlbums(endorsedRecords,fetcher));
   // Multiple verified primary sources can resolve to one Spotify album.
   // Never let a plain label catalogue overwrite the stronger editorial citation.
   const byListeningUrl=new Map();
