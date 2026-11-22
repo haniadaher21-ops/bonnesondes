@@ -147,7 +147,7 @@ test('feedback, duplicate artists, previously seen links and missing quotas are 
       curators: [],
     },
   } });
-  assert.deepEqual(result.gaps, {live: 1});
+  assert.deepEqual(result.gaps, {albums: 1, live: 1});
   assert.equal(result.selected.live.length, 2);
   assert.equal(result.complete, false);
   assert.equal(result.selected.nova[0].item.id, 'Nova Danse');
