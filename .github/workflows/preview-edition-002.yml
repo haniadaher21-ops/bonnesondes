@@ -1,0 +1,83 @@
+name: Prévisualiser l'édition 002 sans publier
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/preview-edition-002.yml'
+      - 'source/scripts/private-cycle.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: bonnes-ondes-private-cycle
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[preview-edition-002]'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - run: npm ci
+        working-directory: source
+      - run: npm test && npm run typecheck
+        working-directory: source
+      - name: Préparer les recommandations réelles et le site témoin
+        working-directory: source
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          BONNES_ONDES_RUNNER_TOKEN: ${{ secrets.BONNES_ONDES_RUNNER_TOKEN }}
+          YOUTUBE_DATA_API_KEY: ${{ secrets.YOUTUBE_DATA_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          AUTO_PUBLISH_ENABLED: 'false'
+          BONNES_ONDES_PREVIEW_DIR: ${{ runner.temp }}/bonnes-ondes-preview
+          BONNES_ONDES_OBSERVATION_DIR: ${{ runner.temp }}/bonnes-ondes-observation
+        run: node scripts/private-cycle.mjs observe
+      - name: Mettre en ligne seulement la route de prévisualisation
+        env:
+          PREVIEW_DIR: ${{ runner.temp }}/bonnes-ondes-preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "$PREVIEW_DIR/previsualisation/2026-11-23/index.html"
+          test -d "$PREVIEW_DIR/_next"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
+          mkdir -p previsualisation/2026-11-23 _next
+          cp "$PREVIEW_DIR/previsualisation/2026-11-23/index.html" previsualisation/2026-11-23/index.html
+          cp -R "$PREVIEW_DIR/_next/." _next/
+          touch .nojekyll
+          git add previsualisation/2026-11-23/index.html _next .nojekyll
+          git diff --cached --quiet && exit 0
+          git config user.name 'Bonnes Ondes'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m 'Prévisualisation isolée de l’édition 002'
+          git push origin HEAD:main
+      - name: Actualiser GitHub Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          curl --fail-with-body --silent --show-error --output /dev/null -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/pages/builds"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: diagnostic-preview-edition-002
+          path: ${{ runner.temp }}/bonnes-ondes-observation/
+          if-no-files-found: ignore
+          retention-days: 7
