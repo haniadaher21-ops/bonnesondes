@@ -90,8 +90,8 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
   const score = Math.round((baseline + affinity * tasteWeight) * 100) / 100;
 
   const evidence = {
-    Album: endorsement ? 'Album recommandé dans « ' + endorsement.claim + ' » par ' + (endorsement.source??'un média musical')
-      + ' (' + endorsement.url + '), sortie originale vérifiée (' + date + ')' : 'Aucune recommandation éditoriale attestée',
+    Album: endorsement ? 'Sélection « ' + endorsement.claim + ' » de ' + (endorsement.source??'un média musical')
+      + ', sortie originale vérifiée (' + date + ')' : 'Aucune recommandation éditoriale attestée',
     'Radio show': (age > 14 ? 'Replay d’archive' : 'Replay individuel') + (date ? ' du ' + date : '') + ' sur ' + (item.provider ?? item.source),
     Playlist: item.playlistOrigin === 'publisher-discovered' ? 'Lien vérifié et publié par ' + (item.creator ?? item.provider ?? 'le média source') : 'Playlist vérifiée sur Spotify',
     'Live session': 'Performance publiée par une chaîne officielle, vidéo intégrable de ' + Math.round(item.minutes * 60) + ' secondes',
