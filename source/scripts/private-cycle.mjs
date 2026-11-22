@@ -171,6 +171,14 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   }
   const draft = publicEdition(report,earlier,legacyItems);
   for (const item of editionItems(draft)) {
+    // Spotify embeds and YouTube videos have already passed their provider APIs;
+    // NTS show pages and Nova episodes come from independently verified official
+    // provider feeds. A crawler-blocked HTML fetch is not a dead player link.
+    const host = new URL(item.url).hostname.toLowerCase();
+    const alreadyVerified = item.embed?.provider === 'spotify'
+      || item.embed?.provider === 'youtube'
+      || ['www.nts.live','nts.live','podcasts.nova.fr','www.radiofrance.fr'].includes(host);
+    if (alreadyVerified) continue;
     try { await readPublicPage(item.url,fetcher); }
     catch {
       await saveState();
