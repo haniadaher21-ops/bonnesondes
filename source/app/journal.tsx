@@ -293,7 +293,7 @@ export default function Journal() {
             <a className="text-link" href="#essential-albums">Voir la sélection <ArrowDown size={15} /></a></div>
         </header>
         <article className="feature">
-          <div className="feature-art"><img src={(process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/art/mix-semaine.webp'} alt="Illustration d’un chien DJ à une platine vinyle" /></div>
+          <div className="feature-art"><img src={(process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/art/mix-semaine.jpg'} alt="Illustration d’un chien DJ à une platine vinyle" /></div>
           <div className="feature-copy">
             <p className="eyebrow">Mix de la semaine</p>
             <h2>{featured.title}</h2>
