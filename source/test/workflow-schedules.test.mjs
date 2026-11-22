@@ -15,14 +15,13 @@ test('daily discovery runs independently, read-only and never publishes', () => 
   assert.doesNotMatch(daily, /contents: write|pages: write|private-cycle\.mjs publish/);
 });
 
-test('separate scheduled publication is disabled until explicit opt-in', () => {
+test('weekly drafts stay scheduled but edition publication is strictly manual', () => {
   const autonomous = workflow('autonomous.yml');
-  assert.doesNotMatch(autonomous, /cron: '17 9 \* \* \*'/);
-  assert.match(autonomous, /cron: '0 18 \* \* 0'/);
-  assert.match(autonomous, /vars\.AUTO_PUBLISH_ENABLED == 'true'/);
+  assert.match(autonomous, /workflow_dispatch:/);
+  assert.doesNotMatch(autonomous, /cron:|^  schedule:/m);
+  assert.match(autonomous, /if: github\.event_name == 'workflow_dispatch'/);
   const weekly = workflow('weekly.yml');
   assert.match(weekly, /cron: '30 17 \* \* 0'/);
   assert.match(weekly, /AUTO_PUBLISH_ENABLED: 'false'/);
   assert.match(weekly, /contents: read/);
 });
-
