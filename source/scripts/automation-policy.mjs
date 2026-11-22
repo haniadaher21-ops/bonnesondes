@@ -1,10 +1,11 @@
 import { canonicalUrl, isoDate, parisDate, sourceUrl, validateEdition } from '../editorial/edition.mjs';
 import { normalized } from './weekly-evidence.mjs';
-import { isFreshMusicMix } from './recommendation-policy.mjs';
+import { isFreshMusicMix, isNtsMix, isNovaMix, isYouTubeMix } from './recommendation-policy.mjs';
 
 const DAY = 86400000;
 const publicFields = ['id','title','creator','format','source','publisher','url','sourceUrl','artwork','date','minutes',
   'mood','season','genre','embed','officialVideo','videoSourceUrl','mixKind','sourceId',
+  'audienceVerified','viewCount','subscriberCount','curatorEstablished',
   'editorialSource','editorialUrl','editorialClaim'];
 
 export function editionForCycle(at) {
@@ -56,6 +57,10 @@ export function publicEdition(report, earlier, catalog) {
   if (!report.complete) throw new Error('Brouillon incomplet.');
   const draft = {...report.draft};
   const artists = new Set();
+  if(draft.mixPolicy==='nts-nova-youtube-v1' && (draft.mixes.length!==3
+    || draft.mixes.filter(isNtsMix).length!==1||draft.mixes.filter(isNovaMix).length!==1
+    || draft.mixes.filter(isYouTubeMix).length!==1))
+    throw new Error('Sélection obligatoire : un NTS, un Nova et un YouTube crédible.');
   for (const section of ['albums','mixes','playlists','live']) {
     draft[section] = report.draft[section].map(item => {
       const entry = Object.values(report.selected).flat().find(row => row.item.id === item.id);
