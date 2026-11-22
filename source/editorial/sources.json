@@ -34,6 +34,45 @@
     "mixKind": "dj-set"
   },
   {
+    "id": "nova-teuf-appart",
+    "name": "Radio Nova · Teuf d’appart",
+    "provider": "Radio Nova",
+    "format": "Radio show",
+    "mode": "automatic",
+    "method": "podcast-rss",
+    "url": "https://podcasts.nova.fr/teuf-dappart",
+    "feed": "https://podcasts.nova.fr/teuf-dappart/feed/rss/website.xml",
+    "itemPrefix": "/teuf-dappart/",
+    "mixSelection": "teuf-dappart",
+    "mixKind": "dj-set"
+  },
+  {
+    "id": "nova-worldmix",
+    "name": "Radio Nova · Néo Géo Worldmix",
+    "provider": "Radio Nova",
+    "format": "Radio show",
+    "mode": "automatic",
+    "method": "podcast-rss",
+    "url": "https://podcasts.nova.fr/radio-nova-neo-geo-nova-le-worldmix",
+    "feed": "https://podcasts.nova.fr/radio-nova-neo-geo-nova-le-worldmix/feed/rss/website.xml",
+    "itemPrefix": "/radio-nova-neo-geo-nova-le-worldmix/",
+    "mixSelection": "neo-geo-worldmix",
+    "mixKind": "dj-set"
+  },
+  {
+    "id": "nova-club-mixes",
+    "name": "Radio Nova · Nova Club (mixes uniquement)",
+    "provider": "Radio Nova",
+    "format": "Radio show",
+    "mode": "automatic",
+    "method": "podcast-rss",
+    "url": "https://podcasts.nova.fr/radio-nova-nova-club",
+    "feed": "https://podcasts.nova.fr/radio-nova-nova-club/feed/rss/website.xml",
+    "itemPrefix": "/radio-nova-nova-club/",
+    "mixSelection": "nova-club-exclusively-mixed",
+    "mixKind": "dj-set"
+  },
+  {
     "id": "nts-floating-points",
     "name": "NTS · Floating Points",
     "provider": "NTS",
