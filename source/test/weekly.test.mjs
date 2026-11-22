@@ -78,7 +78,22 @@ const album = (id, options = {}) => item(id, 'Album', { releaseDate: '2026-11-13
   verificationStatus: 'primary-verified', editorialSource:'Bandcamp Daily',
   editorialUrl:'https://daily.bandcamp.com/album-of-the-day/fixture-'+id.toLowerCase().replace(/[^a-z0-9]+/g,'-'),
   editorialKind:'curator-pick',editorialClaim:'Album of the Day',...options });
-const radio = (id, provider) => item(id, 'Radio show', {provider,mixKind:'dj-set',sourceId:'dj-'+id});
+const radio = (id, provider) => item(id, 'Radio show', {
+ provider,mixKind:'dj-set',
+ ...(provider==='Radio Nova' ? {
+  sourceId:'nova-danse',source:'Radio Nova · Nova Danse',
+  url:'https://podcasts.nova.fr/radio-nova-nova-danse/20261120-'+id.toLowerCase().replace(/[^a-z0-9]+/g,'-'),
+  date:'2026-11-20',
+ } : {sourceId:'dj-'+id}),
+});
+const youtubeMix=(id='YouTube mix',options={})=>item(id,'Radio show',{
+ title:'All-vinyl DJ set | DJ Good Selector',creator:'DJ Good Selector',source:'YouTube · DJ Good Selector',
+ sourceId:'youtube-mix-UC'+'A'.repeat(22),mixKind:'curated-mix',audienceVerified:true,viewCount:20000,subscriberCount:80000,
+ url:'https://www.youtube.com/watch?v=3C01eaL5_Xw',sourceUrl:'https://www.youtube.com/channel/UC'+'A'.repeat(22),
+ videoSourceUrl:'https://www.youtube.com/watch?v=3C01eaL5_Xw',
+ officialVideo:true,embed:{provider:'youtube',id:'3C01eaL5_Xw'},
+ date:'2026-11-17',minutes:58,verificationStatus:'source-verified',...options,
+});
 const readyOptions = {
   sources: [], earlier: [legacyEdition], catalog: [], startsOn: nextEditionMonday(new Date('2026-11-18T19:00:00Z')), now: new Date('2026-11-18T19:00:00Z'),
 };
@@ -87,7 +102,7 @@ const completeCandidates = [
   album('Old', {releaseDate: '2025-11-13'}), album('Future', {releaseDate: '2026-11-20'}),
   item('Review', 'Album', {verificationStatus: 'release-date-needed'}),
   item('NTS', 'Radio show', {url: 'https://www.nts.live/shows/show/episodes/replay', provider: 'NTS',mixKind:'dj-set',sourceId:'nts-test',date: '2026-11-17'}),
-  radio('Jazzafip', 'FIP'), radio('Nova Club', 'Radio Nova'),
+  radio('Jazzafip', 'FIP'), radio('Nova Danse', 'Radio Nova'),youtubeMix(),
   item('Playlist', 'Playlist', {url: 'https://open.spotify.com/playlist/' + playlistId, playlistOrigin: 'publisher-discovered'}),
   item('Live', 'Live session', {minutes: 4.5, sourceId:'npr',verificationStatus: 'performance-verified'}),
   item('Live2', 'Live session', {minutes: 18, sourceId:'colors',verificationStatus: 'performance-verified'}),
@@ -106,8 +121,8 @@ test('complete verified inputs give a valid draft and tastes change the radio an
   assert.equal(nova.complete, true);
   assert.equal(fip.selected.live.length, 3);
   assert.equal(nova.draft.live.length, 3);
-  assert.equal(fip.selected.otherRadio[0].item.id, 'Nova Club');
-  assert.equal(nova.selected.otherRadio[0].item.id, 'Nova Club');
+  assert.equal(fip.selected.nova[0].item.id, 'Nova Danse');
+  assert.equal(nova.selected.nova[0].item.id, 'Nova Danse');
   assert.equal(fip.draft.albums[0].id, 'Beta');
   assert.equal(nova.draft.albums[0].id, 'Alpha');
   assert.equal(fip.draft.albums[0].date, '2026-11-13');
@@ -128,15 +143,15 @@ test('feedback, duplicate artists, previously seen links and missing quotas are 
   ];
   const result = weeklyShortlist({ ...readyOptions, candidates, seen: {'https://publisher.test/content/Beta': '2026-11-15'}, profile: {
     ...emptyTasteProfile(), signals: {
-      items: [{ id: 'Jazzafip', saved: true, reaction: 'Loved' }, { id: 'Nova Club', saved: false, reaction: 'Not for me' }],
+      items: [{ id: 'Jazzafip', saved: true, reaction: 'Loved' }, { id: 'Nova Danse', saved: false, reaction: 'Not for me' }],
       curators: [],
     },
   } });
   assert.deepEqual(result.gaps, {live: 1});
   assert.equal(result.selected.live.length, 2);
   assert.equal(result.complete, false);
-  assert.equal(result.selected.otherRadio[0].item.id, 'Nova Club');
-  assert.match(result.selected.otherRadio[0].reason, /Pas pour moi/);
+  assert.equal(result.selected.nova[0].item.id, 'Nova Danse');
+  assert.match(result.selected.nova[0].reason, /Pas pour moi/);
   assert.ok(result.rankings.find(row => row.item.id === 'Beta').previouslySeen);
 });
 
@@ -207,7 +222,7 @@ test('jazz does not enter albums, radio shows, mixes, playlists or verified live
   ];
   const report=weeklyShortlist({...readyOptions,candidates,profile:{...emptyTasteProfile(),favoriteRadios:['FIP'],favoritePublications:['ECM']}});
   assert.deepEqual(report.selected.albums.map(row=>row.item.id),['Soul record']);
-  assert.deepEqual(report.selected.otherRadio.map(row=>row.item.id),['Nova replay']);
+  assert.deepEqual(report.selected.nova.map(row=>row.item.id),['Nova replay']);
   assert.ok(report.rejected.filter(row=>row.reason==='Jazz exclu des recommandations').length>=5);
   assert.equal(excludesJazz({format:'Album',source:'ECM',title:'No genre supplied'}),true);
 });
@@ -226,7 +241,7 @@ test('verified artists are extracted from YouTube titles and never repeated acro
     makeLive('rosalia','Rosalía: Tiny Desk Concert'),
     album('First'),album('Second'),album('Third'),
     item('NTS','Radio show',{url:'https://www.nts.live/shows/show/episodes/other',mixKind:'dj-set',sourceId:'nts-test'}),
-    radio('Nova Club','Radio Nova'),
+    radio('Nova Danse','Radio Nova'),
     item('Playlist','Playlist',{url:'https://open.spotify.com/playlist/64WCJyxoGnhFHdDe6LYwNG'}),
   ];
   const report=weeklyShortlist({...readyOptions,candidates,profile:emptyTasteProfile()});
@@ -325,9 +340,9 @@ test('three live performances must come from three distinct music studios',()=>{
  assert.equal(result.complete,false);
 });
 
-test('an eligible recent YouTube music mix can replace the second NTS set',()=>{
-  const youtube=item('Soul selection','Radio show',{
-    creator:'Soul Vinyl Curator',source:'YouTube · Soul Vinyl Curator',provider:'YouTube',
+test('an eligible YouTube music mix occupies the mandatory slot',()=>{
+  const youtube=youtubeMix('Soul selection',{
+    creator:'Soul Vinyl Curator',source:'YouTube · Soul Vinyl Curator',provider:'YouTube',audienceVerified:true,
     sourceId:'youtube-mix-UC'+'A'.repeat(22),mixKind:'curated-mix',
     url:'https://www.youtube.com/watch?v=3C01eaL5_Xw',sourceUrl:'https://www.youtube.com/channel/UC'+'A'.repeat(22),
     videoSourceUrl:'https://www.youtube.com/watch?v=3C01eaL5_Xw',
@@ -335,15 +350,15 @@ test('an eligible recent YouTube music mix can replace the second NTS set',()=>{
     date:'2026-11-17',minutes:58,verificationStatus:'source-verified'});
   const report=weeklyShortlist({...readyOptions,candidates:[...completeCandidates,youtube],profile:emptyTasteProfile()});
   assert.equal(report.selected.nts[0].item.id,'NTS');
-  assert.equal(report.selected.otherRadio[0].item.id,'Soul selection');
-  assert.deepEqual(report.draft.mixes.map(x=>x.id),['NTS','Soul selection']);
+  assert.equal(report.selected.nova[0].item.id,'Soul selection');
+  assert.deepEqual(report.draft.mixes.map(x=>x.id),['NTS','Nova Danse','Soul selection']);
 });
 
 test('a named vinyl DJ mix outranks a generic automated-looking YouTube compilation',()=>{
  const channel=variant=>'UC'+variant.repeat(22);
  const youtube=(id,title,creator,variant)=>item(id,'Radio show',{
    title,creator,source:'YouTube · '+creator,provider:'YouTube',sourceId:'youtube-mix-'+channel(variant),
-   mixKind:'curated-mix',date:'2026-11-17',verificationStatus:'source-verified',minutes:50,
+   mixKind:'curated-mix',date:'2026-11-17',verificationStatus:'source-verified',audienceVerified:true,minutes:50,
    url:'https://www.youtube.com/watch?v='+('a'.repeat(10)+variant),
    sourceUrl:'https://www.youtube.com/channel/'+channel(variant),
    videoSourceUrl:'https://www.youtube.com/watch?v='+('a'.repeat(10)+variant),
@@ -352,7 +367,23 @@ test('a named vinyl DJ mix outranks a generic automated-looking YouTube compilat
  const generic=youtube('Generic','Best Vintage Funk Mix 2026','Music Mixes','A');
  const real=youtube('Actual DJ','All-vinyl 80s R&B Soul Hip Hop DJ Mix | DJ Tommy Samuel','DJ Tommy Samuel','B');
  const result=weeklyShortlist({...readyOptions,candidates:[...completeCandidates,generic,real],profile:emptyTasteProfile()});
- assert.equal(result.selected.otherRadio[0].item.id,'Actual DJ');
+ assert.equal(result.selected.nova[0].item.id,'Actual DJ');
  assert.ok(result.rankings.find(row=>row.item.id==='Actual DJ').score
    > result.rankings.find(row=>row.item.id==='Generic').score);
+});
+
+test('edition needs one NTS, one Nova and one verified YouTube DJ mix',()=>{
+ const incomplete=weeklyShortlist({...readyOptions,candidates:completeCandidates.filter(x=>x.id!=='YouTube mix'),profile:emptyTasteProfile()});
+ assert.equal(incomplete.complete,false);assert.equal(incomplete.gaps.youtube,1);
+ const complete=weeklyShortlist({...readyOptions,candidates:completeCandidates,profile:emptyTasteProfile()});
+ assert.equal(complete.complete,true);
+ assert.deepEqual(complete.draft.mixes.map(x=>x.id),['NTS','Nova Danse','YouTube mix']);
+ assert.equal(complete.draft.mixPolicy,'nts-nova-youtube-v1');
+});
+test('Nova may use its last real DJ set from ten days ago',()=>{
+ const older=radio('Nova ten days','Radio Nova');older.date='2026-11-13';
+ assert.equal(isFreshMusicMix(older,'2026-11-23','2026-11-22'),true);
+ assert.equal(isFreshMusicMix({...older,date:'2026-11-08'},'2026-11-23','2026-11-22'),false);
+ const r=weeklyShortlist({...readyOptions,candidates:[...completeCandidates.filter(x=>x.id!=='Nova Danse'),older],profile:emptyTasteProfile()});
+ assert.equal(r.selected.nova[0].item.id,'Nova ten days');
 });
