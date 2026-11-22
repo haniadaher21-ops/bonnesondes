@@ -168,7 +168,7 @@ function validAudio(audio, group) {
   const link = sourceUrl(audio.url);
   if (!link) return false;
   if (audio.provider === 'soundcloud') {
-    return link.hostname === 'soundcloud.com' && /^\\/[^/]+\\/[^/]+\\/?$/.test(link.pathname);
+    return link.hostname === 'soundcloud.com' && link.pathname.split('/').filter(Boolean).length === 2;
   }
   if (audio.provider === 'podcast') {
     return (link.hostname === 'proxycast.radiofrance.fr' || link.hostname === 'audio.audiomeans.fr')
