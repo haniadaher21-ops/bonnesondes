@@ -14,6 +14,8 @@ export interface Recommendation {
   publisher?: string;
   url: string;
   artwork?: string;
+  editorialSource?: string;
+  editorialUrl?: string;
   date?: string;
   minutes?: number;
   mood?: string;
