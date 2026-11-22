@@ -1,5 +1,6 @@
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 import { canonicalUrl, isoDate, sourceUrl } from '../editorial/edition.mjs';
+import { isDedicatedNovaMixEpisode } from './nova-mixes.mjs';
 
 export const text = value => typeof value === 'string' ? value.trim() : '';
 const array = value => [value].flat().filter(Boolean);
@@ -50,12 +51,13 @@ export function editorialFeed(xml, source) {
   if (!(atom ? parsed.feed : parsed.rss?.channel)) throw new Error('Structure de flux inattendue.');
   const candidates = [];
   const leads = [];
-  for (const entry of (entries ?? []).slice(0, 8)) {
+  for (const entry of (entries ?? []).slice(0, source.mixSelection ? 32 : 8)) {
     const href = atom ? array(entry.link).find(link => link['@_rel'] === 'alternate')?.['@_href'] : entry.link;
     const url = primaryLink(href, source);
     const title = text(entry.title?.['#text'] ?? entry.title);
     const dates = publishedDate(atom ? entry.published : entry.pubDate);
     if (!url || !title || !dates.date) continue;
+    if(source.mixSelection && !isDedicatedNovaMixEpisode(title,source.mixSelection)) continue;
     const item = { title, url, ...dates };
     switch (source.method) {
       case 'podcast-rss':
