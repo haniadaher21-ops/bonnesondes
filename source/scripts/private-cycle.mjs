@@ -64,7 +64,8 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   const youtubeMixes=mode==='collect' ? {items:[],status:'deferred-until-observation'}
     : await collectYouTubeMixes({startsOn,today:parisDate(now),profile,key:env.YOUTUBE_DATA_API_KEY,fetcher});
   const youtubeMixSummary={status:youtubeMixes.status,found:youtubeMixes.found??0,
-    eligible:youtubeMixes.items.length,queries:youtubeMixes.queries??0};
+    eligible:youtubeMixes.items.length,queries:youtubeMixes.queries??0,
+    publicCandidates:youtubeMixes.items.slice(0,12).map(({title,source,date,url})=>({title,source,date,url}))};
   if(mode!=='collect') console.log('YouTube mix discovery',JSON.stringify(youtubeMixSummary));
   const previous = rollCandidates(state.candidates,[...collection.candidates,...archivalLives,...youtubeMixes.items],now);
   const registered = readJson(new URL('../editorial/album-sources.json',import.meta.url));
