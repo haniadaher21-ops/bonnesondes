@@ -10,6 +10,10 @@ on:
       - 'source/scripts/recommendation-policy.mjs'
       - 'source/scripts/weekly-evidence.mjs'
       - 'source/scripts/observation-report.mjs'
+      - 'source/scripts/editorial-endorsements.mjs'
+      - 'source/editorial/live-archive.json'
+      - 'source/test/editorial-endorsements.test.mjs'
+      - 'source/test/incremental-discovery.test.mjs'
       - 'source/scripts/album-catalogues.mjs'
       - 'source/scripts/discovery.mjs'
       - 'source/editorial/edition.mjs'
@@ -67,10 +71,12 @@ jobs:
           node --input-type=module <<'JS'
           import {readFileSync} from 'node:fs';
           import {join} from 'node:path';
-          import {excludesJazz} from './scripts/recommendation-policy.mjs';
+          import {excludesJazz,editorialEndorsement} from './scripts/recommendation-policy.mjs';
           const report=JSON.parse(readFileSync(join(process.env.BONNES_ONDES_OBSERVATION_DIR,'recommendations.json'),'utf8'));
           const rows=Object.values(report.selected).flat();
           if(!report.complete || rows.some(item=>excludesJazz(item))) throw new Error('Sélection incomplète ou jazz détecté.');
+          if(report.selected.albums.length!==3 || report.selected.albums.some(item=>!editorialEndorsement({...item,format:'Album'})))
+            throw new Error('Trois albums avec recommandations éditoriales explicites et vérifiables obligatoires.');
           const lives=report.selected.live;
           const creators=lives.map(item=>item.creator?.normalize('NFKD').toLowerCase().trim()).filter(Boolean);
           if(lives.length!==3 || creators.length!==3 || new Set(creators).size!==3) throw new Error('Trois artistes différents sont obligatoires pour les lives.');
