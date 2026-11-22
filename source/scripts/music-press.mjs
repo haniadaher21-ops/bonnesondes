@@ -7,7 +7,14 @@ import { parseFeed } from './discovery-feeds.mjs';
 // album was released then. Primary release dates and Spotify identity are
 // verified separately before any recommendation can be published.
 const DAY=86400000;
-const text = html => String(html).replace(/<[^>]+>/g,' ').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#0?39;/g,"'").replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
+const text = html => String(html).replace(/<[^>]+>/g,' ')
+  .replace(/&#(x[0-9a-f]+|[0-9]+);?/gi,(_,code) => {
+    const value=code.toLowerCase().startsWith('x') ? Number.parseInt(code.slice(1),16) : Number(code);
+    return Number.isInteger(value) && value>0 && value<=0x10ffff && !(value>=0xd800 && value<=0xdfff)
+      ? String.fromCodePoint(value) : ' ';
+  })
+  .replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&nbsp;/g,' ')
+  .replace(/\s+/g,' ').trim();
 const titleKey = value => normalized(value).replace(/\band\b/g,'').replace(/\s+/g,' ').trim();
 const articlePath = {
   'nova-weekly': /^\/news\/[^?#]*albums-immanquables-de-la-semaine[^?#]*\/?$/i,
