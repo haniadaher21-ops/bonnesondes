@@ -35,8 +35,8 @@ test('YouTube search verifies matching videos with its API and deduplicates over
  let searches=0,verified=0;
  const fetcher=async url=>{
   const target=new URL(url);
-  assert.equal(target.searchParams.get('publishedAfter'),'2026-11-16T00:00:00Z');
   if(target.pathname.endsWith('/search')){
+   assert.equal(target.searchParams.get('publishedAfter'),'2026-11-16T00:00:00Z');
    searches++;
    assert.equal(target.searchParams.get('type'),'video');
    assert.equal(target.searchParams.get('videoDuration'),'long');
