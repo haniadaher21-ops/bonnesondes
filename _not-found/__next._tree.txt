@@ -1,4 +1,4 @@
 :HL["/bonnesondes/_next/static/chunks/1ol-zy-5fhi2j.css","style"]
 2:[["children",{"s":"__PAGE__","h":160}]]
 1:[["children",{"s":"/_not-found","h":96,"c":"$Q2"}]]
-0:{"b":"QThCut0Sm5kBqEyT7Z5Qk","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
+0:{"b":"5-zyuN-wLsmra0jsFHAmP","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
