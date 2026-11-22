@@ -117,6 +117,32 @@
         "officialVideo": true,
         "videoSourceUrl": "https://www.youtube.com/watch?v=XQoGtWdpKoA",
         "reason": "Mix R&B mis en ligne le 2026-09-30 sur YouTube ; 4 217 269 vues vérifiées."
+      },
+      {
+        "id": "fip-tape-gta-8454740",
+        "title": "La mixtape de GTA",
+        "source": "FIP · Fip Tape",
+        "url": "https://www.radiofrance.fr/fip/podcasts/fip-tape/la-mixtape-de-gta-8454740",
+        "sourceUrl": "https://www.radiofrance.fr/fip/podcasts/fip-tape/la-mixtape-de-gta-8454740",
+        "date": "2026-11-12",
+        "minutes": 122.2,
+        "mixKind": "editorial-mixtape",
+        "sourceId": "fip-tape",
+        "format": "Radio show",
+        "reason": "Deux heures de voyage musical à travers les radios et les influences de l’univers Grand Theft Auto, imaginées par FIP."
+      },
+      {
+        "id": "fip-tape-james-blake-7762098",
+        "title": "La mixtape de James Blake",
+        "source": "FIP · Fip Tape",
+        "url": "https://www.radiofrance.fr/fip/podcasts/fip-tape/la-mixtape-de-james-blake-7762098",
+        "sourceUrl": "https://www.radiofrance.fr/fip/podcasts/fip-tape/la-mixtape-de-james-blake-7762098",
+        "date": "2026-10-08",
+        "minutes": 118.33333333333333,
+        "mixKind": "editorial-mixtape",
+        "sourceId": "fip-tape",
+        "format": "Radio show",
+        "reason": "Un parcours musical dans l’univers de James Blake, de ses inspirations à ses propres compositions, proposé par l’équipe de FIP."
       }
     ],
     "playlists": [
