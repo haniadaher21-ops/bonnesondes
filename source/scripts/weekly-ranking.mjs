@@ -1,7 +1,7 @@
 import { canonicalUrl, editionItems, isoDate, parisDate, sourceUrl, validateEdition } from '../editorial/edition.mjs';
 import { spotifyPlaylistId } from './discovery-feeds.mjs';
 import { normalized } from './weekly-evidence.mjs';
-import { excludesJazz, editorialEndorsement } from './recommendation-policy.mjs';
+import { excludesJazz, editorialEndorsement, isFreshMusicMix } from './recommendation-policy.mjs';
 
 const DAY = 86400000;
 const addDays = (date, days) => new Date(Date.parse(date) + days * DAY).toISOString().slice(0, 10);
@@ -9,7 +9,9 @@ const radioNts = item => /^https:\/\/(?:www\.)?nts\.live\/shows\/[^/]+\/episodes
 const groups = [
   { name: 'albums', count: 3, max: 3, match: item => item.format === 'Album' },
   { name: 'nts', count: 1, max: 1, match: item => item.format === 'Radio show' && radioNts(item) },
-  { name: 'otherRadio', count: 1, max: 1, match: item => item.format === 'Radio show' && !radioNts(item) },
+  // Prefer a different station when one published a DJ set this week.
+  // If Nova Danse has no new set, a different NTS DJ programme beats a talk show.
+  { name: 'otherRadio', count: 1, max: 1, match: item => item.format === 'Radio show' },
   { name: 'playlists', count: 1, max: 1, match: item => item.format === 'Playlist' },
   { name: 'live', count: 3, max: 3, match: item => item.format === 'Live session' },
 ];
@@ -92,14 +94,14 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
   const evidence = {
     Album: endorsement ? 'Sélection « ' + endorsement.claim + ' » de ' + (endorsement.source??'un média musical')
       + ', sortie originale vérifiée (' + date + ')' : 'Aucune recommandation éditoriale attestée',
-    'Radio show': (age > 14 ? 'Replay d’archive' : 'Replay individuel') + (date ? ' du ' + date : '') + ' sur ' + (item.provider ?? item.source),
+    'Radio show': 'DJ set musical diffusé le ' + date + ' sur ' + (item.provider ?? item.source),
     Playlist: item.playlistOrigin === 'publisher-discovered' ? 'Lien vérifié et publié par ' + (item.creator ?? item.provider ?? 'le média source') : 'Playlist vérifiée sur Spotify',
     'Live session': 'Performance publiée par une chaîne officielle, vidéo intégrable de ' + Math.round(item.minutes * 60) + ' secondes',
   }[item.format];
   return { item, score, publicReason: evidence + '.', reason: [evidence, ...signals].join('. ') + '.', signals, age };
 }
 
-function exclusion(item, today) {
+function exclusion(item, today, startsOn) {
   if (!item.id || !item.title || !item.source || !sourceUrl(item.url) || !sourceUrl(item.sourceUrl)) return 'Lien ou provenance manquante';
   if (excludesJazz(item)) return 'Jazz exclu des recommandations';
   if (item.format === 'Album') {
@@ -109,6 +111,7 @@ function exclusion(item, today) {
   }
   if (item.format === 'Live session' && !normalized(item.creator)) return 'Artiste de la performance non identifié';
   if (item.format === 'Radio show' && !['source-verified', 'editor-verified'].includes(item.verificationStatus)) return 'Replay individuel à vérifier';
+  if (item.format === 'Radio show' && !isFreshMusicMix(item,startsOn,today)) return 'Pas un DJ mix musical de la semaine précédente';
   if (item.format === 'Playlist' && (!spotifyPlaylistId(item.url) || item.verificationStatus !== 'source-verified' || !item.creator)) return 'Lien ou curateur non vérifié';
   if (item.format === 'Live session' && item.verificationStatus !== 'performance-verified') return 'Durée ou caractère officiel de la session à vérifier';
   if (isoDate(item.date) && item.date > today) return 'Publication encore à venir';
@@ -124,7 +127,7 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
   const rejected = [];
   const rankings = [];
   for (const item of candidates) {
-    let why = exclusion(item, today);
+    let why = exclusion(item, today, startsOn);
     if (knownIds.has(item.id) || knownUrls.has(canonicalUrl(item.url))) why = 'Déjà au catalogue';
     if (why) {
       rejected.push({ id: item.id, title: item.title, format: item.format, url: item.url, reason: why });
@@ -140,6 +143,7 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
   const artists = new Set();
   const performances = new Set();
   const providers = new Map();
+  const usedMixPrograms = new Set();
   for (const group of groups) {
     const options = rankings.filter(entry => group.match(entry.item));
     const chosen = [];
@@ -149,6 +153,10 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
         ? (item.sourceId ?? item.source) : (item.provider ?? item.source);
       const remaining = options.filter(entry => {
         const { item } = entry;
+        // For live discoveries, each pick must use a different format/studio.
+        // For DJ sets, two episodes from the same series aren't diverse enough.
+        if (group.name==='live' && localProviders.has(provider(entry))) return false;
+        if (group.name==='otherRadio' && item.sourceId && usedMixPrograms.has(item.sourceId)) return false;
         if (chosen.length >= group.count && localProviders.has(provider(entry))) return false;
         const key = canonicalUrl(item.url);
         const artist = normalized(item.creator);
@@ -166,6 +174,7 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
       urls.add(canonicalUrl(item.url));
       if (item.creator && item.format !== 'Playlist') artists.add(normalized(item.creator));
       if (item.format === 'Live session') performances.add(normalized(item.title));
+      if (item.format === 'Radio show' && item.sourceId) usedMixPrograms.add(item.sourceId);
       localProviders.add(provider(entry));
       providers.set(provider(entry), (providers.get(provider(entry)) ?? 0) + 1);
     }
