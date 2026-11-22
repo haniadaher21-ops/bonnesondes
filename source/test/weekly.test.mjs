@@ -274,7 +274,7 @@ test('label catalogue presence is not an editorial recommendation',()=>{
 
 test('an older live matching tastes wins over a new unrelated live',()=>{
  const live=(id,age,creator,genre,source='KEXP · Live on KEXP')=>item(id,'Live session',{
-  creator,source,sourceId:'kexp-live',genre,date:age,
+  creator,source,sourceId:source.startsWith('NPR')?'npr-tiny-desk':'kexp-live',genre,date:age,
   minutes:12,verificationStatus:'performance-verified'});
  const candidates=[
   live('fresh','2026-11-18','Other','Metal'),
