@@ -10,6 +10,7 @@ import RadioTrack, { type OnAir } from './radio-track';
 import ProfileSync from './profile-sync';
 import TastePreferences from './taste-preferences';
 import { playableYouTubeId, youtubeEmbedSrc } from './youtube-player.mjs';
+import { collectionRecommendations, restoreLibrary, toggleSaved, libraryStorageKey } from './library-store.mjs';
 
 const pages = [
   ['rotation', 'Sélection'], ['radio', 'Radios'], ['playlists', 'Playlists'],
@@ -28,9 +29,14 @@ const reactions = ['Loved', 'Not for me'] as const;
 // Keep existing localStorage/profile reaction values readable for older collections.
 type Reaction = 'Loved' | 'Interesting' | 'Not for me' | 'Worth revisiting';
 type Entry = { saved?: boolean; reaction?: Reaction };
-type Library = { entries: Record<string, Entry>; playlists: Recommendation[]; radioTracks: Record<string, Recommendation>; curators: string[] };
-const emptyLibrary: Library = { entries: {}, playlists: [], radioTracks: {}, curators: [] };
-const storageKey = 'off-frequency.library.v1';
+type Library = { entries: Record<string, Entry>; playlists: Recommendation[]; radioTracks: Record<string, Recommendation>; curators: string[]; savedItems: Record<string, Recommendation> };
+const emptyLibrary: Library = { entries: {}, playlists: [], radioTracks: {}, curators: [], savedItems: {} };
+const storageKey = libraryStorageKey;
+// All still-available catalogues are used once to recover bookmarks saved with
+// the previous library format (which remembered IDs but not complete cards).
+const bundledRecommendations = [...catalog, ...issues.flatMap(edition => [
+  edition.featured, ...edition.albums, ...edition.mixes, ...edition.playlists, ...edition.live,
+])];
 const dateLabel = (value: string) => new Intl.DateTimeFormat('fr-FR', {
   dateStyle: 'medium', timeZone: 'UTC',
 }).format(new Date(value + 'T12:00:00Z'));
@@ -144,7 +150,7 @@ export default function Journal() {
     window.addEventListener('focus', updateEdition);
     try {
       const raw = localStorage.getItem(storageKey);
-      if (raw) setLibrary({ ...emptyLibrary, ...JSON.parse(raw) });
+      if (raw) setLibrary(restoreLibrary(JSON.parse(raw), bundledRecommendations) as Library);
     } catch {
       setStorageMessage('Impossible de lire ta collection dans ce navigateur.');
     }
@@ -178,17 +184,7 @@ export default function Journal() {
     updateEntry(id, entry => ({...entry, reaction: entry.reaction === reaction ? undefined : reaction}));
   };
 
-  const save = (item: Recommendation) => setLibrary(state => {
-    const entry = state.entries[item.id];
-    const saved = !entry?.saved;
-    return {
-      ...state,
-      entries: { ...state.entries, [item.id]: { ...entry, saved } },
-      radioTracks: item.format === 'Track' && saved
-        ? { ...state.radioTracks, [item.id]: { ...state.radioTracks[item.id], ...item } }
-        : state.radioTracks,
-    };
-  });
+  const save = (item: Recommendation) => setLibrary(state => toggleSaved(state, item) as Library);
 
   const currentRadioTrack = ({ title, artist, artwork }: OnAir, sourceName: string): Recommendation => ({
     id: 'radio-track:' + JSON.stringify([title, artist ?? ''].map(value => value.trim().normalize().toLowerCase())),
@@ -304,9 +300,10 @@ export default function Journal() {
       <option value="">Tout</option>{values.map(option => <option key={option} value={option}>{option in formatLabels ? formatLabels[option as Format] : option}</option>)}
     </select></label>;
 
-  const all = [...new Map([...catalog, ...issues.flatMap(edition => [
-    edition.featured, ...edition.albums, ...edition.mixes, ...edition.playlists, ...edition.live,
-  ]), ...library.playlists, ...Object.values(library.radioTracks)].map(item => [item.id, item])).values()];
+  const all = collectionRecommendations(
+    [...bundledRecommendations, ...library.playlists, ...Object.values(library.radioTracks)],
+    library.savedItems,
+  ) as Recommendation[];
   const shelfResults = shelf.filter(item => (!curator || (curator === '★ Créateurs favoris'
     ? library.curators.includes(item.creator ?? '') : item.creator === curator))
     && (!genre || item.genre === genre) && (!season || item.season === season) && (!shelfMood || item.mood === shelfMood));

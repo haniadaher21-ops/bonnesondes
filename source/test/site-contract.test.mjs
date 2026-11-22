@@ -86,3 +86,13 @@ test('mini-player controls remain accessible even while the user browses other s
   assert.match(ui,/onClick=\{\(\) => startVideo\(selected\)\}/);
   assert.match(ui,/radio-dock-with-video/);
 });
+
+
+test('bookmarks retain full cards from previous editions in the personal collection',()=>{
+  assert.match(ui,/savedItems: Record<string, Recommendation>/);
+  assert.match(ui,/setLibrary\(restoreLibrary\(JSON\.parse\(raw\), bundledRecommendations\) as Library\)/);
+  assert.match(ui,/setLibrary\(state => toggleSaved\(state, item\) as Library\)/);
+  assert.match(ui,/collectionRecommendations\(\s*\[\.\.\.bundledRecommendations/);
+  assert.match(ui,/library\.savedItems/);
+  assert.match(ui,/off-frequency\.library\.v1|libraryStorageKey/);
+});
