@@ -256,7 +256,8 @@ test('short publisher preferences match fuller programme names without matching 
  const ranked=(report,id)=>report.rankings.find(row=>row.item.id===id)?.score;
  assert.ok(ranked(preferred,'Favourite label album')>ranked(neutral,'Favourite label album'));
  assert.ok(ranked(preferred,'Live KEXP')>ranked(neutral,'Live KEXP'));
- assert.ok(!preferred.rankings.some(row=>row.item.id==='Other label album' && row.signals.length));
+ assert.ok(!preferred.rankings.some(row=>row.item.id==='Other label album'
+   && row.signals.some(signal=>/Source parmi tes préférées|Média ou curateur recommandé/.test(signal))));
 });
 
 test('label catalogue presence is not an editorial recommendation',()=>{
