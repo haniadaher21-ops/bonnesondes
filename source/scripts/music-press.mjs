@@ -1,6 +1,7 @@
 import { readPublicPage } from './album-catalogues.mjs';
 import { normalized } from './release-metadata.mjs';
 import { isoDate } from '../editorial/edition.mjs';
+import { parseFeed } from './discovery-feeds.mjs';
 
 // Articles published within the previous month are leads, not proof that an
 // album was released then. Primary release dates and Spotify identity are
@@ -67,6 +68,47 @@ export function musicPressMentions(html, source, articleUrl, today) {
       source.method==='nova-weekly'?'Albums immanquables':'New albums to listen to'}));
 }
 
+export function nprMusicFridayMentions(xml,source,today) {
+  let parsed;
+  try { parsed=parseFeed(xml); } catch { return []; }
+  const episodes=parsed.rss?.channel?.item??[];
+  const mentions=[];
+  for(const episode of episodes.slice(0,35)) {
+    const title=String(episode.title??'');
+    if(!/new music friday/i.test(title))continue;
+    const pubDate=Number.isFinite(Date.parse(episode.pubDate??''))
+      ? new Date(episode.pubDate).toISOString().slice(0,10) : undefined;
+    const age=pubDate?(Date.parse(today)-Date.parse(pubDate))/DAY:Infinity;
+    if(age<0||age>30)continue;
+    const link=String(episode.link??'');
+    let valid;
+    try {
+      const url=new URL(link);
+      valid=url.protocol==='https:' && ['www.npr.org','npr.org'].includes(url.hostname)
+        && /new-music-friday/.test(url.pathname);
+    } catch {valid=false;}
+    if(!valid)continue;
+    const raw=episode.description?.['#text']??episode.description??'';
+    const description=text(raw);
+    const start=description.toLowerCase().indexOf('the starting 5');
+    if(start<0)continue;
+    const limit=description.toLowerCase().indexOf('the lightning round',start);
+    const picks=description.slice(start,limit<0?undefined:limit);
+    // Parse explicitly named, paired artist and album titles from the
+    // broadcaster's own episode notes, never transcribe speech speculatively.
+    const rx=/-\\s*([^,\\n]{2,80}),\\s*['"“]([^'"”]{2,120})['"”]/g;
+    for(const match of picks.matchAll(rx)) {
+      const creator=match[1].trim().replace(/\\s*\\(.*?\\)\\s*/g,'');
+      const album=match[2].trim();
+      if(!creator||!album)continue;
+      mentions.push({creator,title:album,editorialSource:source.name,
+        editorialUrl:link,editorialPublishedAt:pubDate,
+        editorialKind:'curator-pick',editorialClaim:'New Music Friday'});
+    }
+  }
+  return mentions;
+}
+
 export function matchMusicPress(record, mentions) {
   const artist=titleKey(record.creator??''), title=titleKey(record.title??'');
   if(!artist||!title)return;
@@ -84,6 +126,12 @@ export async function collectMusicPress(sources,{fetcher=fetch,today=new Date().
     }
     try {
       const html=await readPublicPage(source.listingUrl,fetcher);
+      if(source.method==='npr-new-music-friday') {
+        const items=nprMusicFridayMentions(html,source,today);
+        mentions.push(...items);
+        status.push({source:source.name,status:items.length?'ok':'empty',articles:items.length?1:0,mentions:items.length});
+        continue;
+      }
       const links=musicPressLinks(html,source);
       let examined=0,verified=0;
       for(const url of links) {
