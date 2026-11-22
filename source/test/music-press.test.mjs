@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import sources from '../editorial/music-press.json' with {type:'json'};
-import {musicPressLinks,musicPressMentions,nprMusicFridayMentions,matchMusicPress,collectMusicPress} from '../scripts/music-press.mjs';
+import {musicPressLinks,musicPressMentions,nprMusicFridayMentions,musicPressAlbumReferences,matchMusicPress,collectMusicPress} from '../scripts/music-press.mjs';
 import {editorialEndorsement} from '../scripts/recommendation-policy.mjs';
 
 const nova=sources.find(x=>x.id==='nova');
@@ -58,6 +58,27 @@ test('article title and release identity must match to qualify as an editorial p
  assert.equal(editorialEndorsement({...citation,editorialUrl:'https://evil.example/review',format:'Album'}),undefined);
  const [pitch]=musicPressMentions('{"datePublished":"2026-11-13"}'+articles[2][2],pitchfork,articles[2][1],'2026-11-22');
  assert.equal(matchMusicPress({title:'Trouble Mountain',creator:'Aesop Rock & Blockhead'},[pitch]),pitch);
+});
+
+test('curated press articles can discover new primary album links without guessing identities',()=>{
+ const url=articles[2][1];
+ const mention=musicPressMentions('{"datePublished":"2026-11-13"}<h2>Aesop Rock and Blockhead: Trouble Mountain [Rhymesayers]</h2>',pitchfork,url,'2026-11-22')[0];
+ const html='<h2>Aesop Rock and Blockhead: Trouble Mountain [Rhymesayers]</h2>'
+   +'<p><a href="https://aesoprock.bandcamp.com/album/trouble-mountain">Primary release</a>'
+   +'<a href="https://open.spotify.com/album/0Fta5KudJiX6HpDWApUu8y">Spotify</a></p>'
+   +'<h2>Unrelated bandcamp album</h2>'
+   +'<a href="https://somebody.bandcamp.com/album/unrelated">Other</a>';
+ const records=musicPressAlbumReferences(html,url,[mention]);
+ assert.equal(records.length,1);
+ assert.deepEqual(records.map(x=>[x.title,x.creator,x.sourceUrl,x.url]),[
+   ['Trouble Mountain','Aesop Rock and Blockhead',
+    'https://aesoprock.bandcamp.com/album/trouble-mountain',
+    'https://open.spotify.com/album/0Fta5KudJiX6HpDWApUu8y'],
+ ]);
+ assert.equal(records[0].editorialSource,'Pitchfork');
+ assert.ok(editorialEndorsement({...records[0],format:'Album'}));
+ const ambiguous=html.replace('</p>','<a href="https://other.bandcamp.com/album/also">another</a></p>');
+ assert.deepEqual(musicPressAlbumReferences(ambiguous,url,[mention]),[]);
 });
 
 test('automatic collectors work with independently retrieved articles, while unavailable media stay explicit',async()=>{
