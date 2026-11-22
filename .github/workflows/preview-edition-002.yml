@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/preview-edition-002.yml'
       - 'source/scripts/private-cycle.mjs'
+      - 'source/test/workflow-schedules.test.mjs'
   workflow_dispatch:
 
 permissions:
