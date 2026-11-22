@@ -57,7 +57,10 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   const linked = previous.filter(item => item.format === 'Album' && item.creator)
     .flatMap(item => (item.primaryReleaseUrls ?? []).map(sourceUrl => ({
       title:item.title,creator:item.creator,label:new URL(sourceUrl).hostname,sourceUrl,
-    }))).slice(0,24);
+      editorialSource:item.provider ?? item.source,
+      editorialUrl:item.url,
+      editorialKind:item.sourceId==='pitchfork-best' ? 'critic-pick' : 'review',
+    }))).slice(0,40);
   const priorAlbums=previous.filter(item=>item.format==='Album' && item.releaseProofUrl).map(item=>({
     title:item.title,creator:item.creator,label:item.source,sourceUrl:item.sourceUrl,url:item.url,listeningMappingUrl:item.listeningMappingUrl,
     method:item.sourceUrl.includes('.bandcamp.com/')?'bandcamp-album':undefined,
@@ -71,7 +74,8 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   const preferredSources=[...profile.favoritePublications,...profile.favoriteRadios,...profile.spotify.map(row=>row.name).filter(Boolean)].map(normalized);
   const preferredArtists=profile.favoriteArtists.map(normalized);
   const priority=record=>38*Number(preferredArtists.includes(normalized(record.creator)))
-    +32*Number(preferredSources.includes(normalized(record.label)))
+    +50*Number(preferredSources.includes(normalized(record.label)))
+    +36*Number(record.editorialKind==='critic-pick')+12*Number(record.editorialKind==='review')
     +22*Number((record.tags??[]).some(tag=>profile.explore.map(normalized).includes(normalized(tag))));
   uniqueRecords.sort((a,b)=>priority(b)-priority(a)||a.sourceUrl.localeCompare(b.sourceUrl));
   for(const record of uniqueRecords) {
