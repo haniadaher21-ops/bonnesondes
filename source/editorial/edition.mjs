@@ -97,6 +97,7 @@ export function validateEdition(edition, earlier = [], catalog = []) {
         errors.push('Lien de playlist Spotify requis : ' + item.id + '.');
       }
       if (item.embed && !validEmbed(item, url)) errors.push('Lecteur invalide ou non vérifié : ' + item.id + '.');
+      if (item.audio && !validAudio(item.audio, group)) errors.push('Lecteur audio non vérifié : ' + item.id + '.');
       for (const field of ['creator', 'publisher', 'mood', 'season', 'genre', 'note']) {
         if (item[field] !== undefined && typeof item[field] !== 'string') errors.push('Champ texte invalide : ' + field + '.');
       }
@@ -160,6 +161,20 @@ export function readPublishedEditions(drafts, legacy, catalog) {
     accepted.push(draft);
   }
   return accepted;
+}
+
+function validAudio(audio, group) {
+  if (group !== 'mixes' || !audio || typeof audio !== 'object') return false;
+  const link = sourceUrl(audio.url);
+  if (!link) return false;
+  if (audio.provider === 'soundcloud') {
+    return link.hostname === 'soundcloud.com' && /^\\/[^/]+\\/[^/]+\\/?$/.test(link.pathname);
+  }
+  if (audio.provider === 'podcast') {
+    return (link.hostname === 'proxycast.radiofrance.fr' || link.hostname === 'audio.audiomeans.fr')
+      && link.pathname.endsWith('.mp3');
+  }
+  return false;
 }
 
 function validEmbed(item, url) {
