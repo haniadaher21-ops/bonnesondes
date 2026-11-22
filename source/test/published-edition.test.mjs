@@ -11,9 +11,9 @@ test('edition 002 is manually published today with the exact verified preview co
   assert.equal(item.startsOn,'2026-11-23');
   assert.equal(item.publishedAt,'2026-11-22');
   assert.deepEqual(validateEdition(item,[legacyEdition],legacyItems),[]);
-  assert.deepEqual(item.albums.map(x=>x.title),['All My Friends','Trouble Mountain','Mek Do & Mend']);
-  assert.deepEqual(item.albums.map(x=>x.creator),['Chastity Belt','Aesop Rock & Blockhead','Wonky Logic']);
-  assert.deepEqual(item.albums.map(x=>x.date),['2026-11-06','2026-11-13','2026-11-11']);
+  assert.deepEqual(item.albums.map(x=>x.title),['All My Friends','Trouble Mountain','Secret Language']);
+  assert.deepEqual(item.albums.map(x=>x.creator),['Chastity Belt','Aesop Rock & Blockhead','Krill']);
+  assert.deepEqual(item.albums.map(x=>x.date),['2026-11-06','2026-11-13','2026-11-13']);
   assert.equal(item.albums[0].editorialException,true);
   assert.ok(item.albums[0].editorialExceptionReason.length>=20);
   const staleAlbum=structuredClone(item);
