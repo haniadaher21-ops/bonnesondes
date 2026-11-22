@@ -11,6 +11,8 @@ export function observationReport(report, diagnostics) {
       id:row.item.id,title:row.item.title,creator:row.item.creator,source:row.item.source,provider:row.item.provider,
       genre:row.item.genre,tags:row.item.tags ?? [],sourceId:row.item.sourceId,
       url:row.item.url,sourceUrl:row.item.sourceUrl,releaseDate:row.item.releaseDate,
+      editorialSource:row.item.editorialSource,editorialUrl:row.item.editorialUrl,
+      editorialKind:row.item.editorialKind,editorialClaim:row.item.editorialClaim,
       releaseProofUrl:row.item.releaseProofUrl,listeningProofUrl:row.item.listeningProofUrl,listeningMappingUrl:row.item.listeningMappingUrl,
       date:row.item.date,minutes:row.item.minutes,score:row.score,
       affinityApplied:row.signals.length>0,publicReason:row.publicReason,
