@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import {collectYouTubeMixes,verifiedYouTubeMix,youtubeMixQueries} from '../scripts/youtube-mixes.mjs';
 import {isFreshMusicMix} from '../scripts/recommendation-policy.mjs';
+import {rollCandidates} from '../scripts/automation-policy.mjs';
 
 const channel='UC'+'A'.repeat(22);
 const video=(id,title='I Love You | 60s - 70s Rhythm and Soul Playlist',date='2026-11-20',duration='PT1H10M')=>({
@@ -60,4 +61,13 @@ test('YouTube verification fails closed if key is missing',async()=>{
   fetcher:()=>{throw new Error('no network expected');}});
  assert.deepEqual(result.items,[]);
  assert.equal(result.status,'not-configured');
+});
+
+test('verified YouTube mixes are persisted with the collection timestamp before weekly ranking',()=>{
+ const candidate=verifiedYouTubeMix(video('3C01eaL5_Xw'),'2026-11-23','2026-11-22');
+ const now=new Date('2026-11-22T18:00:00Z');
+ assert.equal(rollCandidates([], [candidate], now).length,0,'Rollup requires collection metadata');
+ const stored=rollCandidates([],[{...candidate,collectedAt:now.toISOString()}],now);
+ assert.equal(stored.length,1);
+ assert.equal(stored[0].mixKind,'curated-mix');
 });
