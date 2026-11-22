@@ -6,12 +6,12 @@ import { isoDate } from '../editorial/edition.mjs';
 // album was released then. Primary release dates and Spotify identity are
 // verified separately before any recommendation can be published.
 const DAY=86400000;
-const text = html => String(html).replace(/<[^>]+>/g,' ').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#0?39;/g,"'").replace(/&nbsp;/g,' ').replace(/\\s+/g,' ').trim();
-const titleKey = value => normalized(value).replace(/\\band\\b/g,'').replace(/\\s+/g,' ').trim();
+const text = html => String(html).replace(/<[^>]+>/g,' ').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#0?39;/g,"'").replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
+const titleKey = value => normalized(value).replace(/\band\b/g,'').replace(/\s+/g,' ').trim();
 const articlePath = {
-  'nova-weekly': /^\\/news\\/[^?#]*albums-immanquables-de-la-semaine[^?#]*\\/?$/i,
-  'stereogum-aotw': /^\\/\\d+\\/album-of-the-week-[^/]+\\/reviews\\/album-of-the-week\\/?$/i,
-  'pitchfork-weekly': /^\\/story\\/\\d+-new-albums-you-should-listen-to-now-[^/]+\\/?$/i,
+  'nova-weekly': /^\/news\/[^?#]*albums-immanquables-de-la-semaine[^?#]*\/?$/i,
+  'stereogum-aotw': /^\/\d+\/album-of-the-week-[^/]+\/reviews\/album-of-the-week\/?$/i,
+  'pitchfork-weekly': /^\/story\/\d+-new-albums-you-should-listen-to-now-[^/]+\/?$/i,
 };
 
 export function musicPressLinks(html, source) {
@@ -19,7 +19,7 @@ export function musicPressLinks(html, source) {
   const pattern=articlePath[source.method];
   if (!pattern || typeof html!=='string') return [];
   const found=[];
-  for(const match of html.matchAll(/href\\s*=\\s*["']([^"'<>]+)["']/gi)) {
+  for(const match of html.matchAll(/href\s*=\s*["']([^"'<>]+)["']/gi)) {
     try {
       const url=new URL(match[1].replace(/&amp;/g,'&'),listing);
       if(url.protocol==='https:' && url.hostname===listing.hostname && pattern.test(url.pathname)) {
@@ -32,10 +32,10 @@ export function musicPressLinks(html, source) {
 }
 
 export function pressPublicationDate(html) {
-  const published = html.match(/"datePublished"\\s*:\\s*"([^"]+)"/i)?.[1]
+  const published = html.match(/"datePublished"\s*:\s*"([^"]+)"/i)?.[1]
     ?? html.match(/(?:property|name)=["']article:published_time["'][^>]*content=["']([^"']+)/i)?.[1]
     ?? html.match(/content=["']([^"']+)["'][^>]*(?:property|name)=["']article:published_time["']/i)?.[1]
-    ?? html.match(/<time\\b[^>]*datetime=["']([^"']+)/i)?.[1];
+    ?? html.match(/<time\b[^>]*datetime=["']([^"']+)/i)?.[1];
   const day=published?.slice(0,10);
   return isoDate(day)?day:undefined;
 }
@@ -47,19 +47,19 @@ export function musicPressMentions(html, source, articleUrl, today) {
   if(age<0||age>30)return [];
   const matches=[];
   if(source.method==='nova-weekly'||source.method==='pitchfork-weekly') {
-    const headings=[...html.matchAll(/<h2\\b[^>]*>([\\s\\S]*?)<\\/h2>/gi)].map(x=>text(x[1]));
+    const headings=[...html.matchAll(/<h2\b[^>]*>([\s\S]*?)<\/h2>/gi)].map(x=>text(x[1]));
     for(const heading of headings) {
       const match= source.method==='nova-weekly'
-        ? heading.match(/^(.+?)\\s*[–—-]\\s*(.+)$/)
-        : heading.match(/^(.+?):\\s*(.+?)(?:\\s*\\[[^\\]]+\\])?$/);
+        ? heading.match(/^(.+?)\s*[–—-]\s*(.+)$/)
+        : heading.match(/^(.+?):\s*(.+?)(?:\s*\[[^\]]+\])?$/);
       if (!match) continue;
-      const artist=match[1].trim(), title=match[2].replace(/\\s*\\[[^\\]]+\\]$/,'').trim();
+      const artist=match[1].trim(), title=match[2].replace(/\s*\[[^\]]+\]$/,'').trim();
       if(artist.length<2||title.length<2)continue;
       matches.push({creator:artist,title});
     }
   } else if(source.method==='stereogum-aotw') {
-    const h1=text(html.match(/<h1\\b[^>]*>([\\s\\S]*?)<\\/h1>/i)?.[1]??'');
-    if(/^Album Of The Week:\\s*/i.test(h1))matches.push({headline:h1.replace(/^Album Of The Week:\\s*/i,'')});
+    const h1=text(html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1]??'');
+    if(/^Album Of The Week:\s*/i.test(h1))matches.push({headline:h1.replace(/^Album Of The Week:\s*/i,'')});
   }
   return matches.map(item=>({...item,editorialSource:source.name,editorialUrl:articleUrl,
     editorialPublishedAt:date,editorialKind:'curator-pick',
