@@ -57,7 +57,7 @@ export function editorialEndorsement(item) {
 // Edition 002 goes live on Monday: the eligible shows aired the previous Mon–Sun.
 const spokenProgram = /(?:\binterview\b|\btalk(?:show)?\b|\bnews\b|\bpodcast\b|\bdiscussion\b|\bchronique\b|\binvité(?:e|s|es)?\b|\binvitée\b|\bmatinale\b|\bentretien\b)/i;
 export function isFreshMusicMix(item, startsOn, today) {
-  if(item?.format!=='Radio show' || item.mixKind!=='dj-set' || !isoDate(item.date)
+  if(item?.format!=='Radio show' || !['dj-set','curated-mix'].includes(item.mixKind) || !isoDate(item.date)
     || !isoDate(startsOn) || !isoDate(today)) return false;
   const min=new Date(Date.parse(startsOn)-7*86400000).toISOString().slice(0,10);
   const max=new Date(Date.parse(startsOn)-86400000).toISOString().slice(0,10);
