@@ -28,7 +28,7 @@ test('explicit album-curation articles and the last 30 days are required',()=>{
  for(const [source,url,headings,published] of articles){
   const listing='<a href="'+url+'">Choix des disques</a><a href="https://example.org/other">Other</a>';
   assert.deepEqual(musicPressLinks(listing,source),[url]);
-  const content='<script type="application/ld+json">{"datePublished":"'+published+'T10:00:00Z"}</script>'+headings;
+  const content='<script type="application/ld+json">{"datePublished":"'+published+'T10:00:00Z"}</script>'+(source.id==='nova' ? headings.replace(' – ',' &#8211; ') : headings);
   const found=musicPressMentions(content,source,url,'2026-11-22');
   assert.ok(found.length>=1,source.id);
   assert.equal(found[0].editorialPublishedAt,published);
