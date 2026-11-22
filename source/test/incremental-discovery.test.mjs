@@ -39,11 +39,13 @@ test('daily cycles use the remotely synchronized profile, preserve candidates an
  const env={SUPABASE_URL:'https://example.supabase.co',SUPABASE_PUBLISHABLE_KEY:'public',BONNES_ONDES_RUNNER_TOKEN:'test-runner',AUTO_PUBLISH_ENABLED:'false'};
  for(let i=0;i<2;i++) {
    const result=await privateCycle({mode:'collect',env,now:new Date(+now+i*1000),fetcher,providerWait:async()=>{}});
-   assert.equal(result.profileRevision,7);assert.equal(result.incremental.retained,1);assert.equal(result.incremental.new,0);
+   assert.equal(result.profileRevision,7);
+   assert.equal(result.incremental.retained,i===0?1:5);
+   assert.equal(result.incremental.new,i===0?4:0);
  }
  assert.equal(followed,true);assert.equal(writes,2);assert.equal(stored.state.collections.length,2);
  assert.equal(stored.state.candidates[0].firstSeenAt,'2026-11-15T00:00:00Z');
- assert.equal(JSON.stringify(stored.state).includes('Khruangbin'),false);
+ assert.equal(JSON.stringify(stored.state).includes('"favoriteArtists"'),false);
 });
 test('revoked or missing synchronized profiles fail closed before contacting discovery providers',async()=>{
  let calls=0;
