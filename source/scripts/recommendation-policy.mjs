@@ -47,7 +47,14 @@ export function editorialEndorsement(item) {
     (host==='daily.bandcamp.com' && path.startsWith('/album-of-the-day/') && kind==='curator-pick')
     || (host==='bandcamp.substack.com' && /^\/p\/i-love-this-record(?:-|$)/.test(path) && kind==='curator-pick')
     || (host==='pitchfork.com' && /^\/reviews\/albums\/[^/]+\/?$/.test(path) && kind==='critic-pick');
-  if (!verified) return;
+  const mediaDay=item.editorialPublishedAt;
+  const mediaIsRecent=isoDate(mediaDay);
+  const mediaPick=kind==='curator-pick' && mediaIsRecent && (
+    (['www.nova.fr','nova.fr'].includes(host) && /^\/news\/[^/]*albums-immanquables-de-la-semaine[^/]*\/?$/.test(path))
+    || (host==='stereogum.com' && /^\/\d+\/album-of-the-week-[^/]+\/reviews\/album-of-the-week\/?$/.test(path))
+    || (host==='pitchfork.com' && /^\/story\/\d+-new-albums-you-should-listen-to-now-[^/]+\/?$/.test(path))
+  );
+  if (!verified && !mediaPick) return;
   return {source:item.editorialSource,kind,url:url.origin+url.pathname,
     claim:item.editorialClaim??(kind==='critic-pick'?'Best New Music':'Sélection éditoriale')};
 }
