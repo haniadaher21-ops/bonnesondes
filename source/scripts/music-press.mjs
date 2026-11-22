@@ -10,8 +10,8 @@ const text = html => String(html).replace(/<[^>]+>/g,' ').replace(/&amp;/g,'&').
 const titleKey = value => normalized(value).replace(/\band\b/g,'').replace(/\s+/g,' ').trim();
 const articlePath = {
   'nova-weekly': /^\/news\/[^?#]*albums-immanquables-de-la-semaine[^?#]*\/?$/i,
-  'stereogum-aotw': /^\/\d+\/album-of-the-week-[^/]+\/reviews\/album-of-the-week\/?$/i,
-  'pitchfork-weekly': /^\/story\/\d+-new-albums-you-should-listen-to-now-[^/]+\/?$/i,
+  'stereogum-aotw': /^\/\d+\/album-of-the-week-[a-z0-9-]+\/reviews\/album-of-the-week\/?$/i,
+  'pitchfork-weekly': /^\/story\/\d+-new-albums-you-should-listen-to-now-[a-z0-9-]+\/?$/i,
 };
 
 export function musicPressLinks(html, source) {
