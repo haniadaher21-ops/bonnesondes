@@ -93,6 +93,16 @@ export function validateEdition(edition, earlier = [], catalog = []) {
       if (group === 'albums' && (!isoDate(item.date) || item.date > startsOn)) {
         errors.push('Date de sortie vérifiée manquante ou future : ' + item.id + '.');
       }
+      if (group === 'albums' && isoDate(item.date)) {
+        const earliest = new Date(start - 14 * 86400000).toISOString().slice(0, 10);
+        const exceptionStart = new Date(start - 21 * 86400000).toISOString().slice(0, 10);
+        const exceptionValid = item.editorialException === true
+          && text(item.editorialExceptionReason) && item.editorialExceptionReason.length >= 20
+          && !!sourceUrl(item.editorialUrl) && item.date >= exceptionStart;
+        if (item.date < earliest && !exceptionValid) {
+          errors.push('Album trop ancien pour la fenêtre de 14 jours : ' + item.id + '.');
+        }
+      }
       if (group === 'playlists' && !(url?.hostname === 'open.spotify.com' && /^\/(?:intl-[a-z]+\/)?playlist\/[a-zA-Z0-9]{22}\/?$/.test(url.pathname))) {
         errors.push('Lien de playlist Spotify requis : ' + item.id + '.');
       }
