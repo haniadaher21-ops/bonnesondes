@@ -19,6 +19,15 @@ test('the homepage offers heart and thumbs-down as mutually exclusive reactions'
   assert.doesNotMatch(ui, /<span className="signal-dot" \/> Journal musical/);
 });
 
+test('mix and live cards show the source only and use the singular weekly heading', () => {
+  assert.match(ui, /item\.format === 'Radio show' \|\| item\.format === 'Live session'/);
+  assert.match(ui, /\? item\.source/);
+  assert.match(ui, /recommendationLabel\(item\)/);
+  assert.match(ui, /recommendationLabel\(selected\)/);
+  assert.equal((ui.match(/title="Mix de la semaine"/g) ?? []).length, 2);
+  assert.doesNotMatch(ui, /title="Mixes de la semaine"/);
+});
+
 test('the first radio row is FIP, NTS 1 and La Belle Aventure', () => {
   const order = [...main.matchAll(/name: '([^']+)'/g)].map(match => match[1]);
   assert.deepEqual(order.slice(0,3), ['FIP','NTS 1','Radio La Belle Aventure']);

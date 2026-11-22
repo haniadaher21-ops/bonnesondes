@@ -20,6 +20,12 @@ type Page = typeof pages[number][0] | 'archive' | 'preferences';
 const formatLabels: Record<Format, string> = {
   Album: 'Album', 'Radio show': 'DJ set / mix', Playlist: 'Playlist', 'Live session': 'Session live', Track: 'Morceau',
 };
+// For mixes and live performances, the source alone is the useful card label.
+const recommendationLabel = (item: Recommendation) =>
+  item.format === 'Radio show' || item.format === 'Live session'
+    ? item.source
+    : formatLabels[item.format] + (item.format === 'Album' ? '' : ' · ' + item.source);
+
 const viewLabels: Record<string, string> = {
   Saved: 'Favoris', 'All discoveries': 'Toutes les découvertes',
   Loved: 'Coup de cœur', Interesting: 'Intéressant', 'Not for me': 'Pas pour moi',
@@ -288,7 +294,7 @@ export default function Journal() {
         : <Artwork item={item} index={index} />}
       <div className="card-body">
         <div className="flex justify-between items-center gap-2">
-          <p className="eyebrow">{formatLabels[item.format]}{item.format !== 'Album' && <> <span aria-hidden="true">·</span> {item.source}</>}</p>
+          <p className="eyebrow">{recommendationLabel(item)}</p>
           <div className="card-feedback">{reactionButtons(item)}{saveButton(item)}</div>
         </div>
         <h3>{item.format === 'Album' ? <a href={item.url} target="_blank" rel="noopener noreferrer" aria-label={'Écouter '+item.title+' sur Spotify'}>{item.title}</a> : <button onClick={() => setSelected(item)}>{item.title}</button>}</h3>
@@ -375,7 +381,7 @@ export default function Journal() {
           </div>
         </article>
         <Section label="DISQUES" title="Trois albums essentiels" id="essential-albums">{cards(issue.albums)}</Section>
-        <Section label="SUR LES ONDES" title="Mixes de la semaine">{cards(issue.mixes, true)}</Section>
+        <Section label="SUR LES ONDES" title="Mix de la semaine">{cards(issue.mixes, true)}</Section>
         <Section label="SUR SPOTIFY" title="Les playlists de la semaine">{cards(issue.playlists, true)}</Section>
         <Section label="LIVE" title="Performances à découvrir">{cards(issue.live.slice(0, 3), true)}</Section>
       </>}
@@ -390,7 +396,7 @@ export default function Journal() {
             <p>{archivedIssue.label}</p>
           </div>
           <Section label="DISQUES" title="Albums recommandés">{cards(archivedIssue.albums)}</Section>
-          <Section label="SUR LES ONDES" title="Mixes de la semaine">
+          <Section label="SUR LES ONDES" title="Mix de la semaine">
             <p className="edition-featured-note">Mix de la semaine : <strong>{archivedIssue.featured.title}</strong></p>
             {cards(archivedIssue.mixes, true)}
           </Section>
@@ -545,7 +551,7 @@ export default function Journal() {
     }} aria-labelledby="listening-title">
       {selected && <div className="dialog-content">
         <button className="icon-button close-dialog" onClick={() => setSelected(null)} aria-label="Fermer les infos tracks" autoFocus><X size={22} /></button>
-        <p className="eyebrow">{formatLabels[selected.format]}{selected.format !== 'Album' && ' · ' + selected.source}</p>
+        <p className="eyebrow">{recommendationLabel(selected)}</p>
         <h2 id="listening-title">{selected.title}</h2>
         {selected.creator && <p className="creator">{[selected.creator, selected.publisher].filter(Boolean).join(' · ')}</p>}
         {(selected.date || selected.minutes) && <p className="metadata">{[selected.date && dateLabel(selected.date), selected.minutes && displayMinutes(selected.minutes)].filter(Boolean).join(' · ')}</p>}
