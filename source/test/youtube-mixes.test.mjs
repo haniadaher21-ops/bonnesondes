@@ -4,70 +4,84 @@ import {collectYouTubeMixes,verifiedYouTubeMix,youtubeMixQueries} from '../scrip
 import {isFreshMusicMix} from '../scripts/recommendation-policy.mjs';
 import {rollCandidates} from '../scripts/automation-policy.mjs';
 
-const channel='UC'+'A'.repeat(22);
-const video=(id,title='I Love You | 60s - 70s Rhythm and Soul Playlist',date='2026-11-20',duration='PT1H10M')=>({
- id,snippet:{title,channelId:channel,channelTitle:'Soul Vinyl Curator',
+const channelId='UC'+'A'.repeat(22);
+const channel=(subs=56000)=>({id:channelId,statistics:{subscriberCount:String(subs)}});
+const video=(id='3C01eaL5_Xw',title='All-vinyl 70s soul & funk DJ mix | DJ Sample',
+ date='2026-11-20',duration='PT1H10M',views=12500)=>({
+ id,snippet:{title,channelId,channelTitle:'DJ Sample Vinyl Club',
    publishedAt:date+'T14:00:00Z',liveBroadcastContent:'none',
    thumbnails:{high:{url:'https://i.ytimg.com/vi/'+id+'/hqdefault.jpg'}},tags:['soul','funk']},
  status:{privacyStatus:'public',embeddable:true},contentDetails:{duration},
+ statistics:{viewCount:String(views),likeCount:'520'},
 });
-
-test('a long musical playlist on a YouTube channel is a valid weekly mix',()=>{
- const item=verifiedYouTubeMix(video('3C01eaL5_Xw'),'2026-11-23','2026-11-22');
+test('verified credible vinyl mix embeds inside Bonnes Ondes with YouTube player',()=>{
+ const item=verifiedYouTubeMix(video(),'2026-11-23','2026-11-22',channel());
  assert.equal(item.mixKind,'curated-mix');
- assert.equal(item.format,'Radio show');
+ assert.equal(item.audienceVerified,true);
+ assert.equal(item.viewCount,12500);
+ assert.equal(item.subscriberCount,56000);
  assert.equal(item.embed.provider,'youtube');
  assert.equal(item.url,'https://www.youtube.com/watch?v=3C01eaL5_Xw');
  assert.equal(item.artwork,'https://i.ytimg.com/vi/3C01eaL5_Xw/hqdefault.jpg');
  assert.equal(isFreshMusicMix(item,'2026-11-23','2026-11-22'),true);
 });
-
-test('reject old uploads, short tracks, jazz, interviews and unembeddable YouTube videos',()=>{
- assert.equal(verifiedYouTubeMix(video('3C01eaL5_Xw',undefined,'2025-11-20'),'2026-11-23','2026-11-22'),undefined);
- assert.equal(verifiedYouTubeMix(video('3C01eaL5_Xw',undefined,'2026-11-20','PT3M'),'2026-11-23','2026-11-22'),undefined);
- assert.equal(verifiedYouTubeMix(video('3C01eaL5_Xw','Jazz vinyl playlist'),'2026-11-23','2026-11-22'),undefined);
- assert.equal(verifiedYouTubeMix(video('3C01eaL5_Xw','DJ interview about playlist'),'2026-11-23','2026-11-22'),undefined);
- assert.equal(verifiedYouTubeMix({...video('3C01eaL5_Xw'),status:{privacyStatus:'public',embeddable:false}},'2026-11-23','2026-11-22'),undefined);
- assert.equal(verifiedYouTubeMix({...video('3C01eaL5_Xw'),snippet:{...video('3C01eaL5_Xw').snippet,tags:['jazz']}},'2026-11-23','2026-11-22'),undefined);
+test('reject fake audiences, tiny channels, nine views and unknown subscriber counts',()=>{
+ assert.equal(verifiedYouTubeMix(video('3C01eaL5_Xw',undefined,undefined,undefined,9),'2026-11-23','2026-11-22',channel(2)),undefined);
+ assert.equal(verifiedYouTubeMix(video(),'2026-11-23','2026-11-22'),undefined);
+ assert.equal(verifiedYouTubeMix(video(),'2026-11-23','2026-11-22',channel(2)),undefined);
+ assert.equal(verifiedYouTubeMix(video('3C01eaL5_Xw',undefined,undefined,undefined,9),'2026-11-23','2026-11-22',channel(56000)),undefined);
 });
-
-test('YouTube search verifies matching videos with its API and deduplicates overlapping searches',async()=>{
- const valid=video('3C01eaL5_Xw');
- let searches=0,verified=0;
- const fetcher=async url=>{
+test('reject older uploads, short tracks, jazz, interviews and disabled embeds',()=>{
+ assert.equal(verifiedYouTubeMix(video('3C01eaL5_Xw',undefined,'2025-11-20'),'2026-11-23','2026-11-22',channel()),undefined);
+ assert.equal(verifiedYouTubeMix(video('3C01eaL5_Xw',undefined,'2026-11-20','PT3M'),'2026-11-23','2026-11-22',channel()),undefined);
+ assert.equal(verifiedYouTubeMix(video('3C01eaL5_Xw','Jazz vinyl playlist'),'2026-11-23','2026-11-22',channel()),undefined);
+ assert.equal(verifiedYouTubeMix(video('3C01eaL5_Xw','DJ interview about playlist'),'2026-11-23','2026-11-22',channel()),undefined);
+ assert.equal(verifiedYouTubeMix(video('3C01eaL5_Xw','Best Vintage Funk Mix 2026'),'2026-11-23','2026-11-22',channel()),undefined);
+ assert.equal(verifiedYouTubeMix({...video(),status:{privacyStatus:'public',embeddable:false}},'2026-11-23','2026-11-22',channel()),undefined);
+ assert.equal(verifiedYouTubeMix({...video(),snippet:{...video().snippet,tags:['jazz']}},'2026-11-23','2026-11-22',channel()),undefined);
+});
+test('search verifies view counts and subscriber counts through two different official APIs',async()=>{
+ let searches=0,videos=0,channels=0;const valid=video();
+ const fetcher=async(url,args)=>{
   const target=new URL(url);
+  assert.equal(args.headers['x-goog-api-key'],'fixture-api-key');
+  assert.equal(target.searchParams.has('key'),false);
   if(target.pathname.endsWith('/search')){
-   assert.equal(target.searchParams.get('publishedAfter'),'2026-11-16T00:00:00Z');
-   searches++;
-   assert.equal(target.searchParams.get('type'),'video');
-   assert.equal(target.searchParams.get('videoDuration'),'long');
-   return Response.json({items:[{id:{videoId:valid.id}},{id:{videoId:valid.id}}]});
+    searches++;
+    assert.equal(target.searchParams.get('publishedAfter'),'2026-11-16T00:00:00Z');
+    assert.equal(target.searchParams.get('order'),'viewCount');
+    return Response.json({items:[{id:{videoId:valid.id}},{id:{videoId:valid.id}}]});
   }
-  assert.ok(target.pathname.endsWith('/videos'));
-  verified++;
-  return Response.json({items:[valid]});
+  if(target.pathname.endsWith('/videos')){
+    videos++;
+    assert.match(target.searchParams.get('part'),/statistics/);
+    return Response.json({items:[valid]});
+  }
+  if(target.pathname.endsWith('/channels')){
+    channels++;
+    assert.equal(target.searchParams.get('id'),channelId);
+    return Response.json({items:[channel()]});
+  }
+  throw new Error('Unexpected YouTube endpoint');
  };
- const result=await collectYouTubeMixes({startsOn:'2026-11-23',today:'2026-11-22',profile:{explore:['Soul']},key:'fixture-api-key',fetcher});
+ const r=await collectYouTubeMixes({startsOn:'2026-11-23',today:'2026-11-22',profile:{explore:['Soul']},key:'fixture-api-key',fetcher});
  assert.equal(searches,youtubeMixQueries.length+1);
- assert.equal(verified,1);
- assert.equal(result.items.length,1);
- assert.equal(result.items[0].title,valid.snippet.title);
- assert.equal(result.items[0].source,'YouTube · Soul Vinyl Curator');
- assert.equal(result.status,'ok');
+ assert.equal(videos,1);assert.equal(channels,1);
+ assert.equal(r.items.length,1);
+ assert.equal(r.items[0].title,valid.snippet.title);
+ assert.equal(r.status,'ok');
 });
-
-test('YouTube verification fails closed if key is missing',async()=>{
- const result=await collectYouTubeMixes({startsOn:'2026-11-23',today:'2026-11-22',
-  fetcher:()=>{throw new Error('no network expected');}});
- assert.deepEqual(result.items,[]);
- assert.equal(result.status,'not-configured');
+test('without YouTube API key no scraping or fabricated statistics is allowed',async()=>{
+ const r=await collectYouTubeMixes({startsOn:'2026-11-23',today:'2026-11-22',
+   fetcher:()=>{throw new Error('network access should not occur');}});
+ assert.deepEqual(r.items,[]);
+ assert.equal(r.status,'not-configured');
 });
-
-test('verified YouTube mixes are persisted with the collection timestamp before weekly ranking',()=>{
- const candidate=verifiedYouTubeMix(video('3C01eaL5_Xw'),'2026-11-23','2026-11-22');
+test('the real video must be timestamped before it enters the candidate rollup',()=>{
+ const sample=verifiedYouTubeMix(video(),'2026-11-23','2026-11-22',channel());
  const now=new Date('2026-11-22T18:00:00Z');
- assert.equal(rollCandidates([], [candidate], now).length,0,'Rollup requires collection metadata');
- const stored=rollCandidates([],[{...candidate,collectedAt:now.toISOString()}],now);
- assert.equal(stored.length,1);
- assert.equal(stored[0].mixKind,'curated-mix');
+ assert.equal(rollCandidates([],[sample],now).length,0);
+ const saved=rollCandidates([],[{...sample,collectedAt:now.toISOString()}],now);
+ assert.equal(saved.length,1);
+ assert.equal(saved[0].audienceVerified,true);
 });
