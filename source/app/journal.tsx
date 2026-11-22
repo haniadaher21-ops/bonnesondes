@@ -16,7 +16,7 @@ const pages = [
 ] as const;
 type Page = typeof pages[number][0] | 'archive' | 'preferences';
 const formatLabels: Record<Format, string> = {
-  Album: 'Album', 'Radio show': 'Émission radio', Playlist: 'Playlist', 'Live session': 'Session live', Track: 'Morceau',
+  Album: 'Album', 'Radio show': 'DJ set / mix', Playlist: 'Playlist', 'Live session': 'Session live', Track: 'Morceau',
 };
 const viewLabels: Record<string, string> = {
   Saved: 'Favoris', 'All discoveries': 'Toutes les découvertes',
@@ -293,7 +293,7 @@ export default function Journal() {
             <a className="text-link" href="#essential-albums">Voir la sélection <ArrowDown size={15} /></a></div>
         </header>
         <article className="feature">
-          <div className="feature-art"><img src={(process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/art/disques.jpg'} alt="Une personne porte une pile de disques vinyles sous le bras" /></div>
+          <div className="feature-art"><img src={(process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/art/mix-semaine.webp'} alt="Illustration d’un chien DJ à une platine vinyle" /></div>
           <div className="feature-copy">
             <p className="eyebrow">Mix de la semaine</p>
             <h2>{featured.title}</h2>
@@ -308,7 +308,7 @@ export default function Journal() {
           </div>
         </article>
         <Section label="DISQUES" title="Trois albums essentiels" id="essential-albums">{cards(issue.albums)}</Section>
-        <Section label="SUR LES ONDES" title="Radios et mixes">{cards(issue.mixes)}</Section>
+        <Section label="SUR LES ONDES" title="Mixes de la semaine">{cards(issue.mixes)}</Section>
         <Section label="SUR SPOTIFY" title="Les playlists de la semaine">{cards(issue.playlists, true)}</Section>
         <Section label="LIVE" title="Performances à découvrir">{cards(issue.live.slice(0, 3), true)}</Section>
       </>}
@@ -323,7 +323,7 @@ export default function Journal() {
             <p>{archivedIssue.label}</p>
           </div>
           <Section label="DISQUES" title="Albums recommandés">{cards(archivedIssue.albums)}</Section>
-          <Section label="SUR LES ONDES" title="Émissions et mixes">
+          <Section label="SUR LES ONDES" title="Mixes de la semaine">
             <p className="edition-featured-note">Mix de la semaine : <strong>{archivedIssue.featured.title}</strong></p>
             {cards(archivedIssue.mixes)}
           </Section>
@@ -339,7 +339,7 @@ export default function Journal() {
                 <strong>{dateLabel(edition.startsOn)}</strong>
                 <span>{edition.label}</span>
               </span>
-              <span className="edition-list-counts">{edition.albums.length} albums · {edition.mixes.length} émissions et mixes · {edition.live.length} lives</span>
+              
               {edition.startsOn === issue.startsOn && <span className="edition-list-current">En cours</span>}
               <ArrowRight size={19} aria-hidden="true" />
             </a>)}
