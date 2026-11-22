@@ -5,6 +5,7 @@ import { radioArtworkUrl } from '../app/radio-artwork.mjs';
 
 const page=readFileSync(new URL('../app/journal.tsx',import.meta.url),'utf8');
 const player=readFileSync(new URL('../app/radio-track.tsx',import.meta.url),'utf8');
+const libraryStore=readFileSync(new URL('../app/library-store.mjs',import.meta.url),'utf8');
 const css=readFileSync(new URL('../app/globals.css',import.meta.url),'utf8');
 
 test('subtitles under every tab page heading are removed, not replaced by empty markup',()=>{
@@ -43,7 +44,8 @@ test('album artwork is safely normalized or rejected without making up a cover',
 test('album covers accompany saved radio songs while station provenance and NTS behavior remain unchanged',()=>{
   assert.match(page,/currentRadioTrack = \(\{ title, artist, artwork \}: OnAir, sourceName: string\)/);
   assert.match(page,/format: 'Track',\s+artwork,\s+source: sourceName/);
-  assert.match(page,/radioTracks: item.format === 'Track' && saved/);
+  assert.match(page,/setLibrary\(state => toggleSaved\(state, item\)/);
+  assert.match(libraryStore,/radioTracks:item.format==='Track'&&saved/);
   assert.match(player,/!isNts && trackForSave && saveTrack\(trackForSave\)/);
   assert.match(player,/isNts \? 'ÉMISSION EN DIRECT'/);
   assert.doesNotMatch(page,/item.metadata.provider !== 'nova-page'/);
