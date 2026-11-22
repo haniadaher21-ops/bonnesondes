@@ -26,6 +26,7 @@ export interface Recommendation {
   note?: string;
   reason?: string;
   embed?: { provider: 'spotify' | 'youtube'; id: string };
+  audio?: { provider: 'podcast' | 'soundcloud'; url: string };
 }
 
 const playlist = (id: string, title: string, creator: string, details: Partial<Recommendation> = {}): Recommendation => ({
