@@ -1,0 +1,9 @@
+[
+  {"id":"nova","name":"Radio Nova","method":"nova-weekly","listingUrl":"https://www.nova.fr/musique/","mode":"automatic"},
+  {"id":"stereogum","name":"Stereogum","method":"stereogum-aotw","listingUrl":"https://stereogum.com/category/reviews/album-of-the-week","mode":"automatic"},
+  {"id":"pitchfork","name":"Pitchfork","method":"pitchfork-weekly","listingUrl":"https://pitchfork.com/tags/out-this-week/","mode":"automatic"},
+  {"id":"inrocks","name":"Les Inrockuptibles","method":"manual-review","listingUrl":"https://www.lesinrocks.com/musique/","mode":"manual"},
+  {"id":"npr","name":"NPR Music","method":"manual-review","listingUrl":"https://www.npr.org/sections/allsongs/","mode":"manual"},
+  {"id":"the-quietus","name":"The Quietus","method":"manual-review","listingUrl":"https://thequietus.com/reviews/","mode":"manual"},
+  {"id":"bandcamp","name":"Bandcamp Daily","method":"existing-collector","listingUrl":"https://daily.bandcamp.com/album-of-the-day","mode":"existing"}
+]
