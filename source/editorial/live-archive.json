@@ -77,5 +77,45 @@
       "provider": "youtube",
       "id": "fYwRsJAPfec"
     }
+  },
+  {
+    "id": "youtube-0PsOJ_fRckg",
+    "title": "Khruangbin - Full Performance (Live on KEXP)",
+    "creator": "Khruangbin",
+    "format": "Live session",
+    "source": "KEXP · Live on KEXP",
+    "sourceId": "kexp-live",
+    "url": "https://www.youtube.com/watch?v=0PsOJ_fRckg",
+    "sourceUrl": "https://www.youtube.com/@kexp",
+    "date": "2026-01-20",
+    "tags": [
+      "psychedelic rock",
+      "funk"
+    ],
+    "officialVideo": true,
+    "embed": {
+      "provider": "youtube",
+      "id": "0PsOJ_fRckg"
+    }
+  },
+  {
+    "id": "youtube-DyWhFB9ijzA",
+    "title": "Khruangbin - Full Performance (Live on KEXP)",
+    "creator": "Khruangbin",
+    "format": "Live session",
+    "source": "KEXP · Live on KEXP",
+    "sourceId": "kexp-live",
+    "url": "https://www.youtube.com/watch?v=DyWhFB9ijzA",
+    "sourceUrl": "https://www.youtube.com/@kexp",
+    "date": "2018-06-27",
+    "tags": [
+      "psychedelic rock",
+      "funk"
+    ],
+    "officialVideo": true,
+    "embed": {
+      "provider": "youtube",
+      "id": "DyWhFB9ijzA"
+    }
   }
 ]
