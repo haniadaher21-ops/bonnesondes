@@ -20,6 +20,7 @@ on:
       - 'source/editorial/sources.json'
       - 'source/editorial/album-catalogues.json'
       - 'source/test/weekly.test.mjs'
+      - 'source/test/discovery-sources.test.mjs'
       - 'source/test/edition-archives.test.mjs'
       - 'source/scripts/automation-policy.mjs'
       - 'source/app/journal.tsx'
