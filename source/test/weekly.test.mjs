@@ -83,7 +83,7 @@ const radio = (id, provider) => item(id, 'Radio show', {
  ...(provider==='Radio Nova' ? {
   sourceId:'nova-danse',source:'Radio Nova · Nova Danse',
   url:'https://podcasts.nova.fr/radio-nova-nova-danse/20261120-'+id.toLowerCase().replace(/[^a-z0-9]+/g,'-'),
-  date:'2026-11-20',
+  date:'2026-11-17',
  } : {sourceId:'dj-'+id}),
 });
 const youtubeMix=(id='YouTube mix',options={})=>item(id,'Radio show',{
