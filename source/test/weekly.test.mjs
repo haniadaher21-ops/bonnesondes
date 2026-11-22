@@ -350,7 +350,7 @@ test('an eligible YouTube music mix occupies the mandatory slot',()=>{
     date:'2026-11-17',minutes:58,verificationStatus:'source-verified'});
   const report=weeklyShortlist({...readyOptions,candidates:[...completeCandidates,youtube],profile:emptyTasteProfile()});
   assert.equal(report.selected.nts[0].item.id,'NTS');
-  assert.equal(report.selected.nova[0].item.id,'Soul selection');
+  assert.equal(report.selected.youtube[0].item.id,'Soul selection');
   assert.deepEqual(report.draft.mixes.map(x=>x.id),['NTS','Nova Danse','Soul selection']);
 });
 
@@ -367,7 +367,7 @@ test('a named vinyl DJ mix outranks a generic automated-looking YouTube compilat
  const generic=youtube('Generic','Best Vintage Funk Mix 2026','Music Mixes','A');
  const real=youtube('Actual DJ','All-vinyl 80s R&B Soul Hip Hop DJ Mix | DJ Tommy Samuel','DJ Tommy Samuel','B');
  const result=weeklyShortlist({...readyOptions,candidates:[...completeCandidates,generic,real],profile:emptyTasteProfile()});
- assert.equal(result.selected.nova[0].item.id,'Actual DJ');
+ assert.equal(result.selected.youtube[0].item.id,'Actual DJ');
  assert.ok(result.rankings.find(row=>row.item.id==='Actual DJ').score
    > result.rankings.find(row=>row.item.id==='Generic').score);
 });
