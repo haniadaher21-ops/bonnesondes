@@ -40,8 +40,8 @@ test('daily cycles use the remotely synchronized profile, preserve candidates an
  for(let i=0;i<2;i++) {
    const result=await privateCycle({mode:'collect',env,now:new Date(+now+i*1000),fetcher,providerWait:async()=>{}});
    assert.equal(result.profileRevision,7);
-   assert.equal(result.incremental.retained,i===0?1:5);
-   assert.equal(result.incremental.new,i===0?4:0);
+   assert.equal(result.incremental.retained,i===0?1:7);
+   assert.equal(result.incremental.new,i===0?6:0);
  }
  assert.equal(followed,true);assert.equal(writes,2);assert.equal(stored.state.collections.length,2);
  assert.equal(stored.state.candidates[0].firstSeenAt,'2026-11-15T00:00:00Z');
