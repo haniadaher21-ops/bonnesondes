@@ -56,7 +56,7 @@ jobs:
           if(!url||!publicKey)throw new Error('Configuration publique absente ou invalide.');
           JS
       # Redéploie l'interface et l'illustration originale sans publier de nouvelle édition.
-      # Vérifier les slots NTS/Nova/YouTube avec des dates réelles, leurs lecteurs et les profils.
+      # Tester les mixes R&B soul blues pop avec 100000 vues vérifiées et exclusion des styles électro.
       - name: Générer l'export statique
         run: npm run build
         env:
