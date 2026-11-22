@@ -1,9 +1,10 @@
 import { canonicalUrl, isoDate, parisDate, sourceUrl, validateEdition } from '../editorial/edition.mjs';
 import { normalized } from './weekly-evidence.mjs';
+import { isFreshMusicMix } from './recommendation-policy.mjs';
 
 const DAY = 86400000;
 const publicFields = ['id','title','creator','format','source','publisher','url','sourceUrl','artwork','date','minutes',
-  'mood','season','genre','embed','officialVideo','videoSourceUrl',
+  'mood','season','genre','embed','officialVideo','videoSourceUrl','mixKind','sourceId',
   'editorialSource','editorialUrl','editorialClaim'];
 
 export function editionForCycle(at) {
@@ -67,6 +68,8 @@ export function publicEdition(report, earlier, catalog) {
         if (artists.has(artist)) throw new Error('Artiste répété.');
         artists.add(artist);
       }
+      if (section === 'mixes' && !isFreshMusicMix(item,draft.startsOn,draft.startsOn))
+        throw new Error('Le mix n’est pas un DJ set musical de la semaine précédente.');
       if (section === 'albums' && (!isoDate(item.releaseDate) || item.verificationStatus !== 'primary-verified')) throw new Error('Album non vérifié.');
       if (section === 'live' && item.verificationStatus !== 'performance-verified') throw new Error('Performance non vérifiée.');
       return clean;
