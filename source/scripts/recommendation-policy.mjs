@@ -46,13 +46,13 @@ export function editorialEndorsement(item) {
   const verified =
     (host==='daily.bandcamp.com' && path.startsWith('/album-of-the-day/') && kind==='curator-pick')
     || (host==='bandcamp.substack.com' && /^\/p\/i-love-this-record(?:-|$)/.test(path) && kind==='curator-pick')
-    || (host==='pitchfork.com' && /^\/reviews\/albums\/[^/]+\/?$/.test(path) && kind==='critic-pick');
+    || (host==='pitchfork.com' && /^\/reviews\/albums\/[a-z0-9-]+\/?$/.test(path) && kind==='critic-pick');
   const mediaDay=item.editorialPublishedAt;
   const mediaIsRecent=isoDate(mediaDay);
   const mediaPick=kind==='curator-pick' && mediaIsRecent && (
-    (['www.nova.fr','nova.fr'].includes(host) && /^\/news\/[^/]*albums-immanquables-de-la-semaine[^/]*\/?$/.test(path))
-    || (host==='stereogum.com' && /^\/\d+\/album-of-the-week-[^/]+\/reviews\/album-of-the-week\/?$/.test(path))
-    || (host==='pitchfork.com' && /^\/story\/\d+-new-albums-you-should-listen-to-now-[^/]+\/?$/.test(path))
+    (['www.nova.fr','nova.fr'].includes(host) && /^\/news\/[a-z0-9-]*albums-immanquables-de-la-semaine[a-z0-9-]*\/?$/.test(path))
+    || (host==='stereogum.com' && /^\/\d+\/album-of-the-week-[a-z0-9-]+\/reviews\/album-of-the-week\/?$/.test(path))
+    || (host==='pitchfork.com' && /^\/story\/\d+-new-albums-you-should-listen-to-now-[a-z0-9-]+\/?$/.test(path))
   );
   if (!verified && !mediaPick) return;
   return {source:item.editorialSource,kind,url:url.origin+url.pathname,
@@ -80,7 +80,7 @@ export function isNovaMix(item) {
 }
 export function isNtsMix(item) {
   return item?.format==='Radio show' && item?.mixKind==='dj-set'
-    && /^https:\/\/(?:www\.)?nts\.live\/shows\/[^/]+\/episodes\/[^/]+$/.test(
+    && /^https:\/\/(?:www\.)?nts\.live\/shows\/[a-z0-9-]+\/episodes\/[a-z0-9-]+$/.test(
       new URL(item?.url??'https://invalid.local').origin + new URL(item?.url??'https://invalid.local').pathname);
 }
 export const MIN_YOUTUBE_MIX_VIEWS = 100000;
