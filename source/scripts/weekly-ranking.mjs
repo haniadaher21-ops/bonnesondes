@@ -82,8 +82,9 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
 
   const date = item.releaseDate ?? item.date;
   const age = isoDate(date) ? (Date.parse(today) - Date.parse(date)) / DAY : undefined;
-  // For albums, trusted editorial recommendations outrank release recency.
-  const freshness = ['Album','Live session'].includes(item.format) ? 0
+  // A new album must be current, not a years-old review that ranks on reputation alone.
+  const freshness = item.format === 'Album' && age >= 0 ? Math.max(0, 36 - 2 * age)
+    : item.format === 'Live session' ? 0
     : item.mixKind==='curated-mix' && age>=0 ? age<=30?26:age<=90?20:age<=180?12:3
     : age>=0 ? Math.max(0,28-age) : 0;
   const novelty = item.playlistOrigin === 'publisher-discovered' ? (previouslySeen ? 16 : 32) : 0;
@@ -129,6 +130,8 @@ function exclusion(item, today, startsOn) {
     if (!editorialEndorsement(item)) return 'Aucune recommandation éditoriale vérifiée';
     if (!['primary-verified', 'editor-verified'].includes(item.verificationStatus) || !isoDate(item.releaseDate)) return 'Date originale non vérifiée';
     if (item.releaseDate > today) return 'Sortie encore à venir';
+    const earliest = addDays(startsOn, -14);
+    if (item.releaseDate < earliest) return 'Album hors de la fenêtre des 14 derniers jours';
   }
   if (item.format === 'Live session' && !normalized(item.creator)) return 'Artiste de la performance non identifié';
   if (item.format === 'Radio show' && !['source-verified', 'editor-verified'].includes(item.verificationStatus)) return 'Replay individuel à vérifier';
@@ -188,7 +191,8 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
           && !(performance && performances.has(performance));
       });
       const adjusted = entry => entry.score
-        - 18 * Number(localProviders.has(provider(entry))) - 6 * (providers.get(provider(entry)) ?? 0);
+        - (group.name === 'albums' ? 38 : 18) * Number(localProviders.has(provider(entry)))
+        - 6 * (providers.get(provider(entry)) ?? 0);
       remaining.sort((a,b)=>adjusted(b)-adjusted(a));
       const entry = remaining[0];
       if (!entry) break;
