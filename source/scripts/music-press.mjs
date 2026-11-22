@@ -96,9 +96,9 @@ export function nprMusicFridayMentions(xml,source,today) {
     const picks=description.slice(start,limit<0?undefined:limit);
     // Parse explicitly named, paired artist and album titles from the
     // broadcaster's own episode notes, never transcribe speech speculatively.
-    const rx=/-\\s*([^,\\n]{2,80}),\\s*['"“]([^'"”]{2,120})['"”]/g;
+    const rx=/-\s*([^,\n]{2,80}),\s*['"“]([^'"”]{2,120})['"”]/g;
     for(const match of picks.matchAll(rx)) {
-      const creator=match[1].trim().replace(/\\s*\\(.*?\\)\\s*/g,'');
+      const creator=match[1].trim().replace(/\s*\(.*?\)\s*/g,'');
       const album=match[2].trim();
       if(!creator||!album)continue;
       mentions.push({creator,title:album,editorialSource:source.name,
