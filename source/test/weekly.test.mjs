@@ -324,3 +324,17 @@ test('three live performances must come from three distinct music studios',()=>{
  assert.equal(result.gaps.live,1);
  assert.equal(result.complete,false);
 });
+
+test('an eligible recent YouTube music mix can replace the second NTS set',()=>{
+  const youtube=item('Soul selection','Radio show',{
+    creator:'Soul Vinyl Curator',source:'YouTube · Soul Vinyl Curator',provider:'YouTube',
+    sourceId:'youtube-mix-UC'+'A'.repeat(22),mixKind:'curated-mix',
+    url:'https://www.youtube.com/watch?v=3C01eaL5_Xw',sourceUrl:'https://www.youtube.com/channel/UC'+'A'.repeat(22),
+    videoSourceUrl:'https://www.youtube.com/watch?v=3C01eaL5_Xw',
+    officialVideo:true,embed:{provider:'youtube',id:'3C01eaL5_Xw'},
+    date:'2026-11-17',minutes:58,verificationStatus:'source-verified'});
+  const report=weeklyShortlist({...readyOptions,candidates:[...completeCandidates,youtube],profile:emptyTasteProfile()});
+  assert.equal(report.selected.nts[0].item.id,'NTS');
+  assert.equal(report.selected.otherRadio[0].item.id,'Soul selection');
+  assert.deepEqual(report.draft.mixes.map(x=>x.id),['NTS','Soul selection']);
+});
