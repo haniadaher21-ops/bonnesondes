@@ -1,6 +1,7 @@
 import { canonicalUrl, editionItems, isoDate, parisDate, sourceUrl, validateEdition } from '../editorial/edition.mjs';
 import { spotifyPlaylistId } from './discovery-feeds.mjs';
 import { normalized } from './weekly-evidence.mjs';
+import { excludesJazz } from './recommendation-policy.mjs';
 
 const DAY = 86400000;
 const addDays = (date, days) => new Date(Date.parse(date) + days * DAY).toISOString().slice(0, 10);
@@ -35,7 +36,9 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
   const source = matchingValue([...profile.favoriteRadios, ...profile.favoritePublications, ...profile.spotify.map(entry=>entry.name).filter(Boolean)], [item.source, item.provider, item.publisher, item.discoverySource]);
   const attributes = [item.genre, item.mood, ...(item.tags ?? [])];
   signal(artist, 38, 'Artiste parmi tes favoris');
-  signal(source, 32, 'Source parmi tes préférées');
+  signal(source, item.format === 'Album' ? 52 : 32, 'Source parmi tes préférées');
+  if (item.format === 'Album' && item.editorialKind === 'critic-pick') signal(true, 38, 'Sélection éditoriale distinguée');
+  else if (item.format === 'Album' && item.editorialKind === 'review') signal(true, 12, 'Album repéré par un média musical');
   signal(matchingValue(profile.explore, attributes), 22, 'Genre ou ambiance à explorer');
   signal(matchingValue(profile.avoid, attributes), -40, 'Genre ou ambiance que tu préfères éviter');
   const followsPlaylist = profile.spotify.some(entry => entry.kind === 'playlist' && canonicalUrl(entry.url) === canonicalUrl(item.url));
@@ -67,14 +70,17 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
 
   const date = item.releaseDate ?? item.date;
   const age = isoDate(date) ? (Date.parse(today) - Date.parse(date)) / DAY : undefined;
-  const freshness = age >= 0 ? Math.max(0, 28 - age) : 0;
+  // For albums, trusted editorial recommendations outrank release recency.
+  const freshness = item.format === 'Album' ? 0 : age >= 0 ? Math.max(0, 28 - age) : 0;
   const novelty = item.playlistOrigin === 'publisher-discovered' ? (previouslySeen ? 16 : 32) : 0;
   const quality = 18 + (item.creator ? 5 : 0) + (item.tracklistUrl ? 4 : 0);
   const baseline = freshness + novelty + quality;
   const score = Math.round((baseline + affinity * tasteWeight) * 100) / 100;
 
   const evidence = {
-    Album: 'Date de sortie originale vérifiée auprès de la source primaire (' + date + ')',
+    Album: item.editorialUrl && item.editorialSource
+      ? 'Album repéré via ' + item.editorialSource + ', date de sortie vérifiée (' + date + ')'
+      : 'Album sélectionné dans le catalogue de ' + item.source + ', sortie originale vérifiée (' + date + ')',
     'Radio show': (age > 14 ? 'Replay d’archive' : 'Replay individuel') + (date ? ' du ' + date : '') + ' sur ' + (item.provider ?? item.source),
     Playlist: item.playlistOrigin === 'publisher-discovered' ? 'Lien vérifié et publié par ' + (item.creator ?? item.provider ?? 'le média source') : 'Playlist vérifiée sur Spotify',
     'Live session': 'Performance publiée par une chaîne officielle, vidéo intégrable de ' + Math.round(item.minutes * 60) + ' secondes',
@@ -82,12 +88,14 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
   return { item, score, publicReason: evidence + '.', reason: [evidence, ...signals].join('. ') + '.', signals, age };
 }
 
-function exclusion(item, windowStart, today) {
+function exclusion(item, today) {
   if (!item.id || !item.title || !item.source || !sourceUrl(item.url) || !sourceUrl(item.sourceUrl)) return 'Lien ou provenance manquante';
+  if (excludesJazz(item)) return 'Jazz exclu des recommandations';
   if (item.format === 'Album') {
     if (!['primary-verified', 'editor-verified'].includes(item.verificationStatus) || !isoDate(item.releaseDate)) return 'Date originale non vérifiée';
-    if (item.releaseDate < windowStart || item.releaseDate > today) return 'Sortie hors fenêtre ou encore à venir';
+    if (item.releaseDate > today) return 'Sortie encore à venir';
   }
+  if (item.format === 'Live session' && !normalized(item.creator)) return 'Artiste de la performance non identifié';
   if (item.format === 'Radio show' && !['source-verified', 'editor-verified'].includes(item.verificationStatus)) return 'Replay individuel à vérifier';
   if (item.format === 'Playlist' && (!spotifyPlaylistId(item.url) || item.verificationStatus !== 'source-verified' || !item.creator)) return 'Lien ou curateur non vérifié';
   if (item.format === 'Live session' && item.verificationStatus !== 'performance-verified') return 'Durée ou caractère officiel de la session à vérifier';
@@ -104,7 +112,7 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
   const rejected = [];
   const rankings = [];
   for (const item of candidates) {
-    let why = exclusion(item, albumWindowStart, today);
+    let why = exclusion(item, today);
     if (knownIds.has(item.id) || knownUrls.has(canonicalUrl(item.url))) why = 'Déjà au catalogue';
     if (why) {
       rejected.push({ id: item.id, title: item.title, format: item.format, url: item.url, reason: why });
