@@ -66,15 +66,28 @@ export function isNtsMix(item) {
     && /^https:\/\/(?:www\.)?nts\.live\/shows\/[^/]+\/episodes\/[^/]+$/.test(
       new URL(item?.url??'https://invalid.local').origin + new URL(item?.url??'https://invalid.local').pathname);
 }
+export const MIN_YOUTUBE_MIX_VIEWS = 100000;
+export const preferredYouTubeMixStyles = ['rnb','soul','blues','pop','light-house','funk'];
+const forbiddenElectronic = /\b(?:electro(?:nic|nica)?|techno|tech[ -]?house|edm|hardstyle|hard[ -]?house|industrial|trance|rave|dubstep|drum[ -]?(?:and|&|n)[ -]?bass|dnb|psytrance|breakcore|gabber|hardcore[ -]?dance|big[ -]?room|acid[ -]?techno)\b/i;
+export function excludesElectronicMix(item) {
+  return forbiddenElectronic.test([item?.title,item?.genre,item?.mood,item?.mixStyle,
+    ...(Array.isArray(item?.tags)?item.tags:[])].filter(Boolean).join(' '));
+}
 export function isYouTubeMix(item) {
   return item?.format==='Radio show' && item?.mixKind==='curated-mix'
-    && item.embed?.provider==='youtube' && item.audienceVerified===true;
+    && item.embed?.provider==='youtube' && item.audienceVerified===true
+    && Number.isSafeInteger(item.viewCount) && item.viewCount>=MIN_YOUTUBE_MIX_VIEWS
+    && item.mixStyleVerified===true && preferredYouTubeMixStyles.includes(item.mixStyle)
+    && !excludesElectronicMix(item) && !excludesJazz(item);
 }
 const spokenProgram = /(?:\binterview\b|\btalk(?:show)?\b|\bnews\b|\bpodcast\b|\bdiscussion\b|\bchronique\b|\binvité(?:e|s|es)?\b|\binvitée\b|\bmatinale\b|\bentretien\b)/i;
 export function isFreshMusicMix(item, startsOn, today) {
   if(item?.format!=='Radio show' || !['dj-set','curated-mix'].includes(item.mixKind) || !isoDate(item.date)
     || !isoDate(startsOn) || !isoDate(today) || spokenProgram.test(item.title??''))return false;
-  const min=new Date(Date.parse(startsOn)-(isNovaMix(item)?14:7)*86400000).toISOString().slice(0,10);
+  // NTS is weekly, Nova can use its last set, and YouTube must reach 100k
+  // views. Give YouTube up to a year, favoring freshness within that window.
+  const lookback=item.mixKind==='curated-mix'?365:isNovaMix(item)?14:7;
+  const min=new Date(Date.parse(startsOn)-lookback*86400000).toISOString().slice(0,10);
   const max=new Date(Date.parse(startsOn)-86400000).toISOString().slice(0,10);
   return item.date>=min && item.date<=max && item.date<=today;
 }
