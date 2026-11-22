@@ -222,7 +222,9 @@ async function collect(source, request, collectedAt) {
       }
       outcome.items.push({
         source: source.name, ...verified, provider: verified.provider ?? source.provider, sourceId, sourceUrl: verified.sourceUrl ?? feed, collectedAt,
-        ...(source.format === 'Radio show' && source.mixKind === 'dj-set' && {mixKind:'dj-set'}),
+        ...(source.format === 'Radio show' && source.mixKind === 'dj-set' && {
+          mixKind:'dj-set',...(source.mixSelection && {novaMixVerified:true}),
+        }),
         verificationStatus: verified.verificationStatus ?? 'source-verified',
       });
     }
