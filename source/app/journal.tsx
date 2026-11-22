@@ -586,7 +586,7 @@ export default function Journal() {
     <PersistentYouTubePlayer item={activeVideo} expanded={videoExpanded}
       onResize={() => setVideoExpanded(value => !value)} onClose={() => { setActiveVideo(null); setVideoExpanded(false); }} />
 
-    <aside className={'radio-dock' + (activeVideo ? ' radio-dock-with-video' : '')} aria-label="Lecteur radio">
+    <aside className={'radio-dock' + ((activeVideo || activeMix) ? ' radio-dock-with-video' : '')} aria-label="Lecteur radio">
       {radioOpen && <div className="dock-expanded">
         <div className="flex gap-2 items-center justify-between"><strong>{station.name}</strong><button className="icon-button" onClick={() => setRadioOpen(false)} aria-label="Fermer le lecteur radio"><X size={18} /></button></div>
         <label className="filter">Station<select value={station.name} onChange={event => {
