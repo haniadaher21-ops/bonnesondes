@@ -30,9 +30,9 @@
   {
     "id": "npr",
     "name": "NPR Music",
-    "method": "manual-review",
-    "listingUrl": "https://www.npr.org/sections/allsongs/",
-    "mode": "manual"
+    "method": "npr-new-music-friday",
+    "listingUrl": "https://feeds.npr.org/510019/podcast.xml",
+    "mode": "automatic"
   },
   {
     "id": "the-quietus",
