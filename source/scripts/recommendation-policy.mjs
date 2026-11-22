@@ -1,5 +1,5 @@
 import { normalized } from './release-metadata.mjs';
-import { sourceUrl } from '../editorial/edition.mjs';
+import { isoDate, sourceUrl } from '../editorial/edition.mjs';
 
 // Never infer a musical genre from the hosting radio or video channel alone.
 // For jazz-dedicated programmes and labels with mixed/undocumented metadata,
@@ -50,4 +50,17 @@ export function editorialEndorsement(item) {
   if (!verified) return;
   return {source:item.editorialSource,kind,url:url.origin+url.pathname,
     claim:item.editorialClaim??(kind==='critic-pick'?'Best New Music':'Sélection éditoriale')};
+}
+
+
+// A mix is a recent continuous musical DJ set, not a spoken music program.
+// Edition 002 goes live on Monday: the eligible shows aired the previous Mon–Sun.
+const spokenProgram = /(?:\binterview\b|\btalk(?:show)?\b|\bnews\b|\bpodcast\b|\bdiscussion\b|\bchronique\b|\binvité(?:e|s|es)?\b|\binvitée\b|\bmatinale\b|\bentretien\b)/i;
+export function isFreshMusicMix(item, startsOn, today) {
+  if(item?.format!=='Radio show' || item.mixKind!=='dj-set' || !isoDate(item.date)
+    || !isoDate(startsOn) || !isoDate(today)) return false;
+  const min=new Date(Date.parse(startsOn)-7*86400000).toISOString().slice(0,10);
+  const max=new Date(Date.parse(startsOn)-86400000).toISOString().slice(0,10);
+  return item.date>=min && item.date<=max && item.date<=today
+    && !spokenProgram.test(item.title??'');
 }
