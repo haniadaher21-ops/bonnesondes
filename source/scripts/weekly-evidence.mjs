@@ -2,6 +2,7 @@ import { canonicalUrl, isoDate, sourceUrl } from '../editorial/edition.mjs';
 import {bandcampAlbum} from './bandcamp-albums.mjs';
 import {listeningResolver} from './album-links.mjs';
 import { text } from './discovery-feeds.mjs';
+import { livePerformer } from './recommendation-policy.mjs';
 
 import { readPublicPage, albumListeningLink } from './album-catalogues.mjs';
 
@@ -65,6 +66,7 @@ export async function verifyAlbums(records, fetcher = fetch) {
         provider: record.label, format: 'Album', url: spotify.href, sourceUrl: primary.href,
         releaseDate, releaseProofUrl: record.dateProofUrl ?? primary.href, date: releaseDate, dateKind: 'release', verificationStatus: 'primary-verified',
         embed: { provider: 'spotify', id: albumId }, listeningProofUrl:oembedUrl,listeningMappingUrl:record.url?record.listeningMappingUrl:listening.proof, tags:record.tags ?? [],
+        editorialSource:record.editorialSource,editorialUrl:record.editorialUrl,editorialKind:record.editorialKind,
       };
     } catch { /* A blocked or ambiguous source cannot confirm an original release. */ }
     results.push({ title: record.title, creator:record.creator, sourceUrl: record.sourceUrl, candidate, verifiedReleaseDate, ...(!candidate && {reason: failure}) });
@@ -99,7 +101,7 @@ export async function verifyLives(candidates, sources, key, fetcher = fetch) {
         if (!item || video.snippet?.channelId !== channels.get(item.sourceId) || video.status?.embeddable !== true
           || video.status.privacyStatus !== 'public' || video.snippet.liveBroadcastContent !== 'none' || duration <= 180
           || /\b(interview|shorts?|teaser|trailer|extrait|clip|official music video|behind the scenes)\b/i.test(title)) continue;
-        items.push({ ...item, minutes: duration / 60, verificationStatus: 'performance-verified' });
+        items.push({ ...item, title, creator: livePerformer(title,item.creator), minutes: duration / 60, verificationStatus: 'performance-verified' });
       }
     }
   } catch {
