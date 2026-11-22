@@ -57,6 +57,24 @@ jobs:
           BONNES_ONDES_PREVIEW_DIR: ${{ runner.temp }}/bonnes-ondes-preview
           BONNES_ONDES_OBSERVATION_DIR: ${{ runner.temp }}/bonnes-ondes-observation
         run: node scripts/private-cycle.mjs observe
+      - name: Contrôler les choix réels avant toute prévisualisation
+        working-directory: source
+        env:
+          BONNES_ONDES_OBSERVATION_DIR: ${{ runner.temp }}/bonnes-ondes-observation
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import {readFileSync} from 'node:fs';
+          import {join} from 'node:path';
+          import {excludesJazz} from './scripts/recommendation-policy.mjs';
+          const report=JSON.parse(readFileSync(join(process.env.BONNES_ONDES_OBSERVATION_DIR,'recommendations.json'),'utf8'));
+          const rows=Object.values(report.selected).flat();
+          if(!report.complete || rows.some(item=>excludesJazz(item))) throw new Error('Sélection incomplète ou jazz détecté.');
+          const lives=report.selected.live;
+          const creators=lives.map(item=>item.creator?.normalize('NFKD').toLowerCase().trim()).filter(Boolean);
+          if(lives.length!==3 || creators.length!==3 || new Set(creators).size!==3) throw new Error('Trois artistes différents sont obligatoires pour les lives.');
+          console.log(JSON.stringify({albums:report.selected.albums.map(x=>x.title),radio:report.selected.otherRadio.map(x=>x.title),live:report.selected.live.map(x=>x.creator)}));
+          JS
       - name: Mettre en ligne seulement la route de prévisualisation
         env:
           PREVIEW_DIR: ${{ runner.temp }}/bonnes-ondes-preview
