@@ -1,7 +1,7 @@
 import { canonicalUrl, editionItems, isoDate, parisDate, sourceUrl, validateEdition } from '../editorial/edition.mjs';
 import { spotifyPlaylistId } from './discovery-feeds.mjs';
 import { normalized } from './weekly-evidence.mjs';
-import { excludesJazz, editorialEndorsement, isFreshMusicMix, isNovaMix, isNtsMix, isYouTubeMix } from './recommendation-policy.mjs';
+import { excludesJazz, excludesElectronicMix, editorialEndorsement, isFreshMusicMix, isNovaMix, isNtsMix, isYouTubeMix, MIN_YOUTUBE_MIX_VIEWS } from './recommendation-policy.mjs';
 
 const DAY = 86400000;
 const addDays = (date, days) => new Date(Date.parse(date) + days * DAY).toISOString().slice(0, 10);
@@ -83,7 +83,9 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
   const date = item.releaseDate ?? item.date;
   const age = isoDate(date) ? (Date.parse(today) - Date.parse(date)) / DAY : undefined;
   // For albums, trusted editorial recommendations outrank release recency.
-  const freshness = ['Album','Live session'].includes(item.format) ? 0 : age >= 0 ? Math.max(0, 28 - age) : 0;
+  const freshness = ['Album','Live session'].includes(item.format) ? 0
+    : item.mixKind==='curated-mix' && age>=0 ? age<=30?26:age<=90?20:age<=180?12:3
+    : age>=0 ? Math.max(0,28-age) : 0;
   const novelty = item.playlistOrigin === 'publisher-discovered' ? (previouslySeen ? 16 : 32) : 0;
   // For YouTube, prefer a demonstrable selector/DJ and vinyl-oriented sets
   // over generic compilations. This is title/channel evidence, not audio analysis.
@@ -94,9 +96,12 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
   const trustedSession = /\b(?:Kiosk Radio|Boiler Room|HÖR Berlin|The Lot Radio|My Analog Journal)\b/i
     .test([item.source,item.title].join(' '));
   const genericCompilation = /\bbest\s+(?:vintage|soul|funk|old school).*\bmix\b/i.test(item.title??'');
-  const mixQuality = videoMix ? 45*Number(genuineSelector) + 25*Number(vinylSelection)
-    + 10*Number(/\bvinyl\b/i.test(item.title??''))
-    + 30*Number(trustedSession) - 15*Number(genericCompilation) : 0;
+  const genreStrength = {rnb:135,soul:125,blues:112,pop:96,'light-house':90,funk:65};
+  const mixQuality = videoMix ? (genreStrength[item.mixStyle]??0)
+    + 20*Number(genuineSelector) + 12*Number(vinylSelection)
+    + 5*Number(/\bvinyl\b/i.test(item.title??''))
+    + 18*Number(trustedSession) - 30*Number(genericCompilation)
+    + Math.min(30,Math.round(10*Math.log10(Math.max(1,item.viewCount??1)/MIN_YOUTUBE_MIX_VIEWS))) : 0;
   const quality = 18 + (item.creator ? 5 : 0) + (item.tracklistUrl ? 4 : 0) + mixQuality;
   const baseline = freshness + novelty + quality;
   const score = Math.round((baseline + affinity * tasteWeight) * 100) / 100;
@@ -104,8 +109,11 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
   const evidence = {
     Album: endorsement ? 'Sélection « ' + endorsement.claim + ' » de ' + (endorsement.source??'un média musical')
       + ', sortie originale vérifiée (' + date + ')' : 'Aucune recommandation éditoriale attestée',
-    'Radio show': (item.mixKind==='curated-mix' ? 'Sélection YouTube d’un DJ établi publiée le ' : 'DJ set musical diffusé le ')
-      + date + ' sur ' + (item.provider ?? item.source),
+    'Radio show': item.mixKind==='curated-mix'
+      ? 'Mix '+({rnb:'R&B',soul:'soul',blues:'blues',pop:'pop','light-house':'house douce',funk:'funk'}[item.mixStyle]??'musical')
+        +' mis en ligne le '+date+' sur '+(item.provider??item.source)
+        +' ; '+Number(item.viewCount??0).toLocaleString('fr-FR')+' vues vérifiées'
+      : 'DJ set musical diffusé le '+date+' sur '+(item.provider??item.source),
     Playlist: item.playlistOrigin === 'publisher-discovered' ? 'Lien vérifié et publié par ' + (item.creator ?? item.provider ?? 'le média source') : 'Playlist vérifiée sur Spotify',
     'Live session': 'Performance publiée par une chaîne officielle, vidéo intégrable de ' + Math.round(item.minutes * 60) + ' secondes',
   }[item.format];
@@ -115,6 +123,8 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
 function exclusion(item, today, startsOn) {
   if (!item.id || !item.title || !item.source || !sourceUrl(item.url) || !sourceUrl(item.sourceUrl)) return 'Lien ou provenance manquante';
   if (excludesJazz(item)) return 'Jazz exclu des recommandations';
+  if (item.format==='Radio show' && item.mixKind==='curated-mix' && excludesElectronicMix(item))
+    return 'Mix électro exclu par les préférences';
   if (item.format === 'Album') {
     if (!editorialEndorsement(item)) return 'Aucune recommandation éditoriale vérifiée';
     if (!['primary-verified', 'editor-verified'].includes(item.verificationStatus) || !isoDate(item.releaseDate)) return 'Date originale non vérifiée';
@@ -122,7 +132,8 @@ function exclusion(item, today, startsOn) {
   }
   if (item.format === 'Live session' && !normalized(item.creator)) return 'Artiste de la performance non identifié';
   if (item.format === 'Radio show' && !['source-verified', 'editor-verified'].includes(item.verificationStatus)) return 'Replay individuel à vérifier';
-  if (item.format === 'Radio show' && item.mixKind==='curated-mix' && !isYouTubeMix(item)) return 'Audience et crédibilité du DJ YouTube non vérifiées';
+  if (item.format === 'Radio show' && item.mixKind==='curated-mix' && !isYouTubeMix(item))
+    return 'Mix YouTube exclu : moins de 100 000 vues ou style R&B/soul/blues/pop/house douce non vérifié';
   if (item.format === 'Radio show' && !isFreshMusicMix(item,startsOn,today)) return 'Pas un DJ mix musical de la semaine précédente';
   if (item.format === 'Playlist' && (!spotifyPlaylistId(item.url) || item.verificationStatus !== 'source-verified' || !item.creator)) return 'Lien ou curateur non vérifié';
   if (item.format === 'Live session' && item.verificationStatus !== 'performance-verified') return 'Durée ou caractère officiel de la session à vérifier';
