@@ -381,7 +381,6 @@ export default function Journal() {
         {item.creator && <p className="creator">{[item.creator, item.publisher].filter(Boolean).join(' · ')}</p>}
         {(item.date || item.minutes) && <p className="metadata">{[item.date && dateLabel(item.date), item.minutes && displayMinutes(item.minutes)].filter(Boolean).join(' · ')}</p>}
         {item.note && <p className="card-note">{item.note}</p>}
-        {item.format === 'Album' && item.editorialSource && <p className="metadata">Recommandé par {item.editorialUrl ? <a href={item.editorialUrl} target="_blank" rel="noopener noreferrer">{item.editorialSource}</a> : item.editorialSource}</p>}
         {(item.mood || item.season || item.genre) && <p className="tags">{[item.genre, item.mood, item.season].filter(Boolean).join(' · ')}</p>}
         <div className="card-actions">
           <button onClick={() => setSelected(item)} className="text-link">Infos tracks <ArrowRight size={14} /></button>
