@@ -234,3 +234,20 @@ test('a trusted editorially endorsed older album outranks a merely new release',
  assert.equal(report.selected.albums[0].item.id,'Well reviewed');
  assert.match(report.selected.albums[0].publicReason,/Pitchfork/);
 });
+
+test('short publisher preferences match fuller programme names without matching partial words',()=>{
+ const preferred=weeklyShortlist({...readyOptions,candidates:[
+  album('Favourite label album',{source:'Brownswood Recordings'}),
+  album('Other label album',{source:'Unknown label'}),
+  item('Live KEXP','Live session',{creator:'Other Artist',source:'KEXP · Live on KEXP',sourceId:'kexp-live',verificationStatus:'performance-verified',minutes:8}),
+ ],profile:{...emptyTasteProfile(),favoritePublications:['Brownswood','KEXP']}});
+ const neutral=weeklyShortlist({...readyOptions,candidates:[
+  album('Favourite label album',{source:'Brownswood Recordings'}),
+  album('Other label album',{source:'Unknown label'}),
+  item('Live KEXP','Live session',{creator:'Other Artist',source:'KEXP · Live on KEXP',sourceId:'kexp-live',verificationStatus:'performance-verified',minutes:8}),
+ ],profile:emptyTasteProfile()});
+ const ranked=(report,id)=>report.rankings.find(row=>row.item.id===id)?.score;
+ assert.ok(ranked(preferred,'Favourite label album')>ranked(neutral,'Favourite label album'));
+ assert.ok(ranked(preferred,'Live KEXP')>ranked(neutral,'Live KEXP'));
+ assert.ok(!preferred.rankings.some(row=>row.item.id==='Other label album' && row.signals.length));
+});
