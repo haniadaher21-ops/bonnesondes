@@ -11,7 +11,7 @@ export function observationReport(report, diagnostics) {
       id:row.item.id,title:row.item.title,creator:row.item.creator,source:row.item.source,provider:row.item.provider,
       artwork:row.item.artwork,
       genre:row.item.genre,tags:row.item.tags ?? [],sourceId:row.item.sourceId,mixKind:row.item.mixKind,
-      embed:row.item.embed,audienceVerified:row.item.audienceVerified,
+      embed:row.item.embed,audienceVerified:row.item.audienceVerified,novaMixVerified:row.item.novaMixVerified,
       viewCount:row.item.viewCount,subscriberCount:row.item.subscriberCount,
       mixStyle:row.item.mixStyle,mixStyleVerified:row.item.mixStyleVerified,
       url:row.item.url,sourceUrl:row.item.sourceUrl,releaseDate:row.item.releaseDate,
