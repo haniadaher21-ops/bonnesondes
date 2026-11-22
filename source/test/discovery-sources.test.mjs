@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { discover, renderReport } from '../scripts/discovery.mjs';
 import { emptyTasteProfile, normalizeTasteProfile } from '../editorial/taste-profile.mjs';
+import configuredSources from '../editorial/sources.json' with {type:'json'};
 
 const rss = items => '<rss><channel>' + items.join('') + '</channel></rss>';
 const xmlItem = (title, url, extra = '') => '<item><title>' + title + '</title><link>' + url
@@ -148,4 +149,19 @@ test('a rate limit suspends that host for the run while other providers finish',
   assert.equal(requests.filter(url => url.includes('limited.test')).length, 1);
   assert.deepEqual(result.sources.map(source => source.status), ['error', 'error', 'ok']);
   assert.equal(result.candidates[0].sourceId, 'other');
+});
+
+test('Nova Club is no longer a DJ recommendation source, and Nova Danse is a verified musical set feed',async()=>{
+ assert.equal(configuredSources.some(x=>x.id==='nova-club'&&x.mode==='automatic'),false);
+ const src=configuredSources.find(x=>x.id==='nova-danse');
+ assert.equal(src.mixKind,'dj-set');
+ assert.equal(src.feed,'https://podcasts.nova.fr/radio-nova-nova-danse/feed/rss/website.xml');
+ const url='https://podcasts.nova.fr/radio-nova-nova-danse/202611202200-dj-set';
+ const rss='<rss><channel><item><title>Nova Danse : DJ set</title><link>'+url+'</link>'
+  +'<pubDate>Fri, 20 Nov 2026 22:00:00 +0100</pubDate></item></channel></rss>';
+ const r=await discover({sources:[src],fetcher:async target=>
+  new Response(target===src.feed?rss:'<html><title>Nova Danse DJ set</title></html>')});
+ assert.equal(r.candidates.length,1);
+ assert.equal(r.candidates[0].mixKind,'dj-set');
+ assert.equal(r.candidates[0].date,'2026-11-20');
 });
