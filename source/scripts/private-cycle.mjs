@@ -67,7 +67,8 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     eligible:youtubeMixes.items.length,queries:youtubeMixes.queries??0,
     publicCandidates:youtubeMixes.items.slice(0,12).map(({title,source,date,url})=>({title,source,date,url}))};
   if(mode!=='collect') console.log('YouTube mix discovery',JSON.stringify(youtubeMixSummary));
-  const previous = rollCandidates(state.candidates,[...collection.candidates,...archivalLives,...youtubeMixes.items],now);
+  const newlyDiscoveredYouTubeMixes=youtubeMixes.items.map(item=>({...item,collectedAt:date}));
+  const previous = rollCandidates(state.candidates,[...collection.candidates,...archivalLives,...newlyDiscoveredYouTubeMixes],now);
   const registered = readJson(new URL('../editorial/album-sources.json',import.meta.url));
   const linked = previous.filter(item => item.format === 'Album' && item.creator && item.editorialKind)
     .flatMap(item => [
@@ -129,7 +130,7 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   // Never carry a past verification into this run if its primary source is unavailable.
   const base = previous.filter(item => !albumKeys.has(canonicalUrl(item.url))).map(item=>
     item.format==='Album' && item.verificationStatus==='primary-verified' ? {...item,verificationStatus:'release-date-needed'} : item);
-  const candidates = rollCandidates(base,[...collection.candidates,...youtubeMixes.items,...albums],now);
+  const candidates = rollCandidates(base,[...collection.candidates,...newlyDiscoveredYouTubeMixes,...albums],now);
   const headers = {'x-bo-runner':env.BONNES_ONDES_RUNNER_TOKEN};
   const beforeKeys=new Set(state.candidates.map(item=>canonicalUrl(item.url)));
   const incremental={before:state.candidates.length,after:candidates.length,new:candidates.filter(item=>!beforeKeys.has(canonicalUrl(item.url))).length,
