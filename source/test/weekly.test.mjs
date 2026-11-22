@@ -23,9 +23,11 @@ test('release evidence needs the matching album and artist, and the verified lis
   assert.deepEqual(linkedReleaseSources('<a href="' + labelUrl + '?ref=review">Label</a><a href="https://example.test/releases/album">Other</a>'), [labelUrl]);
   const [found, missing] = await verifyAlbums([record, {...record, title: 'Another Record'}], async url =>
     url === labelUrl ? new Response(albumPage() + '<a href="https://open.spotify.com/album/' + albumId + '">Listen</a>') :
-      Response.json({title: 'Record', iframe_url: 'https://open.spotify.com/embed/album/' + albumId}));
+      Response.json({title: 'Record', provider_name:'Spotify', thumbnail_url:'https://i.scdn.co/image/fixture-album-art', iframe_url: 'https://open.spotify.com/embed/album/' + albumId}));
   assert.equal(found.candidate.releaseDate, '2026-11-13');
   assert.equal(found.candidate.sourceUrl, labelUrl);
+  assert.equal(found.candidate.url,'https://open.spotify.com/album/'+albumId);
+  assert.equal(found.candidate.artwork,'https://i.scdn.co/image/fixture-album-art');
   assert.equal(missing.candidate, undefined);
 });
 
