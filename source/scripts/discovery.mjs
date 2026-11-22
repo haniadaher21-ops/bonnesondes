@@ -2,6 +2,7 @@ import { canonicalUrl, isoDate, sourceUrl } from '../editorial/edition.mjs';
 import { editorialFeed, parseFeed, reviewedArtist, spotifyCandidate, text } from './discovery-feeds.mjs';
 
 import { linkedReleaseSources } from './weekly-evidence.mjs';
+import { livePerformer } from './recommendation-policy.mjs';
 
 const formats = ['Album', 'Radio show', 'Playlist', 'Live session'];
 const label = value => text(value).normalize('NFC').toLowerCase();
@@ -40,7 +41,7 @@ function youtubeCandidates(xml, source) {
     const alternate = sourceUrl(entry.link?.['@_href']);
     return !alternate?.pathname.startsWith('/shorts/') && !excludedVideo.test(title)
       && (!source.titleContains || label(title).includes(label(source.titleContains)));
-  }).slice(0, 8).flatMap(entry => {
+  }).slice(0, 15).flatMap(entry => {
     const id = entry['yt:videoId'];
     const title = text(entry.title);
     const publishedAt = text(entry.published);
@@ -50,7 +51,7 @@ function youtubeCandidates(xml, source) {
     }
     return {
       id: 'youtube-' + id, title, format: 'Live session', source: source.name,
-      url: 'https://www.youtube.com/watch?v=' + id, creator: source.artist, date, dateKind: 'published', publishedAt,
+      url: 'https://www.youtube.com/watch?v=' + id, creator: livePerformer(title, source.artist), date, dateKind: 'published', publishedAt,
       videoKind: /\b(?:covers?|reprise)\b/i.test(title) ? 'cover' : 'live',
       performanceKey: source.channelId + ':' + label(title).replace(/[^\p{L}\p{N}]+/gu, ' ').trim(),
     };
@@ -139,7 +140,8 @@ async function verifyCandidate(item, source, request) {
   if (source.method === 'youtube-atom') {
     const metadata = await (await request('https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent(item.url))).json();
     if (!text(metadata.title) || excludedVideo.test(metadata.title)) throw new Error('Vidéo non confirmée.');
-    return { ...item, videoSourceUrl: item.url, officialVideo: true, embed: { provider: 'youtube', id: item.id.slice(8) } };
+    return { ...item, title: text(metadata.title), creator: livePerformer(text(metadata.title), source.artist) ?? item.creator,
+      videoSourceUrl: item.url, officialVideo: true, embed: { provider: 'youtube', id: item.id.slice(8) } };
   }
   if (source.method === 'nts-episodes') {
     await (await request(item.url)).body?.cancel();
@@ -199,7 +201,7 @@ async function collect(source, request, collectedAt) {
       }
       default: throw new Error('Connecteur inconnu.');
     }
-    for (const item of items.slice(0, 8)) {
+    for (const item of items.slice(0, source.method === 'youtube-atom' ? 15 : 8)) {
       let verified = item;
       try {
         verified = await verifyCandidate(item, source, request);
