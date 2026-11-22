@@ -3,6 +3,7 @@ import { editorialFeed, parseFeed, reviewedArtist, spotifyCandidate, text } from
 
 import { linkedReleaseSources } from './weekly-evidence.mjs';
 import { livePerformer } from './recommendation-policy.mjs';
+import { bandcampLinks } from './bandcamp-albums.mjs';
 
 const formats = ['Album', 'Radio show', 'Playlist', 'Live session'];
 const label = value => text(value).normalize('NFC').toLowerCase();
@@ -146,6 +147,15 @@ async function verifyCandidate(item, source, request) {
   if (source.method === 'nts-episodes') {
     await (await request(item.url)).body?.cancel();
   }
+  if (source.method === 'bandcamp-notes' && item.format === 'Album') {
+    let links = item.bandcampUrls ?? [];
+    try {
+      const article = await (await request(item.url)).text();
+      links = [...new Set([...links,...bandcampLinks(article,item.url)])].slice(0,8);
+    } catch { /* RSS provenance remains, but an unavailable article is not an endorsement. */ }
+    return { ...item, bandcampUrls:links,
+      ...(links.length && {editorialKind:'curator-pick',editorialUrl:item.url,editorialSource:'Bandcamp Notes',editorialClaim:'I Love This Record'}) };
+  }
   if (source.method === 'pitchfork-rss') {
     const response = await request(item.url);
     const url = response.url && sourceUrl(response.url);
@@ -154,7 +164,8 @@ async function verifyCandidate(item, source, request) {
       throw new Error('Critique redirigée hors de Pitchfork.');
     }
     const html = await response.text();
-    return { ...item, creator: reviewedArtist(html, item.title), primaryReleaseUrls: linkedReleaseSources(html) };
+    return { ...item, creator: reviewedArtist(html, item.title), primaryReleaseUrls: linkedReleaseSources(html),
+      ...(source.id === 'pitchfork-best' && {editorialSource:'Pitchfork',editorialUrl:item.url,editorialKind:'critic-pick',editorialClaim:'Best New Albums'}) };
   }
   return item;
 }
