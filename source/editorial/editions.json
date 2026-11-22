@@ -45,17 +45,18 @@
           "id": "0Fta5KudJiX6HpDWApUu8y"
         },
         "editorialSource": "Pitchfork",
-        "editorialUrl": "https://pitchfork.com/reviews/albums/aesop-rock-blockhead-trouble-mountain/",
-        "editorialKind": "critic-pick",
-        "editorialClaim": "Chronique Pitchfork",
-        "verificationStatus": "editor-verified",
+        "editorialUrl": "https://pitchfork.com/story/9-new-albums-you-should-listen-to-now-2hollis-armand-hammer-and-more/",
+        "editorialKind": "curator-pick",
+        "editorialClaim": "New albums you should listen to now",
+        "verificationStatus": "primary-verified",
         "genre": "Hip-hop",
         "tags": [
           "alternative hip-hop",
           "underground rap"
         ],
         "format": "Album",
-        "reason": "Rap indépendant inventif, production de Blockhead et écriture d’Aesop Rock : un disque aventureux sorti le 13 novembre, chroniqué par Pitchfork."
+        "reason": "Rap indépendant aux textures inventives et écriture dense, choisi parmi les albums à écouter de Pitchfork le 13 novembre.",
+        "editorialPublishedAt": "2026-11-13"
       },
       {
         "id": "spotify-7I8TcuLTY8CTwXqVys8GD3",
