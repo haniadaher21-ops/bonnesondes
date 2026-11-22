@@ -2,7 +2,7 @@ import {test} from 'node:test';
 test('check exact Spotify album artwork for editorial edition 002', {timeout: 28000}, async () => {
   for(const [name,id] of [
     ['Aesop Rock & Blockhead Trouble Mountain','0Fta5KudJiX6HpDWApUu8y'],
-    ['Wonky Logic Mek Do & Mend','6H6497odidXH5VRnynYQnV'],
+    ['Krill Secret Language','7I8TcuLTY8CTwXqVys8GD3'],
   ]) {
     const u='https://open.spotify.com/oembed?url='+encodeURIComponent('https://open.spotify.com/album/'+id);
     try {
