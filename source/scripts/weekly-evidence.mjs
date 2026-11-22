@@ -118,6 +118,7 @@ export async function verifyLives(candidates, sources, key, fetcher = fetch) {
         if (item.creator && !normalized(title).includes(normalized(item.creator))) continue;
         const date=video.snippet?.publishedAt?.slice(0,10);
         items.push({ ...item, title, creator: livePerformer(title,item.creator),
+          videoSourceUrl:item.url,officialVideo:true,
           tags: [...new Set([...(item.tags ?? []), ...musicTags(video.snippet)])],
           ...(isoDate(date) && {date,dateKind:'published'}),
           minutes: duration / 60, verificationStatus: 'performance-verified' });
