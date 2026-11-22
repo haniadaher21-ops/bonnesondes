@@ -86,8 +86,8 @@ export function validateEdition(edition, earlier = [], catalog = []) {
       ids.add(item.id);
       if (key) urls.add(key);
       if (item.date !== undefined && !isoDate(item.date)) errors.push('Date invalide : ' + item.id + '.');
-      if (group === 'albums' && (!isoDate(item.date) || item.date < albumWindowStart || item.date > startsOn)) {
-        errors.push('Date de sortie vérifiée hors fenêtre ou manquante : ' + item.id + '.');
+      if (group === 'albums' && (!isoDate(item.date) || item.date > startsOn)) {
+        errors.push('Date de sortie vérifiée manquante ou future : ' + item.id + '.');
       }
       if (group === 'playlists' && !(url?.hostname === 'open.spotify.com' && /^\/(?:intl-[a-z]+\/)?playlist\/[a-zA-Z0-9]{22}\/?$/.test(url.pathname))) {
         errors.push('Lien de playlist Spotify requis : ' + item.id + '.');
