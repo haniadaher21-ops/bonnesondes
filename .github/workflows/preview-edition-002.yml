@@ -83,7 +83,7 @@ jobs:
           node --input-type=module <<'JS'
           import {readFileSync} from 'node:fs';
           import {join} from 'node:path';
-          import {excludesJazz,editorialEndorsement,isFreshMusicMix} from './scripts/recommendation-policy.mjs';
+          import {excludesJazz,editorialEndorsement,isFreshMusicMix,isNtsMix,isNovaMix,isYouTubeMix} from './scripts/recommendation-policy.mjs';
           const report=JSON.parse(readFileSync(join(process.env.BONNES_ONDES_OBSERVATION_DIR,'recommendations.json'),'utf8'));
           const rows=Object.values(report.selected).flat();
           if(!report.complete || rows.some(item=>excludesJazz(item))) throw new Error('Sélection incomplète ou jazz détecté.');
@@ -97,12 +97,21 @@ jobs:
           if(lives.length!==3 || creators.length!==3 || new Set(creators).size!==3) throw new Error('Trois artistes différents sont obligatoires pour les lives.');
           const studios=lives.map(item=>item.sourceId??item.source);
           if(new Set(studios).size!==3) throw new Error('Trois formats ou diffuseurs live différents sont requis.');
-          const djSets=[...report.selected.nts,...report.selected.otherRadio];
+          const djSets=[...report.selected.nts,...report.selected.nova,...report.selected.youtube];
           const date=report.generatedAt.slice(0,10);
-          if(djSets.length!==2 || djSets.some(item=>!isFreshMusicMix({...item,format:'Radio show'},report.startsOn,date)))
-            throw new Error('Deux véritables DJ sets de la semaine précédente sont obligatoires.');
-          if(new Set(djSets.map(item=>item.sourceId)).size!==2) throw new Error('Deux programmes DJ différents sont obligatoires.');
-          console.log(JSON.stringify({albums:report.selected.albums.map(x=>x.title),mixes:djSets.map(x=>({title:x.title,date:x.date,source:x.source})),live:lives.map(x=>({artist:x.creator,format:x.source}))}));
+          if(djSets.length!==3 || djSets.some(item=>!isFreshMusicMix({...item,format:'Radio show'},report.startsOn,date)))
+            throw new Error('Trois vrais mixes musicaux récents obligatoires.');
+          if(report.selected.nts.length!==1 || !isNtsMix({...report.selected.nts[0],format:'Radio show'}))
+            throw new Error('Un mix NTS est obligatoire.');
+          if(report.selected.nova.length!==1 || !isNovaMix({...report.selected.nova[0],format:'Radio show'}))
+            throw new Error('Un mix Nova Danse est obligatoire.');
+          if(report.selected.youtube.length!==1 || !isYouTubeMix({...report.selected.youtube[0],format:'Radio show'})
+             || report.selected.youtube[0].viewCount<250 || report.selected.youtube[0].subscriberCount<2500)
+            throw new Error('Un mix YouTube provenant d’une chaîne crédible est obligatoire.');
+          if(new Set(djSets.map(item=>item.sourceId)).size!==3) throw new Error('Trois sources de mixes distinctes obligatoires.');
+          console.log(JSON.stringify({albums:report.selected.albums.map(x=>x.title),
+            mixes:djSets.map(x=>({title:x.title,date:x.date,source:x.source,views:x.viewCount,subscribers:x.subscriberCount})),
+            live:lives.map(x=>({artist:x.creator,format:x.source}))}));
           JS
       - name: Mettre en ligne seulement la route de prévisualisation
         env:
