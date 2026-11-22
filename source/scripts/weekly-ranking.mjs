@@ -20,8 +20,17 @@ export function nextEditionMonday(now) {
   return addDays(date, ((7 - weekday) % 7) + 1);
 }
 
-const matchingValue = (needles, fields) => needles.find(needle =>
-  normalized(needle) && fields.some(field => normalized(needle) === normalized(field)));
+const matchingValue = (needles, fields) => needles.find(needle => {
+  const key = normalized(needle);
+  if (!key) return false;
+  return fields.some(field => {
+    const value = normalized(field);
+    // The owner may write "KEXP", "NTS", "Brownswood" or "Nova" while
+    // collected programmes carry fuller names. Match complete word sequences,
+    // never arbitrary partial words ("art" must not match "artist").
+    return value === key || (key.length >= 3 && (' ' + value + ' ').includes(' ' + key + ' '));
+  });
+});
 const feedbackWeight = { Loved: 24, Interesting: 10, 'Worth revisiting': 12, 'Not for me': -40 };
 
 function rank(item, profile, today, tasteWeight, previouslySeen) {
@@ -133,7 +142,8 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
     const chosen = [];
     const localProviders = new Set();
     while (chosen.length < group.max) {
-      const provider = ({ item }) => item.provider ?? item.source;
+      const provider = ({ item }) => item.format === 'Live session'
+        ? (item.sourceId ?? item.source) : (item.provider ?? item.source);
       const remaining = options.filter(entry => {
         const { item } = entry;
         if (chosen.length >= group.count && localProviders.has(provider(entry))) return false;
