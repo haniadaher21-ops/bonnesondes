@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import {readPublicPage} from '../scripts/album-catalogues.mjs';
 import {bandcampLinks} from '../scripts/bandcamp-albums.mjs';
+import {musicPressMentions,musicPressAlbumReferences} from '../scripts/music-press.mjs';
 test('inspect outgoing primary album references from real curated articles',{timeout:55000},async()=>{
  const pages=[
   ['Nova','https://www.nova.fr/news/andeol-ladaniva-h-jeunecrack-les-albums-immanquables-de-la-semaine-469377-18-11-2026/'],
@@ -11,7 +12,10 @@ test('inspect outgoing primary album references from real curated articles',{tim
   const html=await readPublicPage(url);
   const links=[...new Set([...html.matchAll(/href=["']([^"']+)["']/gi)]
    .map(m=>m[1].replaceAll('&amp;','&')).filter(x=>/bandcamp\.com|rhymesayers|spotify\.com|subpop\.com|explodinginsound/.test(x)))].slice(0,25);
-  return {name,bandcamp:bandcampLinks(html,url).slice(0,12),links};
+  const source={name,method:name==='Pitchfork'?'pitchfork-weekly':name==='Nova'?'nova-weekly':'stereogum-aotw'};
+  const mentions=musicPressMentions(html,source,url,'2026-11-22');
+  return {name,bandcamp:bandcampLinks(html,url).slice(0,12),links,
+    direct:musicPressAlbumReferences(html,url,mentions).slice(0,12).map(x=>({creator:x.creator,title:x.title,sourceUrl:x.sourceUrl,url:x.url}))};
  }));
  console.log('PRESS_PRIMARY_LINK_PROBE',JSON.stringify(results));
 });
