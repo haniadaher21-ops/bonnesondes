@@ -22,11 +22,11 @@ export function bandcampDailyLinks(html, base = editions[0]) {
 
 export function bandcampDailyIdentity(html) {
   if(typeof html !== 'string' || !/album of the day/i.test(html)) return;
-  const head = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1];
+  const heads = [...html.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi)].map(match=>match[1]);
   const meta = html.match(/<meta\b[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i)?.[1]
     ?? html.match(/<title\b[^>]*>([^<]+)<\/title>/i)?.[1];
-  const label = decode(head || meta || '').replace(/\s*\|\s*Bandcamp Daily.*$/i,'').trim();
-  const parts = label.match(/^(.+?),\s*["“]([^"”]+)["”](?:\s+.*)?$/u);
+  const labels = [...heads,meta].filter(Boolean).map(value=>decode(value).replace(/\s*\|\s*Bandcamp Daily.*$/i,'').trim());
+  const parts = labels.map(label=>label.match(/^(.+?),\s*["“]([^"”]+)["”](?:\s+.*)?$/u)).find(Boolean);
   if(!parts) return;
   const creator = parts[1].trim(), title = parts[2].trim();
   return normalized(title) && normalized(creator) ? {title,creator} : undefined;
