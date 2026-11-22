@@ -104,8 +104,16 @@ export function validateEdition(edition, earlier = [], catalog = []) {
   const mixes = Array.isArray(edition.mixes) ? edition.mixes : [];
   if (!mixes.some(item => isNts(sourceUrl(item?.url)))) errors.push('Un épisode NTS est obligatoire.');
   if (edition.mixPolicy === 'nts-nova-youtube-v1') {
-    const nova=mixes.filter(item=>item?.sourceId==='nova-danse' && item?.mixKind==='dj-set'
-      && sourceUrl(item.url)?.hostname==='podcasts.nova.fr');
+    const novaPaths={
+      'nova-danse':'/radio-nova-nova-danse/',
+      'nova-club-mixes':'/radio-nova-nova-club/',
+      'nova-worldmix':'/radio-nova-neo-geo-nova-le-worldmix/',
+      'nova-teuf-appart':'/teuf-dappart/',
+    };
+    const nova=mixes.filter(item=>item?.mixKind==='dj-set'
+      && novaPaths[item.sourceId] && sourceUrl(item.url)?.hostname==='podcasts.nova.fr'
+      && sourceUrl(item.url)?.pathname.startsWith(novaPaths[item.sourceId])
+      && (item.sourceId==='nova-danse'||item.novaMixVerified===true));
     const youtube=mixes.filter(item=>item?.mixKind==='curated-mix' && item?.embed?.provider==='youtube'
       && item?.audienceVerified===true && Number.isSafeInteger(item.viewCount) && item.viewCount>=100000
       && item?.mixStyleVerified===true && ['rnb','soul','blues','pop','light-house','funk'].includes(item.mixStyle)
