@@ -54,7 +54,12 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   const date = now.toISOString();
   if(!cached)state.albumCatalogueSnapshot={at:date,startsOn,fingerprint:catalogueFingerprint,
     records:catalogues.records.map(({evidenceHtml,...record})=>record),status:catalogues.status};
-  const previous = rollCandidates(state.candidates,collection.candidates,now);
+  // Older, personally relevant official performances compete with recent uploads.
+  // They still need independent YouTube Data API verification on every observation.
+  const archivalLives=readJson(new URL('../editorial/live-archive.json',import.meta.url))
+    .filter(item=>item.date<=parisDate(now) && sources.some(source=>source.id===item.sourceId))
+    .map(item=>({...item,collectedAt:date,verificationStatus:'source-verified'}));
+  const previous = rollCandidates(state.candidates,[...collection.candidates,...archivalLives],now);
   const registered = readJson(new URL('../editorial/album-sources.json',import.meta.url));
   const linked = previous.filter(item => item.format === 'Album' && item.creator && item.editorialKind)
     .flatMap(item => [
@@ -154,7 +159,8 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   }
   await writeReport();
   const fingerprint = createHash('sha256').update(JSON.stringify({
-    sources,albumCatalogues:readJson(new URL('../editorial/album-catalogues.json',import.meta.url)),albums:registered,profileRevision:remote.revision,
+    sources,albumCatalogues:readJson(new URL('../editorial/album-catalogues.json',import.meta.url)),
+    archivalLives:readJson(new URL('../editorial/live-archive.json',import.meta.url)),albums:registered,profileRevision:remote.revision,
     ranking:await readFile(new URL('./weekly-ranking.mjs',import.meta.url),'utf8'),
     evidence:await readFile(new URL('./weekly-evidence.mjs',import.meta.url),'utf8'),
     editorial:await readFile(new URL('./editorial-endorsements.mjs',import.meta.url),'utf8'),
