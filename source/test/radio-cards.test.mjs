@@ -42,3 +42,27 @@ test('card polls are less frequent than expanded player polls and layout is resp
   assert.match(css, /\.station-track-title \{/);
   assert.match(css, /\.station-track-artist \{/);
 });
+
+test('a radio begins playing on the same click and never waits for a newly mounted player', () => {
+  const tuneStart = journal.indexOf('const tune = (next: typeof station) => {');
+  const tuneEnd = journal.indexOf('const saveButton = ', tuneStart);
+  assert.ok(tuneStart > 0 && tuneEnd > tuneStart);
+  const tune = journal.slice(tuneStart, tuneEnd);
+  assert.ok(tune.includes('radioAudioRef.current'));
+  assert.ok(tune.includes('audio.play()'));
+  assert.ok(tune.indexOf('audio.play()') < tune.indexOf('setRadioOpen(true)'));
+  assert.ok(journal.includes('<audio ref={radioAudioRef} controls preload="none"'));
+  assert.ok(journal.includes('className="dock-expanded" hidden={!radioOpen}'));
+  assert.ok(journal.includes('onClick={stopRadio}'));
+  assert.ok(journal.includes('audio.pause()'));
+  assert.ok(css.includes('.dock-expanded[hidden] { display: none; }'));
+  assert.ok(css.includes('.dock-expanded audio[hidden] { display: none; }'));
+  assert.doesNotMatch(journal, /<audio key=\\{station\\.stream\\}/);
+});
+
+test('the four themed FIP stations use their documented direct Radio France streams', () => {
+  for (const slug of ['fiprock', 'fipjazz', 'fipgroove', 'fipelectro'])
+    assert.ok(content.includes("'" + slug + "'"));
+  assert.ok(content.includes("stream: 'https://icecast.radiofrance.fr/' + fipStreams[station] + '-midfi.mp3?id=openapi'"));
+  assert.doesNotMatch(content, /embed: 'https:\/\/embed\.radiofrance\.fr\/fip\/player\?id_station=' \+ station/);
+});
