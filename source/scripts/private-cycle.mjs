@@ -63,6 +63,9 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     .map(item=>({...item,collectedAt:date,verificationStatus:'source-verified'}));
   const youtubeMixes=mode==='collect' ? {items:[],status:'deferred-until-observation'}
     : await collectYouTubeMixes({startsOn,today:parisDate(now),profile,key:env.YOUTUBE_DATA_API_KEY,fetcher});
+  const youtubeMixSummary={status:youtubeMixes.status,found:youtubeMixes.found??0,
+    eligible:youtubeMixes.items.length,queries:youtubeMixes.queries??0};
+  if(mode!=='collect') console.log('YouTube mix discovery',JSON.stringify(youtubeMixSummary));
   const previous = rollCandidates(state.candidates,[...collection.candidates,...archivalLives,...youtubeMixes.items],now);
   const registered = readJson(new URL('../editorial/album-sources.json',import.meta.url));
   const linked = previous.filter(item => item.format === 'Album' && item.creator && item.editorialKind)
@@ -168,7 +171,8 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   }]));
   async function writeReport(build='not-run') {
     const result=observationReport(report,{profileRevision:remote.revision,profileUpdatedAt:remote.profileUpdatedAt,
-      profileSignalCounts,comparison,incremental,albumEvidence:evidence,catalogues:[...catalogues.status,...endorsements.status],sources:collection.sources,liveStatus:lives.status,build});
+      profileSignalCounts,comparison,incremental,albumEvidence:evidence,catalogues:[...catalogues.status,...endorsements.status],sources:collection.sources,liveStatus:lives.status,
+      youtubeMixes:youtubeMixSummary,build});
     if(env.BONNES_ONDES_OBSERVATION_DIR) {
       await mkdir(env.BONNES_ONDES_OBSERVATION_DIR,{recursive:true});
       await writeFile(join(env.BONNES_ONDES_OBSERVATION_DIR,'recommendations.json'),JSON.stringify(result,null,2)+'\n',{mode:0o600});
