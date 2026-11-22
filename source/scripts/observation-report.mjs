@@ -13,6 +13,7 @@ export function observationReport(report, diagnostics) {
       genre:row.item.genre,tags:row.item.tags ?? [],sourceId:row.item.sourceId,mixKind:row.item.mixKind,
       embed:row.item.embed,audienceVerified:row.item.audienceVerified,
       viewCount:row.item.viewCount,subscriberCount:row.item.subscriberCount,
+      mixStyle:row.item.mixStyle,mixStyleVerified:row.item.mixStyleVerified,
       url:row.item.url,sourceUrl:row.item.sourceUrl,releaseDate:row.item.releaseDate,
       editorialSource:row.item.editorialSource,editorialUrl:row.item.editorialUrl,
       editorialKind:row.item.editorialKind,editorialClaim:row.item.editorialClaim,
