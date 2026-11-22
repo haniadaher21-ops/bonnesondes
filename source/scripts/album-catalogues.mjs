@@ -78,7 +78,8 @@ export function ecmRelease(html, sourceUrl) {
 }
 
 export async function collectAlbumCatalogues({startsOn, today, fetcher = fetch, catalogues = []}) {
-  const windowStart = new Date(Date.parse(startsOn) - 14 * 86400000).toISOString().slice(0, 10);
+  // Editorial discovery may revisit proven catalogue records from recent years, not only new releases.
+  const windowStart = new Date(Date.parse(startsOn) - 4 * 365 * 86400000).toISOString().slice(0, 10);
   const sources = [
     {name: 'Ninja Tune', url: 'https://old.ninjatune.net/widget/releases/catalogue/page%3A1/view%3Alist/type%3Arecord', parse: ninjaCatalogue},
     {name: 'Sub Pop', url: 'https://www.subpop.com/releases', parse: subpopCatalogue},
@@ -92,7 +93,7 @@ export async function collectAlbumCatalogues({startsOn, today, fetcher = fetch, 
       for (const record of parsed.filter(item => {
         const date = item.releaseDate ?? item.catalogueDate;
         return date >= windowStart && date <= today;
-      }).slice(0, 15)) {
+      }).slice(0, 12)) {
         try {
           const html = await readPublicPage(record.sourceUrl, fetcher);
           const structured = primaryReleaseDate(html, record);
@@ -147,7 +148,7 @@ export async function collectAlbumCatalogues({startsOn, today, fetcher = fetch, 
     }
     if (source.method !== 'bandcamp') continue;
     try {
-      const urls = bandcampLinks(await readPublicPage(source.url,fetcher),source.url).slice(0,16);
+      const urls = bandcampLinks(await readPublicPage(source.url,fetcher),source.url).slice(0,10);
       let checked=0, parsed=0;
       const failures=[];
       // Bounded batches avoid overwhelming a label, even when its artists have separate subdomains.
