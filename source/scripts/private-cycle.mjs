@@ -9,6 +9,7 @@ import { canonicalUrl, editionItems, parisDate } from '../editorial/edition.mjs'
 import { emptyTasteProfile, normalizeTasteProfile } from '../editorial/taste-profile.mjs';
 import { readRunnerProfile, syncRpc } from '../private-sync/client.mjs';
 import { collectAlbumCatalogues, readPublicPage } from './album-catalogues.mjs';
+import { collectYouTubeMixes } from './youtube-mixes.mjs';
 import { collectEditorialEndorsements } from './editorial-endorsements.mjs';
 import { discover } from './discovery.mjs';
 import { legacyEdition, legacyItems, publishedFile, readJson } from './editorial-files.mjs';
@@ -60,7 +61,9 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   const archivalLives=readJson(new URL('../editorial/live-archive.json',import.meta.url))
     .filter(item=>item.date<=parisDate(now) && sources.some(source=>source.id===item.sourceId))
     .map(item=>({...item,collectedAt:date,verificationStatus:'source-verified'}));
-  const previous = rollCandidates(state.candidates,[...collection.candidates,...archivalLives],now);
+  const youtubeMixes=mode==='collect' ? {items:[],status:'deferred-until-observation'}
+    : await collectYouTubeMixes({startsOn,today:parisDate(now),profile,key:env.YOUTUBE_DATA_API_KEY,fetcher});
+  const previous = rollCandidates(state.candidates,[...collection.candidates,...archivalLives,...youtubeMixes.items],now);
   const registered = readJson(new URL('../editorial/album-sources.json',import.meta.url));
   const linked = previous.filter(item => item.format === 'Album' && item.creator && item.editorialKind)
     .flatMap(item => [
@@ -122,7 +125,7 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   // Never carry a past verification into this run if its primary source is unavailable.
   const base = previous.filter(item => !albumKeys.has(canonicalUrl(item.url))).map(item=>
     item.format==='Album' && item.verificationStatus==='primary-verified' ? {...item,verificationStatus:'release-date-needed'} : item);
-  const candidates = rollCandidates(base,[...collection.candidates,...albums],now);
+  const candidates = rollCandidates(base,[...collection.candidates,...youtubeMixes.items,...albums],now);
   const headers = {'x-bo-runner':env.BONNES_ONDES_RUNNER_TOKEN};
   const beforeKeys=new Set(state.candidates.map(item=>canonicalUrl(item.url)));
   const incremental={before:state.candidates.length,after:candidates.length,new:candidates.filter(item=>!beforeKeys.has(canonicalUrl(item.url))).length,
@@ -177,6 +180,7 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   const fingerprint = createHash('sha256').update(JSON.stringify({
     sources,albumCatalogues:readJson(new URL('../editorial/album-catalogues.json',import.meta.url)),
     archivalLives:readJson(new URL('../editorial/live-archive.json',import.meta.url)),albums:registered,profileRevision:remote.revision,
+    youtubeMixSearches:await readFile(new URL('./youtube-mixes.mjs',import.meta.url),'utf8'),
     ranking:await readFile(new URL('./weekly-ranking.mjs',import.meta.url),'utf8'),
     evidence:await readFile(new URL('./weekly-evidence.mjs',import.meta.url),'utf8'),
     editorial:await readFile(new URL('./editorial-endorsements.mjs',import.meta.url),'utf8'),
