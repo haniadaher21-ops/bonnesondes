@@ -47,7 +47,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[preview-edition-002]'))
     runs-on: ubuntu-latest
     timeout-minutes: 40
-    # Rebuild the preview with a verified curator/DJ vinyl mix and official Spotify covers; no automatic publication.
+    # Rebuild the three-source preview and refuse weak YouTube audiences; keep public edition unchanged.
     steps:
       - uses: actions/checkout@v4
         with:
