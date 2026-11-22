@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
 import sources from '../editorial/music-press.json' with {type:'json'};
-import {musicPressLinks,musicPressMentions,matchMusicPress,collectMusicPress} from '../scripts/music-press.mjs';
+import {musicPressLinks,musicPressMentions,nprMusicFridayMentions,matchMusicPress,collectMusicPress} from '../scripts/music-press.mjs';
 import {editorialEndorsement} from '../scripts/recommendation-policy.mjs';
 
 const nova=sources.find(x=>x.id==='nova');
@@ -20,8 +20,8 @@ test('all five requested editorial media are tracked, but unsupported sites neve
   for(const name of ['Radio Nova','Stereogum','Pitchfork','Les Inrockuptibles','NPR Music'])
     assert.ok(sources.some(row=>row.name===name));
   assert.ok(sources.find(row=>row.id==='inrocks').mode==='manual');
-  assert.ok(sources.find(row=>row.id==='npr').mode==='manual');
-  assert.deepEqual(sources.filter(x=>x.mode==='automatic').map(x=>x.id),['nova','stereogum','pitchfork']);
+  assert.ok(sources.find(row=>row.id==='npr').mode==='automatic');
+  assert.deepEqual(sources.filter(x=>x.mode==='automatic').map(x=>x.id),['nova','stereogum','pitchfork','npr']);
 });
 
 test('explicit album-curation articles and the last 30 days are required',()=>{
@@ -35,6 +35,18 @@ test('explicit album-curation articles and the last 30 days are required',()=>{
   assert.deepEqual(musicPressMentions(content,source,url,'2027-01-01'),[]);
  }
  assert.deepEqual(musicPressLinks('<a href="https://evil.example/99/album-of-the-week-a/reviews/album-of-the-week">bad</a>',stereogum),[]);
+});
+
+test('NPR Music New Music Friday podcast names exact album picks without guessing',()=>{
+ const rss=`<rss><channel><item><title>New Music Friday: The best albums out Nov. 13</title>
+ <link>https://www.npr.org/2026/11/13/nx-s1-1234/new-music-friday-best-albums</link>
+ <pubDate>Fri, 13 Nov 2026 05:01:00 +0000</pubDate><description>
+ The Starting 5 (00:03) - Krill, 'Secret Language' - Aesop Rock and Blockhead, 'Trouble Mountain'
+ The Lightning Round - Another artist, 'Unrelated'</description></item></channel></rss>`;
+ const picks=nprMusicFridayMentions(rss,sources.find(x=>x.id==='npr'),'2026-11-22');
+ assert.deepEqual(picks.map(x=>[x.creator,x.title]),[['Krill','Secret Language'],['Aesop Rock and Blockhead','Trouble Mountain']]);
+ assert.ok(editorialEndorsement({...picks[0],format:'Album'}));
+ assert.deepEqual(nprMusicFridayMentions(rss,sources.find(x=>x.id==='npr'),'2027-01-01'),[]);
 });
 
 test('article title and release identity must match to qualify as an editorial pick',()=>{
