@@ -92,7 +92,7 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     editorialKind:item.editorialKind,editorialClaim:item.editorialClaim,
   }));
   const bySource=new Map();
-  for(const record of [...priorAlbums,...registered,...catalogues.records,...linked,...endorsements.records]) {
+  for(const record of [...priorAlbums,...registered,...catalogues.records,...linked,...press.records,...endorsements.records]) {
     bySource.set(record.sourceUrl,{...(bySource.get(record.sourceUrl)??{}),
       ...Object.fromEntries(Object.entries(record).filter(([,value])=>value!==undefined))});
   }
@@ -101,7 +101,11 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   // identity have been verified against the primary source.
   for(const record of uniqueRecords) {
     const mention=matchMusicPress(record,press.mentions);
-    if(mention && !record.editorialKind) Object.assign(record,mention);
+    const priority=x=>x?.editorialClaim==='Album of the Week'?3
+      : x?.editorialClaim==='Best New Music'?3
+      : x?.editorialClaim==='Album of the Day'?3
+      : x?.editorialKind?1:0;
+    if(mention && priority(mention)>priority(record)) Object.assign(record,mention);
   }
   const preferredSources=[...profile.favoritePublications,...profile.favoriteRadios,...profile.spotify.map(row=>row.name).filter(Boolean)].map(normalized);
   const preferredArtists=profile.favoriteArtists.map(normalized);
