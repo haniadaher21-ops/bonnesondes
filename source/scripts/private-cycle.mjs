@@ -25,7 +25,7 @@ import { editionForCycle, publicationDecision, publicEdition, rollCandidates } f
 const root = fileURLToPath(new URL('../',import.meta.url));
 
 export async function privateCycle({mode = 'observe', env = process.env, now = new Date(), fetcher = fetch, providerWait} = {}) {
-  if (!['collect','observe','publish'].includes(mode)) throw new Error('Mode inconnu.');
+  if (!['collect','observe','publish','audit'].includes(mode)) throw new Error('Mode inconnu.');
   const config = {url:env.SUPABASE_URL ?? '',publicKey:env.SUPABASE_PUBLISHABLE_KEY ?? ''};
   if (!env.BONNES_ONDES_RUNNER_TOKEN) throw new Error('Accès privé non configuré.');
   const remote = await readRunnerProfile(config,env.BONNES_ONDES_RUNNER_TOKEN,fetcher);
@@ -63,7 +63,7 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   const archivalLives=readJson(new URL('../editorial/live-archive.json',import.meta.url))
     .filter(item=>item.date<=parisDate(now) && sources.some(source=>source.id===item.sourceId))
     .map(item=>({...item,collectedAt:date,verificationStatus:'source-verified'}));
-  const youtubeMixes=mode==='collect' ? {items:[],status:'deferred-until-observation'}
+  const youtubeMixes=['collect','audit'].includes(mode) ? {items:[],status:'deferred-until-observation'}
     : await collectYouTubeMixes({startsOn,today:parisDate(now),profile,key:env.YOUTUBE_DATA_API_KEY,fetcher});
   const youtubeMixSummary={status:youtubeMixes.status,found:youtubeMixes.found??0,
     eligible:youtubeMixes.items.length,queries:youtubeMixes.queries??0,
@@ -150,6 +150,98 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     retained:candidates.filter(item=>beforeKeys.has(canonicalUrl(item.url))).length};
   const profileSignalCounts=Object.fromEntries(['favoriteArtists','favoriteRadios','favoritePublications','spotify','explore','avoid'].map(key=>[key,profile[key].length]));
   profileSignalCounts.reactions=profile.signals.items.length;
+  // The editorial audit reads genuine private-profile signals without saving state.
+  if (mode === 'audit') {
+    const historical = earlier.filter(edition => edition.startsOn !== startsOn);
+    const seen = Object.fromEntries(previous.map(item => [canonicalUrl(item.url), item.firstSeenAt]));
+    const shortlist = selectedProfile => weeklyShortlist({
+      candidates, sources:collection.sources, profile:selectedProfile,
+      earlier:historical, catalog:legacyItems, startsOn, now, seen,
+    });
+    const personalized = shortlist(profile);
+    const neutral = shortlist(emptyTasteProfile());
+    const eligible = personalized.rankings.filter(row => row.item.format === 'Album');
+    const contrast = emptyTasteProfile();
+    const contrastingArtist = neutral.rankings.filter(row => row.item.format === 'Album').at(-1)?.item.creator;
+    if (contrastingArtist) contrast.favoriteArtists = [contrastingArtist];
+    const contrasted = shortlist(contrast);
+    const ranks = result => new Map(result.rankings.filter(row => row.item.format === 'Album')
+      .map((row,index) => [canonicalUrl(row.item.url),{rank:index+1,score:row.score}]));
+    const neutralRanks = ranks(neutral);
+    const contrastRanks = ranks(contrasted);
+    const albums = eligible.slice(0,10).map((row,index) => {
+      const item = row.item;
+      const neutral = neutralRanks.get(canonicalUrl(item.url));
+      const contrast = contrastRanks.get(canonicalUrl(item.url));
+      return {
+        rank:index+1,artist:item.creator,title:item.title,genre:item.genre??null,
+        date:item.releaseDate,source:item.source,sourceUrl:item.sourceUrl,
+        releaseProofUrl:item.releaseProofUrl,spotifyUrl:item.url,
+        listeningProofUrl:item.listeningProofUrl,
+        editorialSource:item.editorialSource,editorialUrl:item.editorialUrl,
+        editorialPublishedAt:item.editorialPublishedAt,
+        editorialClaim:item.editorialClaim,verificationStatus:item.verificationStatus,
+        score:row.score,neutralRank:neutral?.rank??null,neutralScore:neutral?.score??null,
+        contrastRank:contrast?.rank??null,contrastScore:contrast?.score??null,
+        scoreSignals:row.signals,
+      };
+    });
+    const report = {
+      generatedAt:date,startsOn,profileRevision:remote.revision,
+      profileSignalCounts,personalized:personalized.personalized,
+      verifiedAlbumCandidates:eligible.length,requested:10,
+      missing:Math.max(0,10-eligible.length),
+      contrastMethod:'Synthetic profile favors last eligible artist under neutral ranking; no owner preferences disclosed.',
+      albums,diversity:{
+        genres:[...new Set(albums.map(row=>row.genre).filter(Boolean))],
+        editorialSources:[...new Set(albums.map(row=>row.editorialSource).filter(Boolean))],
+        primarySources:[...new Set(albums.map(row=>row.source).filter(Boolean))],
+        uniqueArtists:new Set(albums.map(row=>row.artist)).size,
+      },
+      albumRejections:personalized.rejected.filter(row=>row.format==='Album').slice(0,100),
+      albumEvidence:evidence.map(row=>({title:row.title,creator:row.creator,sourceUrl:row.sourceUrl,
+        releaseDate:row.verifiedReleaseDate,eligible:!!row.candidate,reason:row.reason})),
+      coverage:{press:press.status,editorial:endorsements.status,catalogues:catalogues.status},
+      qualification:'Genuine private-profile scoring and primary-verified releases; missing albums are not fabricated.',
+      publicationEnabled:false,privateStateWritten:false,
+    };
+    const directory=env.BONNES_ONDES_AUDIT_DIR;
+    if(!directory) throw new Error('Audit output directory missing.');
+    await mkdir(directory,{recursive:true});
+    await writeFile(join(directory,'album-audit.json'),JSON.stringify(report,null,2)+'\n',{mode:0o600});
+    const safe=value=>String(value??'').replace(/[\r\n|<>]/g,' ').trim();
+    const lines=[
+      '# Audit éditorial des albums',
+      'Généré : '+date+' ; profil synchronisé révision '+remote.revision+'.',
+      'Albums vérifiés admissibles : '+eligible.length+'/10 ; déficit : '+report.missing+'.',
+      'Le dépôt publié et l’index privé restent inchangés.',
+      '| Rang | Artiste | Album | Sortie | Média | Score profil | Rang neutre | Rang contrasté |',
+      '| ---: | --- | --- | --- | --- | ---: | ---: | ---: |',
+      ...albums.map(row=>'| '+row.rank+' | '+safe(row.artist)+' | '+safe(row.title)
+        +' | '+safe(row.date)+' | '+safe(row.editorialSource)+' | '+row.score
+        +' | '+(row.neutralRank??'—')+' | '+(row.contrastRank??'—')+' |'),
+      '## Détails et preuves',
+      ...albums.map(row=>'### '+row.rank+'. '+safe(row.artist)+' — '+safe(row.title)
+        +'\nÉcoute : '+safe(row.spotifyUrl)+' ; sortie : '+safe(row.releaseProofUrl)
+        +' ; média : '+safe(row.editorialUrl)+' ; source primaire : '+safe(row.sourceUrl)
+        +'\nSignaux de classement : '+row.scoreSignals.map(safe).join(' ; ')),
+      '## Couverture',
+      ...press.status.map(row=>'- '+safe(row.source)+': '+safe(row.status)+' ('+(row.mentions??0)+' mentions)'),
+      '## Échecs de validation des albums',
+      ...report.albumRejections.map(row=>'- '+safe(row.title)+': '+safe(row.reason)),
+    ];
+    await writeFile(join(directory,'album-audit.md'),lines.join('\n\n')+'\n',{mode:0o600});
+    console.log('AUDIT_EDITORIAL_RESULT',JSON.stringify({
+      status:'audit',date,startsOn,profileRevision:remote.revision,
+      eligible:eligible.length,missing:report.missing,
+      changedVsNeutral:albums.filter(row=>row.neutralRank!==row.rank).length,
+      albumTitles:albums.map(row=>row.artist+' — '+row.title),
+      mediaStatuses:press.status.map(row=>({source:row.source,status:row.status,mentions:row.mentions??0})),
+    }));
+    return {status:'audit',eligibleAlbums:eligible.length,missing:report.missing,
+      profileRevision:remote.revision,publicationEnabled:false,privateStateWritten:false};
+  }
+
   async function saveState() {
     // A consent revocation or profile edit during a long collection invalidates this observation.
     const latest=await readRunnerProfile(config,env.BONNES_ONDES_RUNNER_TOKEN,fetcher);
