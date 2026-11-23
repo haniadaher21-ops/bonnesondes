@@ -1,0 +1,48 @@
+name: Audit éditorial des albums (lecture seule)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/editorial-audit.yml'
+      - 'source/scripts/private-cycle.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: bonnes-ondes-editorial-audit
+  cancel-in-progress: false
+jobs:
+  editorial-audit:
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'test/editorial-audit-20261123')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: source
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - run: npm ci
+      - name: Evaluer dix albums avec le profil synchronisé sans écrire dans Supabase
+        run: node scripts/private-cycle.mjs audit
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          BONNES_ONDES_RUNNER_TOKEN: ${{ secrets.BONNES_ONDES_RUNNER_TOKEN }}
+          AUTO_PUBLISH_ENABLED: 'false'
+          BONNES_ONDES_AUDIT_DIR: ${{ runner.temp }}/editorial-audit
+      - name: Tests du moteur
+        if: always()
+        run: npm test && npm run typecheck
+      - name: Conserver le rapport public sans profil privé
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bonnes-ondes-audit-editorial
+          path: ${{ runner.temp }}/editorial-audit/
+          if-no-files-found: warn
+          retention-days: 7

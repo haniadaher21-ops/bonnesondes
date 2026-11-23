@@ -1,0 +1,42 @@
+name: Audit immédiat de l'index musical
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/editorial-index-audit.yml'
+      - 'source/scripts/audit-private-index.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check-index:
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'test/editorial-audit-20261123')
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: source
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - run: npm ci
+      - name: Auditer le classement privé existant
+        run: node scripts/audit-private-index.mjs
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          BONNES_ONDES_RUNNER_TOKEN: ${{ secrets.BONNES_ONDES_RUNNER_TOKEN }}
+          AUTO_PUBLISH_ENABLED: 'false'
+          BONNES_ONDES_AUDIT_DIR: ${{ runner.temp }}/index-audit
+      - name: Partager seulement le rapport agrégé
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bonnes-ondes-index-audit
+          path: ${{ runner.temp }}/index-audit/
+          if-no-files-found: warn
+          retention-days: 7
