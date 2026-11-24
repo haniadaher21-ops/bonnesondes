@@ -57,6 +57,30 @@ test('unsupported Media Session API is harmless for normal audio controls',()=>{
   cleanup();
 });
 
+test('fallback key events toggle playback when Media Session is unsupported', async () => {
+  const audio = new MockAudio();
+  const keyTarget = new EventTarget();
+  const cleanup = installRadioMediaSession(audio, 'Radio Nova', {
+    session: null, keyTarget,
+  });
+  const press = key => {
+    const event = new Event('keydown', { cancelable: true });
+    Object.defineProperty(event, 'key', { value: key });
+    keyTarget.dispatchEvent(event);
+    return event.defaultPrevented;
+  };
+  assert.equal(press('MediaPlayPause'), true);
+  assert.equal(audio.paused, false);
+  assert.equal(press('MediaPause'), true);
+  assert.equal(audio.paused, true);
+  assert.equal(press('MediaPlay'), true);
+  await Promise.resolve();
+  assert.equal(audio.paused, false);
+  assert.equal(press('x'), false);
+  cleanup();
+  assert.equal(press('MediaPlayPause'), false);
+});
+
 test('optional stop action and unsupported Safari actions fail safely',()=>{
   const audio = new MockAudio();
   const handlers=new Map();
