@@ -12,6 +12,8 @@ import hashlib
 import json
 import tempfile
 from pathlib import Path
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 SOURCE_ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = SOURCE_ROOT / "editorial" / "image-bank.json"
@@ -24,6 +26,14 @@ MAX_DIMENSION = 8_000
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def next_monday_paris(today: date | None = None) -> str:
+    """A new Drive file is available from NEXT Monday, never midweek."""
+    if today is None:
+        today = datetime.now(ZoneInfo("Europe/Paris")).date()
+    days = 7 - today.weekday()
+    return (today + timedelta(days=days)).isoformat()
 
 
 def plan_new_images(paths: list[Path], manifest: dict, assets: Path = ASSETS) -> list[dict]:
@@ -70,6 +80,7 @@ def plan_new_images(paths: list[Path], manifest: dict, assets: Path = ASSETS) ->
         new.append({"id": identifier, "file": f"/edition-images/{identifier}.jpg",
                     "alt": "Illustration musicale de la banque Bonnes Ondes",
                     "sourceSha256": digest, "sourceName": path.name,
+                    "availableFromWeek": next_monday_paris(),
                     "_path": path})
         existing_ids.add(identifier)
         existing_digests.add(digest)
