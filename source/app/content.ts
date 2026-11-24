@@ -66,7 +66,7 @@ export type RadioMetadata =
   | { provider: 'nts'; endpoint: string; channel: '1' | '2' }
   | { provider: 'nova-page'; endpoint: string }
   | { provider: 'spinitron-reader'; endpoint: string; timezone: string }
-  | { provider: 'kcrw-json'; endpoint: string }
+  | { provider: 'kcrw-json' | 'wxyc-reader'; endpoint: string }
   | { provider: 'campus-paris-reader' | 'radiocult-live'; endpoint: string };
 
 export interface Station {
@@ -172,6 +172,7 @@ export const stations: Station[] = [
     description: 'Une programmation aventureuse, des émissions thématiques et des découvertes inattendues.',
     url: 'https://wxyc.org/listen/',
     stream: 'https://audio-mp3.ibiblio.org/wxyc.mp3',
+    metadata: {provider:'wxyc-reader',endpoint:'https://r.jina.ai/https://api.wxyc.org/flowsheet?limit=30'},
   },
 ];
 
