@@ -97,7 +97,7 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
 
     async function refresh() {
       try {
-        const headers=['spinitron-reader','wxyc-reader'].includes(activeMetadata.provider) ? {
+        const headers: Record<string,string> | undefined = ['spinitron-reader','wxyc-reader'].includes(activeMetadata.provider) ? {
           'X-Cache-Tolerance':'0','X-Respond-With':'markdown',
         } : activeMetadata.provider==='nova-page' ? {
           'X-Respond-With':'html',
