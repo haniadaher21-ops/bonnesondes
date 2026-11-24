@@ -7,7 +7,7 @@ import type { RadioMetadata } from './content';
 import { parseNovaNowPlaying } from './nova-nowplaying.mjs';
 import { radioArtworkUrl } from './radio-artwork.mjs';
 import { findNovaCatalogueArtwork } from './nova-catalogue-artwork.mjs';
-import { parseCampusParisReader, parseRadioCultLive, parseSpinitronReader } from './campus-nowplaying.mjs';
+import { parseCampusParisReader, parseRadioCultLive, parseSpinitronReader, parseKcrwNowPlaying, parseWxycReader } from './campus-nowplaying.mjs';
 import { spotifyRadioSearchUrl } from './spotify-radio-link.mjs';
 
 type BroadcastStep = {
@@ -26,6 +26,12 @@ export type OnAir = { title: string; artist?: string; playedAt?: string; artwork
 async function readOnAir(response: Response, metadata: RadioMetadata): Promise<OnAir | null> {
   if (!response.ok) throw new Error('Métadonnées indisponibles');
 
+  if (metadata.provider === 'kcrw-json') {
+    return parseKcrwNowPlaying(await response.json());
+  }
+  if (metadata.provider === 'wxyc-reader') {
+    return parseWxycReader(await response.text());
+  }
   if (metadata.provider === 'spinitron-reader') {
     return parseSpinitronReader(await response.text(),metadata.timezone);
   }
@@ -91,7 +97,9 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
 
     async function refresh() {
       try {
-        const headers=activeMetadata.provider==='nova-page' ? {
+        const headers=['spinitron-reader','wxyc-reader'].includes(activeMetadata.provider) ? {
+          'X-Cache-Tolerance':'0','X-Respond-With':'markdown',
+        } : activeMetadata.provider==='nova-page' ? {
           'X-Respond-With':'html',
           'X-Target-Selector':'.what_was_title .swiper-slide:first-child',
           'X-Cache-Tolerance':'30',
@@ -102,7 +110,7 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
       } catch {
         if (!controller.signal.aborted) { setTrack(null); setLoading(false); }
       } finally {
-        if (!controller.signal.aborted) timer = setTimeout(refresh, ['spinitron-reader','campus-paris-reader'].includes(activeMetadata.provider) ? 120_000 : activeMetadata.provider === 'radiocult-live' ? 60_000 : activeMetadata.provider === 'nova-page' ? 30_000 : compact ? 30_000 : 15_000);
+        if (!controller.signal.aborted) timer = setTimeout(refresh, ['spinitron-reader','wxyc-reader','kcrw-json'].includes(activeMetadata.provider) ? 60_000 : activeMetadata.provider === 'campus-paris-reader' ? 120_000 : activeMetadata.provider === 'radiocult-live' ? 60_000 : activeMetadata.provider === 'nova-page' ? 30_000 : compact ? 30_000 : 15_000);
       }
     }
 
@@ -115,7 +123,7 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
 
   const isNts = metadata?.provider === 'nts';
   const isNova = metadata?.provider === 'nova-page';
-  const isCampusSource = ['spinitron-reader','campus-paris-reader','radiocult-live'].includes(metadata?.provider ?? '');
+  const isCampusSource = ['spinitron-reader','wxyc-reader','kcrw-json','campus-paris-reader','radiocult-live'].includes(metadata?.provider ?? '');
   const artKey = (metadata?.endpoint ?? '') + '|' + (track?.artist ?? '') + '|' + (track?.title ?? '');
   const failedUrls = failedArtwork.key === artKey ? failedArtwork.urls : [];
   const directArtwork = track?.artwork && !failedUrls.includes(track.artwork) ? track.artwork : undefined;
