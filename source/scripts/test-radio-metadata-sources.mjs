@@ -20,3 +20,13 @@ for (const [name, url] of Object.entries(urls)) {
     } catch(error){console.log(JSON.stringify({name,proxy,error:String(error.message??error).slice(0,100)}));}
   }
 }
+
+for (const url of ['https://r.jina.ai/https://programming.kalx.berkeley.edu/KALX/','https://api.radiocult.fm/api/station/worldwide-fm/schedule/live',
+  'https://r.jina.ai/https://www.radiocampusparis.org/c-etait-quoi-ce-titre']) {
+  try {
+    const response=await fetch(url,{headers:{Origin:'https://haniadaher21-ops.github.io'},signal:AbortSignal.timeout(10000)});
+    console.log(JSON.stringify({originProbe:url,status:response.status,cors:response.headers.get('access-control-allow-origin'),
+      vary:response.headers.get('vary'),type:response.headers.get('content-type')}));
+    await response.body?.cancel();
+  }catch(error){console.log(JSON.stringify({originProbe:url,error:String(error.message??error)}));}
+}
