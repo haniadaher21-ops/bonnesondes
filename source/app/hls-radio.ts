@@ -35,7 +35,7 @@ export function loadHlsLibrary(): Promise<HlsRadioConstructor> {
   if (typeof window === 'undefined') return Promise.reject(new Error('Lecteur réservé au navigateur.'));
   if (window.Hls) return Promise.resolve(window.Hls);
   if (pending) return pending;
-  pending = new Promise((resolve, reject) => {
+  const loader = new Promise<HlsRadioConstructor>((resolve, reject) => {
     const script = document.createElement('script');
     script.src = hlsScriptUrl;
     script.async = true;
@@ -46,6 +46,8 @@ export function loadHlsLibrary(): Promise<HlsRadioConstructor> {
     };
     script.onerror = () => { script.remove(); reject(new Error('Lecteur HLS inaccessible.')); };
     document.head.appendChild(script);
-  }).catch(error => { pending = null; throw error; });
-  return pending;
+  });
+  pending = loader;
+  void loader.catch(() => { pending = null; });
+  return loader;
 }
