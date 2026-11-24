@@ -35,7 +35,7 @@ test('all nine approved college and independent radios are represented', () => {
   assert.ok(stations.includes('https://streams.kcrw.com/e24_mp3'));
   assert.ok(stations.includes('https://stream0.wfmu.org/freeform-128k'));
   assert.ok(stations.includes('https://worldwide-fm.radiocult.fm/stream'));
-  assert.ok(stations.includes('Only an old HTTP stream was verifiable'));
+  assert.ok(stations.includes("stream: 'https://www.radiocampusparis.org/stream/'"));
 });
 
 test('radio UI includes drag handle, keyboard alternatives and local persistence', () => {
