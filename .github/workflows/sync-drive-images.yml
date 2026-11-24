@@ -1,0 +1,74 @@
+name: Synchroniser les illustrations depuis Drive
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '10 8 * * *'
+      timezone: Europe/Paris
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sync-drive-images.yml'
+      - 'source/scripts/sync-drive-images.py'
+      - 'source/scripts/test_drive_sync.py'
+      - 'source/editorial/image-bank.json'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/sync-drive-images.yml'
+      - 'source/scripts/sync-drive-images.py'
+      - 'source/scripts/test_drive_sync.py'
+      - 'source/editorial/image-bank.json'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: bonnes-ondes-drive-image-bank
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Installer le lecteur Drive public et le validateur d'images
+        run: python -m pip install 'gdown==5.2.0' 'Pillow==11.3.0'
+      - name: Tester la protection des éditions et des images
+        run: python -m unittest discover -s source/scripts -p 'test_drive_sync.py' -v
+      - name: Inspecter Drive sans écrire (pull request)
+        if: github.event_name == 'pull_request'
+        run: python source/scripts/sync-drive-images.py --check
+      - name: Importer les nouvelles images (branche principale)
+        if: github.event_name != 'pull_request'
+        run: python source/scripts/sync-drive-images.py --apply
+      - name: Enregistrer les nouveaux visuels et republier le site
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- source/editorial/image-bank.json source/public/edition-images/
+          if git diff --cached --quiet; then
+            echo 'Aucune nouvelle illustration : aucun changement au site.'
+            exit 0
+          fi
+          git config user.name 'Bonnes Ondes'
+          git config user.email 'actions@users.noreply.github.com'
+          git commit -m 'Importer les nouvelles illustrations depuis Google Drive'
+          git pull --rebase origin main
+          git push origin HEAD:main
+          # Actions triggered by a GITHUB_TOKEN push are suppressed. Use the
+          # supported workflow_dispatch exception for the existing Pages build.
+          gh workflow run site-deploy.yml --ref main
+          echo 'Nouvelles images importées et déploiement GitHub Pages demandé.'
