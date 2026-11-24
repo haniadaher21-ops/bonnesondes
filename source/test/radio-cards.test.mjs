@@ -16,8 +16,8 @@ test('all radios including Nova can show identifiable songs in the cards', () =>
   assert.match(journal, /<RadioTrack metadata=\{item\.metadata\} compact/);
   assert.match(radio, /className="station-track-title">\{track\.title\}/);
   assert.match(radio, /className="station-track-artist">\{track\.artist\}/);
-  assert.match(radio, /'Chargement du direct…'/);
-  assert.match(radio, /'Titre indisponible pour le moment.'/);
+  assert.match(radio, /'Recherche du titre en cours…'/);
+  assert.match(radio, /'Titre non confirmé par la station pour le moment.'/);
 });
 
 test('NTS cards show the current broadcast and not a song-saving button', () => {
