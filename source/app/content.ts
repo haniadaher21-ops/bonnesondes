@@ -65,7 +65,7 @@ export type RadioMetadata =
   | { provider: 'radio-france' | 'azuracast'; endpoint: string }
   | { provider: 'nts'; endpoint: string; channel: '1' | '2' }
   | { provider: 'nova-page'; endpoint: string }
-  | { provider: 'spinitron-reader'; endpoint: string; timezone: string }
+  | { provider: 'spinitron-reader'; endpoint: string; timezone: string; stationCode: 'KALX' | 'WRBB' | 'KZSC' }
   | { provider: 'kcrw-json' | 'wxyc-reader'; endpoint: string }
   | { provider: 'campus-paris-reader' | 'radiocult-live'; endpoint: string };
 
@@ -140,7 +140,7 @@ export const stations: Station[] = [
     description: 'Une radio libre et éclectique, entre pépites indépendantes, raretés et émissions de passionnés.',
     url: 'https://www.kalx.berkeley.edu/media/live-streaming/',
     stream: 'https://stream.kalx.berkeley.edu:8443/kalx-128.mp3',
-    metadata: {provider:'spinitron-reader',endpoint:'https://r.jina.ai/https://programming.kalx.berkeley.edu/KALX/',timezone:'America/Los_Angeles'}, 
+    metadata: {provider:'spinitron-reader',endpoint:'https://r.jina.ai/https://programming.kalx.berkeley.edu/KALX/',timezone:'America/Los_Angeles',stationCode:'KALX'}, 
   },
   {
     name: 'WNUR 89.3', category: 'campus', label: 'Northwestern · College radio',
@@ -154,7 +154,7 @@ export const stations: Station[] = [
     description: 'Les sélections étudiantes de Boston, entre R&B, hip-hop, indie, pop et découvertes.',
     url: 'https://wrbbradio.org/',
     stream: 'https://audio-edge-qse4n.yyz.g.radiomast.io/dafd1179-5404-4939-9c1c-a014c6964254',
-    metadata: {provider:'spinitron-reader',endpoint:'https://r.jina.ai/https://spinitron.com/WRBB/',timezone:'America/New_York'}, 
+    metadata: {provider:'spinitron-reader',endpoint:'https://r.jina.ai/https://spinitron.com/WRBB/',timezone:'America/New_York',stationCode:'WRBB'}, 
   },
   {
     name: 'WFMU', category: 'campus', label: 'New Jersey · Indépendante',
@@ -168,7 +168,7 @@ export const stations: Station[] = [
     description: 'Soul, funk, hip-hop, jazz et sélection musicale libre de Santa Cruz.',
     url: 'https://kzsc.org/listen/',
     stream: 'https://kzscfms1-geckohost.radioca.st/kzschigh',
-    metadata: {provider:'spinitron-reader',endpoint:'https://r.jina.ai/https://spinitron.com/KZSC/',timezone:'America/Los_Angeles'}, 
+    metadata: {provider:'spinitron-reader',endpoint:'https://r.jina.ai/https://spinitron.com/KZSC/',timezone:'America/Los_Angeles',stationCode:'KZSC'}, 
   },
   {
     name: 'WXYC 89.3', category: 'campus', label: 'UNC Chapel Hill · College radio',
