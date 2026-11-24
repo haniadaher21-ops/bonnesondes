@@ -1,6 +1,7 @@
 import hashlib
 import json
 import tempfile
+from datetime import date
 import unittest
 from pathlib import Path
 
@@ -13,6 +14,7 @@ spec.loader.exec_module(module)
 EXPECTED_FOLDER = module.EXPECTED_FOLDER
 plan_new_images = module.plan_new_images
 apply_images = module.apply_images
+next_monday_paris = module.next_monday_paris
 
 
 class DriveImageImporterTests(unittest.TestCase):
@@ -30,6 +32,11 @@ class DriveImageImporterTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
+    def test_new_files_are_eligible_from_next_monday_only(self):
+        self.assertEqual(next_monday_paris(date(2026, 11, 23)), "2026-11-30")
+        self.assertEqual(next_monday_paris(date(2026, 11, 24)), "2026-11-30")
+        self.assertEqual(next_monday_paris(date(2026, 11, 29)), "2026-11-30")
+
     def test_new_image_is_added_only_once_and_preserves_old_records(self):
         new = plan_new_images([self.sample], self.manifest, self.assets)
         self.assertEqual(len(new), 1)
@@ -38,6 +45,7 @@ class DriveImageImporterTests(unittest.TestCase):
         record = self.manifest["images"][0]
         self.assertTrue((self.assets / (record["id"] + ".jpg")).exists())
         self.assertEqual(record["sourceName"], "new illustration.png")
+        self.assertRegex(record["availableFromWeek"], r"^20[0-9]{2}-[0-9]{2}-[0-9]{2}$")
         self.assertEqual(record["sourceSha256"], hashlib.sha256(self.sample.read_bytes()).hexdigest())
         self.assertEqual(plan_new_images([self.sample], self.manifest, self.assets), [])
         self.assertEqual(len(json.loads(self.manifest_path.read_text())["images"]), 1)
