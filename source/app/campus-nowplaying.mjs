@@ -104,3 +104,37 @@ export function parseKcrwNowPlaying(payload, now=new Date()) {
     kind:'last-confirmed',playedAt:normalize(row.time),
   };
 }
+
+
+// WXYC's public flowsheet is the DJ-entered broadcast log. Use the most
+// recent track only when its show hasn't ended, and never call a show title
+// or talkset a song. Jina is used only as a CORS-safe pass-through for JSON.
+export function parseWxycReader(text, now=new Date()) {
+  if(typeof text!=='string') return null;
+  const marker='Markdown Content:';
+  const i=text.indexOf(marker);
+  if(i<0)return null;
+  let payload;
+  try{payload=JSON.parse(text.slice(i+marker.length).trim());}
+  catch{return null;}
+  const entries=payload?.entries;
+  if(!Array.isArray(entries)||!entries.length)return null;
+  const newest=[...entries].sort((a,b)=>Date.parse(b.add_time)-Date.parse(a.add_time));
+  // A just-ended show cannot donate its last song to a new, unlogged show.
+  const latest=newest[0];
+  if(latest?.entry_type==='show_end')return null;
+  for(const row of newest){
+    if(row?.show_id!==latest?.show_id) break;
+    if(row?.entry_type!=='track')continue;
+    const age=now.getTime()-Date.parse(row.add_time);
+    if(!Number.isFinite(age)||age< -120_000 || age>40*60_000)return null;
+    const artist=normalize(row.artist_name),title=normalize(row.track_title);
+    if(!artist||!title ||/^(unknown|station|unidentified)$/i.test(title))return null;
+    return {
+      title,artist,artwork:safeArtwork(row.artwork_url),
+      playedAt:new Intl.DateTimeFormat('fr-FR',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit'}).format(new Date(row.add_time)),
+      kind:'last-confirmed',
+    };
+  }
+  return null;
+}
