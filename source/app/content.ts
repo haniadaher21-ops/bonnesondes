@@ -84,7 +84,7 @@ const fipStreams: Record<number, string> = {
 };
 const fip = (name: string, station: number, description: string): Station => ({
   name, label: 'Radio France', description, url: 'https://www.radiofrance.fr/fip',
-  stream: 'https://icecast.radiofrance.fr/' + fipStreams[station] + '-midfi.mp3?id=openapi',
+  stream: 'https://stream.radiofrance.fr/' + fipStreams[station] + '/' + fipStreams[station] + '_hifi.m3u8',
   metadata: { provider: 'radio-france', endpoint: 'https://api.radiofrance.fr/livemeta/pull/' + station },
 });
 
@@ -92,7 +92,7 @@ export const stations: Station[] = [
   {
     name: 'FIP', label: 'Radio France', description: 'Une radio parisienne à la discothèque éclectique.',
     url: 'https://www.radiofrance.fr/fip',
-    stream: 'https://icecast.radiofrance.fr/fip-midfi.mp3?id=openapi',
+    stream: 'https://stream.radiofrance.fr/fip/fip_hifi.m3u8',
     metadata: { provider: 'radio-france', endpoint: 'https://api.radiofrance.fr/livemeta/pull/7' },
   },
   { name: 'NTS 1', label: 'NTS', description: 'Le premier canal de NTS en direct.', url: 'https://www.nts.live/', stream: 'https://stream-relay-geo.ntslive.net/stream',
