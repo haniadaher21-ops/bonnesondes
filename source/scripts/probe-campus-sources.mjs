@@ -1,24 +1,17 @@
-import {parseSpinitronReader,parseKcrwNowPlaying,parseWxycReader} from '../app/campus-nowplaying.mjs';
-const stations=[
-  ['KCRW','https://tracklist-api.kcrw.com/Music/all/1','kcrw'],
-  ['KALX','https://r.jina.ai/https://programming.kalx.berkeley.edu/KALX/','America/Los_Angeles'],
-  ['WRBB','https://r.jina.ai/https://spinitron.com/WRBB/','America/New_York'],
-  ['KZSC','https://r.jina.ai/https://spinitron.com/KZSC/','America/Los_Angeles'],
-  ['WXYC','https://r.jina.ai/https://api.wxyc.org/flowsheet?limit=30','wxyc'],
+const urls=[
+ ['spinitron-script','https://spinitron.com/static/js/widget.js'],
+ ['widget-kalx','https://widgets.spinitron.com/widget/now-playing-v2?station=KALX&num=1&cover=1'],
+ ['widget-wrbb','https://widgets.spinitron.com/widget/now-playing-v2?station=WRBB&num=1&cover=1'],
+ ['widget-kzsc','https://widgets.spinitron.com/widget/now-playing-v2?station=KZSC&num=1&cover=1'],
+ ['spinitron-page','https://spinitron.com/KALX/'],
 ];
-const time=new Date();
-await Promise.all(stations.map(async ([station,url,provider])=>{
- try {
-   const response=await fetch(url,{signal:AbortSignal.timeout(15000),headers:{Origin:'https://haniadaher21-ops.github.io',
-     ...(provider==='kcrw'?{}:{'X-Cache-Tolerance':'0','X-Respond-With':'markdown'})}});
-   let track=null;
-   if(response.ok){
-     if(provider==='kcrw')track=parseKcrwNowPlaying(await response.json(),time);
-     else if(provider==='wxyc')track=parseWxycReader(await response.text(),time);
-     else track=parseSpinitronReader(await response.text(),provider,time);
-   }
-   console.log('REAL_RADIO_VALIDATION '+JSON.stringify({station,status:response.status,
-     track:track?{title:track.title,artist:track.artist,kind:track.kind,playedAt:track.playedAt,
-       artworkVerified:Boolean(track.artwork)}:null,checkedAt:time.toISOString()}));
- } catch(error){console.log('REAL_RADIO_VALIDATION '+JSON.stringify({station,error:String(error)}))}
+await Promise.all(urls.map(async([name,url])=>{
+try{
+const r=await fetch(url,{signal:AbortSignal.timeout(12000),headers:{Accept:'text/html,application/javascript,*/*'}});
+const s=await r.text();
+const snippets=name==='spinitron-script'?
+ [...s.matchAll(/.{0,150}(?:fetch\(|jsonp|ajax|widget\/|http|spinitron|createElement|callback|xhr|XMLHttpRequest|jQuery).{0,170}/ig)].slice(0,25).map(m=>m[0]):
+ [...s.matchAll(/.{0,100}(?:data-spin|spin-title|spin-artist|track|artist|album|image|spinitron).{0,210}/ig)].slice(0,17).map(m=>m[0]);
+console.log('SPINITRON_WIDGET '+JSON.stringify({name,status:r.status,type:r.headers.get('content-type'),cors:r.headers.get('access-control-allow-origin'),len:s.length,start:s.slice(0,1200),snippets}).slice(0,9000));
+}catch(e){console.log('SPINITRON_WIDGET '+JSON.stringify({name,error:String(e)}))}
 }));
