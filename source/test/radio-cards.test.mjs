@@ -10,7 +10,7 @@ const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
 test('all radios including Nova can show identifiable songs in the cards', () => {
   assert.match(journal, /<RadioTrack metadata=\{item\.metadata\} compact/);
   assert.doesNotMatch(journal, /item\.metadata\.provider !== 'nova-page'/);
-  assert.match(radio, /isNova \? 'DERNIER TITRE DIFFUSÉ'/);
+  assert.match(radio, /track\?\.kind==='last-confirmed'/);
   assert.match(radio, /À \{track\.playedAt\}, selon Nova/);
   assert.match(journal, /<RadioTrack metadata=\{item\.metadata\} compact/);
   assert.match(journal, /<RadioTrack metadata=\{item\.metadata\} compact/);
