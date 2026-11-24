@@ -121,19 +121,19 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
   const found = catalogueArtwork?.key === artKey ? catalogueArtwork.result : null;
   const matchedArtwork = found?.artwork && !failedUrls.includes(found.artwork) ? found.artwork : undefined;
   const displayedArtwork = directArtwork || matchedArtwork;
-  const usingCatalogue = isNova && !directArtwork && !!matchedArtwork;
+  const usingCatalogue = (isNova || isCampusSource) && !directArtwork && !!matchedArtwork;
   const trackForSave = track ? { ...track, artwork: displayedArtwork } : null;
 
   // A new image is only searched for if Nova has no usable official cover,
   // or if the official image fails to load in the browser.
   useEffect(() => {
-    if (!isNova || !track?.artist || directArtwork || catalogueArtwork?.key === artKey) return;
+    if ((!isNova && !isCampusSource) || !track?.artist || directArtwork || catalogueArtwork?.key === artKey) return;
     let mounted = true;
     void findNovaCatalogueArtwork(track.artist, track.title).then(result => {
       if (mounted) setCatalogueArtwork({ key: artKey, result });
     });
     return () => { mounted = false; };
-  }, [isNova, track?.artist, track?.title, directArtwork, artKey, catalogueArtwork?.key]);
+  }, [isNova, isCampusSource, track?.artist, track?.title, directArtwork, artKey, catalogueArtwork?.key]);
 
   const markArtworkFailed = () => {
     if (!displayedArtwork) return;
