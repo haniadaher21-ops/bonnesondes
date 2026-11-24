@@ -182,6 +182,10 @@ nav .library-nav { display: flex; align-items: center; gap: 7px; padding: 7px 12
 .station-track-time { color: var(--muted); font: 500 10px/1.35 var(--mono); margin-top: 6px; }
 .station-track-unavailable { font-size: 13px; color: var(--muted); }
 .station-now-playing .radio-save { margin-top: 10px; font-size: 12px; text-align: left; }
+.radio-spotify-link { display: inline-flex; align-items: center; gap: 5px; margin-top: 9px; font-size: 12px; line-height: 1.4; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; color: var(--ink); }
+.radio-spotify-link:hover, .radio-spotify-link:focus-visible { color: var(--accent); }
+.station-track-copy .radio-spotify-link { max-width: 100%; }
+
 .shelf-toolbar { display: flex; align-items: end; justify-content: space-between; gap: 15px; flex-wrap: wrap; margin-bottom: 15px; }
 .filters { display: flex; gap: 11px; flex-wrap: wrap; }
 .filter, .add-form label, .feedback label { display: grid; align-content: start; gap: 5px; color: var(--muted); font-size: 12px; font-weight: 600; }
