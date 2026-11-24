@@ -590,10 +590,8 @@ export default function Journal() {
               </div>
             </div>
             <p className="eyebrow">{item.label}</p><h2>{item.name}</h2>
-            {item.metadata
-              ? <RadioTrack metadata={item.metadata} compact
-                  saveTrack={track => saveButton(currentRadioTrack(track, item.name), 'text-link radio-save', true)} />
-              : <p className="station-description">{item.description}</p>}
+            <RadioTrack metadata={item.metadata} compact
+              saveTrack={track => saveButton(currentRadioTrack(track, item.name), 'text-link radio-save', true)} />
             {item.stream || item.embed
               ? <button className="text-link" onClick={() => tune(item)}><Play size={14} /> Écouter</button>
               : <SourceLink item={item}>Écouter sur le site de la radio</SourceLink>}
