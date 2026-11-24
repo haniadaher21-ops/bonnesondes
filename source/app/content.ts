@@ -78,6 +78,7 @@ export interface Station {
   metadata?: RadioMetadata;
   embed?: string;
   category?: 'campus';
+  playlistUrl?: string;
 }
 // Official Radio France Open API liveStream values for the themed FIP channels.
 const fipStreams: Record<number, string> = {
@@ -146,6 +147,7 @@ export const stations: Station[] = [
     description: 'Rock indépendant, jazz, hip-hop et expérimentations musicales depuis Evanston.',
     url: 'https://wnur.northwestern.edu/stream/',
     stream: 'https://stream.rcs.revma.com/w4pmmfkdx4zuv',
+    playlistUrl: 'https://www.wnur.org/recent-playlists',
   },
   {
     name: 'WRBB 104.9', category: 'campus', label: 'Northeastern · College radio',
@@ -159,6 +161,7 @@ export const stations: Station[] = [
     description: 'Radio freeform culte : raretés, musique sans frontières et programmes très personnels.',
     url: 'https://wfmu.org/',
     stream: 'https://stream0.wfmu.org/freeform-128k',
+    playlistUrl: 'https://wfmu.org/now-playing-widget.html',
   },
   {
     name: 'KZSC 88.1', category: 'campus', label: 'UC Santa Cruz · College radio',
