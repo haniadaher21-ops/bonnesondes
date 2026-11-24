@@ -61,9 +61,11 @@ test('a radio begins playing on the same click and never waits for a newly mount
   assert.ok(!journal.includes('<audio key={station.stream}'));
 });
 
-test('the four themed FIP stations use their documented direct Radio France streams', () => {
+test('all five FIP stations use the official HLS feeds rather than ad-preroll MP3 streams', () => {
   for (const slug of ['fiprock', 'fipjazz', 'fipgroove', 'fipelectro'])
     assert.ok(content.includes("'" + slug + "'"));
-  assert.ok(content.includes("stream: 'https://icecast.radiofrance.fr/' + fipStreams[station] + '-midfi.mp3?id=openapi'"));
+  assert.ok(content.includes("stream: 'https://stream.radiofrance.fr/' + fipStreams[station] + '/' + fipStreams[station] + '_hifi.m3u8'"));
+  assert.ok(content.includes("stream: 'https://stream.radiofrance.fr/fip/fip_hifi.m3u8'"));
+  assert.doesNotMatch(content, /icecast\.radiofrance\.fr/);
   assert.doesNotMatch(content, /embed: 'https:\/\/embed\.radiofrance\.fr\/fip\/player\?id_station=' \+ station/);
 });
