@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { ArrowDown, ArrowRight, ArrowUpRight, Bookmark, Disc3, Headphones, Heart, Maximize2, Menu, Minimize2, Music2, Play, Plus, Radio, ThumbsDown, X } from 'lucide-react';
+import { ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, Bookmark, Disc3, GripVertical, Headphones, Heart, Maximize2, Menu, Minimize2, Music2, Play, Plus, Radio, ThumbsDown, X } from 'lucide-react';
 import { archive, catalog, issues, live, parsePlaylist, personalPlaylist, playlists, stations, type Format, type Recommendation } from './content';
 
 import { selectEdition } from '../editorial/edition.mjs';
@@ -11,6 +11,7 @@ import ProfileSync from './profile-sync';
 import TastePreferences from './taste-preferences';
 import { playableYouTubeId, youtubeEmbedSrc, youtubeThumbnailCandidates } from './youtube-player.mjs';
 import { collectionRecommendations, restoreLibrary, toggleSaved, libraryStorageKey } from './library-store.mjs';
+import { moveStationBefore, normalizeStationOrder, shiftStation, stationOrderStorageKey } from './station-order.mjs';
 
 const pages = [
   ['rotation', 'Sélection'], ['radio', 'Radios'], ['playlists', 'Playlists'],
@@ -169,6 +170,10 @@ export default function Journal() {
   const [activeMix, setActiveMix] = useState<Recommendation | null>(null);
   const [videoExpanded, setVideoExpanded] = useState(false);
   const [station, setStation] = useState(stations[0]);
+  const [stationOrder, setStationOrder] = useState<string[]>(stations.map(item => item.name));
+  const [stationOrderReady, setStationOrderReady] = useState(false);
+  const draggingStation = useRef<string | null>(null);
+  const [stationDropTarget, setStationDropTarget] = useState<string | null>(null);
   const [radioOpen, setRadioOpen] = useState(false);
   const [audioError, setAudioError] = useState(false);
   const radioAudioRef = useRef<HTMLAudioElement>(null);
@@ -217,6 +222,24 @@ export default function Journal() {
   }, []);
 
   useEffect(() => {
+    try {
+      const stored = localStorage.getItem(stationOrderStorageKey);
+      const parsed = stored ? JSON.parse(stored) : [];
+      setStationOrder(normalizeStationOrder(stations.map(item => item.name), parsed));
+    } catch {
+      setStationOrder(stations.map(item => item.name));
+      setStorageMessage('Impossible de retrouver l’ordre personnalisé des radios.');
+    }
+    setStationOrderReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!stationOrderReady) return;
+    try { localStorage.setItem(stationOrderStorageKey, JSON.stringify(stationOrder)); }
+    catch { setStorageMessage('Impossible d’enregistrer l’ordre des radios sur ce navigateur.'); }
+  }, [stationOrder, stationOrderReady]);
+
+  useEffect(() => {
     if (!ready) return;
     try { localStorage.setItem(storageKey, JSON.stringify(library)); }
     catch { setStorageMessage('Ce navigateur n’a pas pu enregistrer les changements apportés à ta collection.'); }
@@ -252,6 +275,10 @@ export default function Journal() {
   const favoriteCurator = (name: string) => setLibrary(state => ({
     ...state, curators: state.curators.includes(name) ? state.curators.filter(value => value !== name) : [...state.curators, name],
   }));
+
+  const orderedStations = stationOrder
+    .map(name => stations.find(item => item.name === name))
+    .filter((item): item is typeof stations[number] => Boolean(item));
 
   const shelf = editionShelf(issues, issue, 'playlists', [...playlists, ...library.playlists]);
   const liveShelf = editionShelf(issues, issue, 'live', live);
@@ -503,9 +530,57 @@ export default function Journal() {
 
       {page === 'radio' && <>
         <PageHeading label="EN DIRECT" title="Radios" />
+        <div className="station-reorder-toolbar">
+          <p>Fais glisser <GripVertical size={15} aria-hidden="true" /> pour déplacer une radio. Sur mobile ou au clavier, utilise les flèches.</p>
+          <button className="text-link" type="button" onClick={() =>
+            setStationOrder(stations.map(item => item.name))} disabled={!stationOrderReady}>
+            Réinitialiser l’ordre
+          </button>
+        </div>
         <div className="station-grid">
-          {stations.map(item => <article className="station" key={item.name}>
-            <Radio size={22} /><p className="eyebrow">{item.label}</p><h2>{item.name}</h2>
+          {orderedStations.map((item, index) => <article className={
+            'station' + (stationDropTarget === item.name ? ' station-drop-target' : '')
+          } key={item.name}
+            onDragOver={event => {
+              if (!draggingStation.current || draggingStation.current === item.name) return;
+              event.preventDefault();
+              event.dataTransfer.dropEffect = 'move';
+              setStationDropTarget(item.name);
+            }}
+            onDrop={event => {
+              if (!draggingStation.current) return;
+              event.preventDefault();
+              setStationOrder(order => moveStationBefore(order, draggingStation.current!, item.name));
+              draggingStation.current = null;
+              setStationDropTarget(null);
+            }}>
+            <div className="station-card-top">
+              <Radio size={22} aria-hidden="true" />
+              <div className="station-order-controls">
+                <button type="button" className="station-drag-handle" draggable={stationOrderReady}
+                  title={'Faire glisser ' + item.name + ' pour la déplacer'}
+                  aria-label={'Faire glisser ' + item.name + ' pour la déplacer'}
+                  onDragStart={event => {
+                    draggingStation.current = item.name;
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', item.name);
+                  }}
+                  onDragEnd={() => { draggingStation.current = null; setStationDropTarget(null); }}>
+                  <GripVertical size={19} aria-hidden="true" />
+                </button>
+                <button type="button" className="station-shift" aria-label={'Monter ' + item.name}
+                  title="Monter" disabled={!stationOrderReady || index === 0}
+                  onClick={() => setStationOrder(order => shiftStation(order, item.name, -1))}>
+                  <ArrowUp size={16} aria-hidden="true" />
+                </button>
+                <button type="button" className="station-shift" aria-label={'Descendre ' + item.name}
+                  title="Descendre" disabled={!stationOrderReady || index === orderedStations.length - 1}
+                  onClick={() => setStationOrder(order => shiftStation(order, item.name, 1))}>
+                  <ArrowDown size={16} aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+            <p className="eyebrow">{item.label}</p><h2>{item.name}</h2>
             {item.metadata
               ? <RadioTrack metadata={item.metadata} compact
                   saveTrack={track => saveButton(currentRadioTrack(track, item.name), 'text-link radio-save', true)} />
