@@ -19,3 +19,12 @@ for(const [station,url,zone] of cases){
      cover:Boolean(result?.artwork),kind:result?.kind,playedAt:result?.playedAt}));
  }catch(error){console.log('CHECK_CAMPUS',JSON.stringify({station,error:String(error.message??error).slice(0,100)}));}
 }
+
+for (const url of ['https://www.radiocampusparis.org/stream/','https://www.radiocampusparis.org/stream']) {
+  try {
+    const response=await fetch(url,{redirect:'follow',signal:AbortSignal.timeout(10000)});
+    console.log('STREAM_CAMPUS',JSON.stringify({status:response.status,url:response.url,
+      mime:response.headers.get('content-type'),length:response.headers.get('content-length')}));
+    await response.body?.cancel();
+  }catch(error){console.log('STREAM_CAMPUS',JSON.stringify({url,error:String(error.message??error)}));}
+}
