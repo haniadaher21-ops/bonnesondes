@@ -50,7 +50,7 @@ test('Campus radios only live in the second tab; no generic covers are fabricate
   const track=readFileSync(new URL('../app/radio-track.tsx',import.meta.url),'utf8');
   assert.match(page,/\['campus', 'Radios Campus'\]/);
   assert.match(page,/page === 'campus'\s*\? item\.category === 'campus'/);
-  assert.equal((stations.match(/category: 'campus'/g)??[]).length,9);
+  assert.equal((stations.match(/category: 'campus'/g)??[]).length,7);
   assert.match(track,/station-cover-placeholder/);
   assert.match(track,/Titre non confirmé par la station/);
 });
