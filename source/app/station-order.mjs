@@ -30,3 +30,25 @@ export function shiftStation(order, name, delta) {
   [result[from], result[to]] = [result[to], result[from]];
   return result;
 }
+
+/** Keep previous cross-category positions in localStorage but only reorder the
+ * visible group. This is important for visitors who arranged cards before the
+ * campus/main split.
+ */
+export function moveStationWithinGroup(order, groupNames, dragged, target) {
+  const group = new Set(groupNames);
+  if (!group.has(dragged) || !group.has(target)) return order;
+  const visible = order.filter(name => group.has(name));
+  const next = moveStationBefore(visible, dragged, target);
+  let index = 0;
+  return order.map(name => group.has(name) ? next[index++] : name);
+}
+
+export function shiftStationWithinGroup(order, groupNames, station, delta) {
+  const group = new Set(groupNames);
+  if (!group.has(station)) return order;
+  const visible = order.filter(name => group.has(name));
+  const next = shiftStation(visible, station, delta);
+  let index = 0;
+  return order.map(name => group.has(name) ? next[index++] : name);
+}

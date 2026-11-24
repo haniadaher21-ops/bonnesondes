@@ -162,6 +162,11 @@ nav .library-nav { display: flex; align-items: center; gap: 7px; padding: 7px 12
 .station-track-layout { display: flex; align-items: flex-start; gap: 12px; width: 100%; min-width: 0; }
 .station-track-copy { flex: 1; min-width: 0; }
 .station-cover { display: block; width: 88px; height: 88px; flex: none; object-fit: cover; border: 1px solid #c6b6a2; background: #e7d9c4; }
+.station-cover-placeholder { width: 88px; height: 88px; flex: none; border: 1px solid #c6b6a2; background: #e7d9c4; color: #8f7f6b; display: grid; place-items: center; }
+.station-now-playing { display: flex; flex-direction: column; }
+.station-now-playing > .station-track-layout { flex: 1; }
+.station-track-unavailable { align-self: start; min-width: 0; }
+
 .station-cover-group { display: grid; justify-items: start; flex: none; gap: 2px; }
 .station-cover-store { font: 500 9px/1.2 var(--mono); color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
 .station-cover-store:hover { color: var(--accent); }
@@ -383,3 +388,6 @@ input[type=checkbox] { accent-color: var(--accent); }
 .mix-dock-soundcloud { display: block; width: 100%; height: 166px; border: 0; background: #fff; }
 .mix-dock-error { margin: 0 12px 10px; font-size: 12px; color: #f0af92; }
 .mix-launch .video-launch-play { background: #bd2724; }
+
+@media (max-width: 780px) { .station-cover-placeholder { width: 72px; height: 72px; } }
+@media (max-width: 540px) { .station-cover-placeholder { width: 82px; height: 82px; } }

@@ -21,7 +21,7 @@ test('radio cover uses broadcaster artwork or a verified catalogue fallback',()=
   assert.match(player,/visual\?: string/);
   assert.match(player,/artwork: radioArtworkUrl\(current.visual\)/);
   assert.match(player,/artwork: radioArtworkUrl\(song.art\)/);
-  assert.match(player,/displayedArtwork && <div className="station-cover-group">/);
+  assert.match(player,/displayedArtwork \? <div className="station-cover-group">/);
   assert.match(player,/artwork=\{displayedArtwork\}/);
   assert.match(player,/className="station-cover"/);
   assert.match(player,/onFailure=\{markArtworkFailed\}/);
@@ -49,6 +49,6 @@ test('album covers accompany saved radio songs while station provenance and NTS 
   assert.match(player,/!isNts && trackForSave && saveTrack\(trackForSave\)/);
   assert.match(player,/isNts \? 'ÉMISSION EN DIRECT'/);
   assert.doesNotMatch(page,/item.metadata.provider !== 'nova-page'/);
-  assert.match(page,/item.metadata\s+\? <RadioTrack/);
-  assert.match(page,/<p className="station-description">\{item.description\}<\/p>/);
+  assert.match(page,/<RadioTrack metadata=\{item\.metadata\} compact/);
+  assert.match(player,/station-cover-placeholder/);
 });

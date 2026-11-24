@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { moveStationBefore, normalizeStationOrder, shiftStation, stationOrderStorageKey } from '../app/station-order.mjs';
+import { moveStationBefore, moveStationWithinGroup, normalizeStationOrder, shiftStation, shiftStationWithinGroup, stationOrderStorageKey } from '../app/station-order.mjs';
 
 test('saved station order removes duplicates and obsolete names, appends new radios', () => {
   assert.deepEqual(normalizeStationOrder(['FIP', 'NTS 1', 'KALX 90.7', 'WFMU'],
@@ -35,14 +35,24 @@ test('all nine approved college and independent radios are represented', () => {
   assert.ok(stations.includes('https://streams.kcrw.com/e24_mp3'));
   assert.ok(stations.includes('https://stream0.wfmu.org/freeform-128k'));
   assert.ok(stations.includes('https://worldwide-fm.radiocult.fm/stream'));
-  assert.ok(stations.includes('Only an old HTTP stream was verifiable'));
+  assert.ok(stations.includes("stream: 'https://www.radiocampusparis.org/stream/'"));
 });
 
 test('radio UI includes drag handle, keyboard alternatives and local persistence', () => {
   const ui = readFileSync(new URL('../app/journal.tsx', import.meta.url), 'utf8');
-  for (const fragment of ['station-drag-handle', 'onDragStart=', 'onDrop=', 'moveStationBefore',
-    'shiftStation', 'stationOrderStorageKey', 'Réinitialiser l’ordre', 'orderedStations.map',
+  for (const fragment of ['station-drag-handle', 'onDragStart=', 'onDrop=', 'moveStationWithinGroup',
+    'shiftStationWithinGroup', 'stationOrderStorageKey', 'Réinitialiser l’ordre', 'visibleStations.map',
     'const dragged = draggingStation.current;']) {
     assert.ok(ui.includes(fragment), fragment);
   }
+});
+
+test('moving campus stations cannot reorder existing FIP and Nova stations', () => {
+  const order=['FIP','KALX 90.7','Radio Nova','KZSC 88.1','NTS 1','WFMU'];
+  const campus=['KALX 90.7','KZSC 88.1','WFMU'];
+  assert.deepEqual(moveStationWithinGroup(order,campus,'WFMU','KALX 90.7'),
+    ['FIP','WFMU','Radio Nova','KALX 90.7','NTS 1','KZSC 88.1']);
+  assert.deepEqual(shiftStationWithinGroup(order,campus,'KALX 90.7',1),
+    ['FIP','KZSC 88.1','Radio Nova','KALX 90.7','NTS 1','WFMU']);
+  assert.deepEqual(moveStationWithinGroup(order,campus,'FIP','KALX 90.7'),order);
 });
