@@ -6,7 +6,13 @@ from pathlib import Path
 
 from PIL import Image
 
-from sync_drive_images import EXPECTED_FOLDER, plan_new_images, apply_images
+import importlib.util
+spec = importlib.util.spec_from_file_location("sync_drive_images", Path(__file__).parent / "sync-drive-images.py")
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+EXPECTED_FOLDER = module.EXPECTED_FOLDER
+plan_new_images = module.plan_new_images
+apply_images = module.apply_images
 
 
 class DriveImageImporterTests(unittest.TestCase):
