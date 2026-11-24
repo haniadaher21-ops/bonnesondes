@@ -40,6 +40,7 @@ export const { albums, mixes, playlists, live, archive } = legacyCatalog as Reco
 
 interface Edition {
   number: string;
+  coverImageId?: string;
   startsOn: string;
   publishedAt?: string;
   label: string;

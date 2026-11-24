@@ -5,6 +5,7 @@ import { ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, Bookmark, Disc3, GripVert
 import { archive, catalog, issues, live, parsePlaylist, personalPlaylist, playlists, stations, type Format, type Recommendation } from './content';
 
 import { selectEdition } from '../editorial/edition.mjs';
+import { editionImage } from '../editorial/edition-art.mjs';
 import { editionShelf } from '../editorial/shelves.mjs';
 import RadioTrack, { type OnAir } from './radio-track';
 import { isHlsStream, loadHlsLibrary, supportsNativeHls, type HlsRadioPlayer } from './hls-radio';
@@ -49,6 +50,13 @@ const dateLabel = (value: string) => new Intl.DateTimeFormat('fr-FR', {
   dateStyle: 'medium', timeZone: 'UTC',
 }).format(new Date(value + 'T12:00:00Z'));
 const displayMinutes = (minutes: number) => Math.ceil(minutes) + ' min';
+const editionCover = (coverImageId?: string) => {
+  const art = editionImage(coverImageId);
+  return {
+    src: (process.env.NEXT_PUBLIC_BASE_PATH ?? '') + (art?.file ?? '/art/mix-semaine.jpg'),
+    alt: art?.alt ?? 'Illustration musicale de l’édition',
+  };
+};
 function SourceLink({ item, children }: { item: { url: string }; children: ReactNode }) {
   return <a className="text-link" href={item.url} target="_blank" rel="noopener noreferrer">{children}<ArrowUpRight size={15} /></a>;
 }
@@ -516,7 +524,8 @@ export default function Journal() {
             <a className="text-link" href="#essential-albums">Voir la sélection <ArrowDown size={15} /></a></div>
         </header>
         <article className="feature">
-          <div className="feature-art"><img src={(process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/art/mix-semaine.jpg'} alt="Illustration d’un chien DJ à une platine vinyle" /></div>
+          <div className="feature-art"><img key={issue.coverImageId ?? issue.number}
+            src={editionCover(issue.coverImageId).src} alt={editionCover(issue.coverImageId).alt} /></div>
           <div className="feature-copy">
             <p className="eyebrow">Mix de la semaine</p>
             <h2>{featured.title}</h2>
@@ -548,6 +557,8 @@ export default function Journal() {
             <p className="eyebrow">ÉDITION N° {archivedIssue.number}{archivedIssue.startsOn === issue.startsOn ? ' · ÉDITION ACTUELLE' : ''}</p>
             <h2>Semaine du {dateLabel(archivedIssue.startsOn)}</h2>
             <p>{archivedIssue.label}</p>
+            <img className="edition-detail-cover" src={editionCover(archivedIssue.coverImageId).src}
+              alt={editionCover(archivedIssue.coverImageId).alt} loading="lazy" />
           </div>
           <Section label="DISQUES" title="Albums recommandés">{cards(archivedIssue.albums)}</Section>
           <Section label="SUR LES ONDES" title="Mix de la semaine">
@@ -562,6 +573,8 @@ export default function Journal() {
               className="edition-list-item" href={'#editions/' + edition.startsOn}
               aria-label={'Voir l’édition du ' + dateLabel(edition.startsOn)}>
               <span className="edition-list-number">N° {edition.number}</span>
+              <img className="edition-list-cover" src={editionCover(edition.coverImageId).src}
+                alt="" loading="lazy" />
               <span className="edition-list-main">
                 <strong>{dateLabel(edition.startsOn)}</strong>
                 <span>{edition.label}</span>

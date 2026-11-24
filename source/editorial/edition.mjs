@@ -1,3 +1,5 @@
+import { editionImage } from './edition-art.mjs';
+
 /** @param {Date} date */
 export function parisDate(date) {
   return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Paris' }).format(date);
@@ -45,6 +47,9 @@ export function validateEdition(edition, earlier = [], catalog = []) {
   if (typeof number !== 'string' || !/^\d{3,}$/.test(number) || !Number.isSafeInteger(Number(number))
     || Number(number) !== Number(previous?.number ?? 1) + 1) errors.push('Numéro d’édition suivant requis.');
   if (!text(label)) errors.push('Libellé manquant.');
+  if (edition.coverImageId !== undefined && !editionImage(edition.coverImageId)) {
+    errors.push('Illustration d’édition inconnue.');
+  }
   if (!isoDate(startsOn) || (previous && startsOn <= previous.startsOn)) errors.push('Date ISO postérieure à l’édition précédente requise.');
   const start = Date.parse(startsOn);
   const window = Date.parse(albumWindowStart);
