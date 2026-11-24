@@ -1,5 +1,6 @@
 import { open, rename, unlink } from 'node:fs/promises';
 import { validateEdition } from '../editorial/edition.mjs';
+import { nextEditionImageId } from '../editorial/edition-art.mjs';
 import { legacyEdition, legacyItems, publishedFile, readJson } from './editorial-files.mjs';
 
 const [file, approval, ...extra] = process.argv.slice(2);
@@ -13,13 +14,15 @@ let pending;
 try {
   if (approval === '--approve') pending = await open(temporary, 'wx');
   const published = readJson(publishedFile);
+  const candidate = readJson(file);
+  // Manual approvals follow the same image rotation as automatic publication.
+  const draft = { ...candidate, coverImageId: candidate.coverImageId ?? nextEditionImageId([legacyEdition,...published]) };
   const earlier = [legacyEdition];
-  for (const edition of [...published, readJson(file)]) {
+  for (const edition of [...published, draft]) {
     const errors = validateEdition(edition, earlier, legacyItems);
     if (errors.length) throw new Error(errors.join('\n'));
     earlier.push(edition);
   }
-  const draft = earlier.at(-1);
   if (pending) {
     await pending.writeFile(JSON.stringify([...published, draft], null, 2) + '\n');
     await pending.close();
