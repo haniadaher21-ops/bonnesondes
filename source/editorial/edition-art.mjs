@@ -26,3 +26,53 @@ export function nextEditionImageId(earlier, images = imageBank.images) {
 export function editionImagePath(coverImageId) {
   return editionImage(coverImageId)?.file ?? null;
 }
+
+/** The Monday of the current week in Europe/Paris, unaffected by DST. */
+export function mondayInParis(now = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(now);
+  const part = name => Number(parts.find(item => item.type === name)?.value);
+  const day = new Date(Date.UTC(part('year'), part('month') - 1, part('day')));
+  const offset = (day.getUTCDay() + 6) % 7;
+  day.setUTCDate(day.getUTCDate() - offset);
+  return day.toISOString().slice(0, 10);
+}
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const START_MONDAY = '2026-11-23';
+const FIRST_WEEK_IMAGE = 'disco-night';
+const PREVIOUS_WEEK_IMAGE = 'dog-dj';
+
+/**
+ * Image on the homepage changes every Monday at 00:00 Paris independently
+ * of whether a new music edition was published.
+ *
+ * The bank is append-only. New Drive uploads become eligible the following
+ * Monday (availableFromWeek); adding them midweek cannot change a cover
+ * already being displayed. All unused photos are shown before repeating.
+ */
+export function weeklyHomeImageId(now = new Date(), images = imageBank.images) {
+  if (!Array.isArray(images) || !images.length) return null;
+  const monday = mondayInParis(now);
+  const week = Math.floor((Date.parse(monday + 'T00:00:00Z') - Date.parse(START_MONDAY + 'T00:00:00Z')) / WEEK_MS);
+  if (week < 0) return images.find(item => item.id === PREVIOUS_WEEK_IMAGE)?.id ?? images[0].id;
+  const initial = images.find(item => item.id === FIRST_WEEK_IMAGE);
+  const ordered = initial ? [initial, ...images.filter(item => item.id !== FIRST_WEEK_IMAGE)] : images;
+  const used = new Set();
+  let previous = null;
+  let chosen = null;
+  for (let n = 0; n <= week; n++) {
+    const weekKey = new Date(Date.parse(START_MONDAY + 'T00:00:00Z') + n * WEEK_MS).toISOString().slice(0, 10);
+    const available = ordered.filter(item => !item.availableFromWeek || item.availableFromWeek <= weekKey);
+    if (!available.length) continue;
+    chosen = available.find(item => !used.has(item.id));
+    if (!chosen) {
+      used.clear();
+      chosen = available.find(item => item.id !== previous) ?? available[0];
+    }
+    used.add(chosen.id);
+    previous = chosen.id;
+  }
+  return chosen?.id ?? ordered[0].id;
+}
