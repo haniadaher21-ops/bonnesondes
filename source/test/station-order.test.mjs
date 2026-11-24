@@ -41,7 +41,7 @@ test('all nine approved college and independent radios are represented', () => {
 test('radio UI includes drag handle, keyboard alternatives and local persistence', () => {
   const ui = readFileSync(new URL('../app/journal.tsx', import.meta.url), 'utf8');
   for (const fragment of ['station-drag-handle', 'onDragStart=', 'onDrop=', 'moveStationWithinGroup',
-    'shiftStationWithinGroup', 'stationOrderStorageKey', 'Réinitialiser l’ordre', 'orderedStations.map',
+    'shiftStationWithinGroup', 'stationOrderStorageKey', 'Réinitialiser l’ordre', 'visibleStations.map',
     'const dragged = draggingStation.current;']) {
     assert.ok(ui.includes(fragment), fragment);
   }
