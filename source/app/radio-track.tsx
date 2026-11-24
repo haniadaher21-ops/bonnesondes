@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Disc3 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { RadioMetadata } from './content';
 import { parseNovaNowPlaying } from './nova-nowplaying.mjs';
 import { radioArtworkUrl } from './radio-artwork.mjs';
 import { findNovaCatalogueArtwork } from './nova-catalogue-artwork.mjs';
+import { parseCampusParisReader, parseRadioCultLive, parseSpinitronReader } from './campus-nowplaying.mjs';
 
 type BroadcastStep = {
   embedType: string;
@@ -18,11 +20,20 @@ type BroadcastStep = {
   visual?: string;
 };
 
-export type OnAir = { title: string; artist?: string; playedAt?: string; artwork?: string };
+export type OnAir = { title: string; artist?: string; playedAt?: string; artwork?: string; kind?: 'last-confirmed' | 'live' };
 
 async function readOnAir(response: Response, metadata: RadioMetadata): Promise<OnAir | null> {
   if (!response.ok) throw new Error('Métadonnées indisponibles');
 
+  if (metadata.provider === 'spinitron-reader') {
+    return parseSpinitronReader(await response.text(),metadata.timezone);
+  }
+  if (metadata.provider === 'campus-paris-reader') {
+    return parseCampusParisReader(await response.text());
+  }
+  if (metadata.provider === 'radiocult-live') {
+    return parseRadioCultLive(await response.json());
+  }
   if (metadata.provider === 'nova-page') {
     return parseNovaNowPlaying(await response.text());
   }
@@ -59,7 +70,7 @@ function BroadcastArtwork({ artwork, title, isNts, onFailure }: {
 }
 
 export default function RadioTrack({ metadata, saveTrack, compact = false }: {
-  metadata: RadioMetadata; saveTrack: (track: OnAir) => ReactNode; compact?: boolean;
+  metadata?: RadioMetadata; saveTrack: (track: OnAir) => ReactNode; compact?: boolean;
 }) {
   const [track, setTrack] = useState<OnAir | null>(null);
   const [loading, setLoading] = useState(true);
@@ -69,6 +80,10 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
   } | null>(null);
 
   useEffect(() => {
+    if (!metadata) {
+      setLoading(false);
+      return;
+    }
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
 
@@ -85,7 +100,7 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
       } catch {
         if (!controller.signal.aborted) { setTrack(null); setLoading(false); }
       } finally {
-        if (!controller.signal.aborted) timer = setTimeout(refresh, metadata.provider === 'nova-page' ? 30_000 : compact ? 30_000 : 15_000);
+        if (!controller.signal.aborted) timer = setTimeout(refresh, ['spinitron-reader','campus-paris-reader'].includes(metadata.provider) ? 120_000 : metadata.provider === 'radiocult-live' ? 60_000 : metadata.provider === 'nova-page' ? 30_000 : compact ? 30_000 : 15_000);
       }
     }
 
@@ -96,9 +111,10 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
     };
   }, [metadata]);
 
-  const isNts = metadata.provider === 'nts';
-  const isNova = metadata.provider === 'nova-page';
-  const artKey = metadata.endpoint + '|' + (track?.artist ?? '') + '|' + (track?.title ?? '');
+  const isNts = metadata?.provider === 'nts';
+  const isNova = metadata?.provider === 'nova-page';
+  const isCampusSource = ['spinitron-reader','campus-paris-reader','radiocult-live'].includes(metadata?.provider ?? '');
+  const artKey = (metadata?.endpoint ?? '') + '|' + (track?.artist ?? '') + '|' + (track?.title ?? '');
   const failedUrls = failedArtwork.key === artKey ? failedArtwork.urls : [];
   const directArtwork = track?.artwork && !failedUrls.includes(track.artwork) ? track.artwork : undefined;
   const found = catalogueArtwork?.key === artKey ? catalogueArtwork.result : null;
@@ -125,27 +141,28 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
       urls: prev.key === artKey ? [...new Set([...prev.urls, displayedArtwork])] : [displayedArtwork],
     }));
   };
-  const cover = displayedArtwork && <div className="station-cover-group">
+  const cover = displayedArtwork ? <div className="station-cover-group">
     <BroadcastArtwork key={displayedArtwork} artwork={displayedArtwork} title={track?.title ?? ''} isNts={isNts}
       onFailure={markArtworkFailed} />
     {usingCatalogue && found?.storeUrl && <a className="station-cover-store" href={found.storeUrl}
       target="_blank" rel="noopener noreferrer" title="Voir ce morceau sur l’iTunes Store">Sur iTunes</a>}
-  </div>;
+  </div> : <div className="station-cover-placeholder" aria-hidden="true"><Disc3 size={31} strokeWidth={1.2} /></div>;
 
   if (compact) {
     return <div className="station-now-playing" aria-live="polite">
-      <p className="eyebrow">{isNts ? 'ÉMISSION EN DIRECT' : isNova ? 'DERNIER TITRE DIFFUSÉ' : 'EN CE MOMENT'}</p>
-      {track ? <div className="station-track-layout">
+      <p className="eyebrow">{isNts ? 'ÉMISSION EN DIRECT' : isNova || track?.kind==='last-confirmed' ? 'DERNIER TITRE IDENTIFIÉ' : isCampusSource ? 'EN DIRECT · SOURCE RADIO' : 'EN CE MOMENT'}</p>
+      <div className="station-track-layout">
         {cover}
         <div className="station-track-copy">
           <strong className="station-track-title">{track.title}</strong>
           {!isNts && track.artist && <p className="station-track-artist">{track.artist}</p>}
           {isNova && track.playedAt && <p className="station-track-time">À {track.playedAt}, selon Nova</p>}
+          {isCampusSource && track.kind==='last-confirmed' && <p className="station-track-time">Dernière diffusion identifiée vers {track.playedAt}, heure locale</p>}
           {!isNts && trackForSave && saveTrack(trackForSave)}
-        </div>
-      </div> : <p className="station-track-unavailable">
-        {loading ? 'Chargement du direct…' : isNts ? 'Émission indisponible pour le moment.' : isNova ? 'Dernier titre Nova indisponible pour le moment.' : 'Titre indisponible pour le moment.'}
-      </p>}
+        </div> : <p className="station-track-unavailable">
+          {loading ? 'Recherche du titre en cours…' : isNts ? 'Émission indisponible pour le moment.' : 'Titre ou pochette non confirmé par la station.'}
+        </p>}
+      </div>}
     </div>;
   }
   return <div className="radio-track" aria-live="polite">
