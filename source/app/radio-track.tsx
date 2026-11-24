@@ -150,19 +150,21 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
 
   if (compact) {
     return <div className="station-now-playing" aria-live="polite">
-      <p className="eyebrow">{isNts ? 'ÉMISSION EN DIRECT' : isNova || track?.kind==='last-confirmed' ? 'DERNIER TITRE IDENTIFIÉ' : isCampusSource ? 'EN DIRECT · SOURCE RADIO' : 'EN CE MOMENT'}</p>
+      <p className="eyebrow">{isNts ? 'ÉMISSION EN DIRECT' : isNova || track?.kind==='last-confirmed'
+        ? 'DERNIER TITRE IDENTIFIÉ' : 'EN CE MOMENT'}</p>
       <div className="station-track-layout">
         {cover}
-        <div className="station-track-copy">
+        {track ? <div className="station-track-copy">
           <strong className="station-track-title">{track.title}</strong>
           {!isNts && track.artist && <p className="station-track-artist">{track.artist}</p>}
           {isNova && track.playedAt && <p className="station-track-time">À {track.playedAt}, selon Nova</p>}
-          {isCampusSource && track.kind==='last-confirmed' && <p className="station-track-time">Dernière diffusion identifiée vers {track.playedAt}, heure locale</p>}
+          {isCampusSource && track.kind==='last-confirmed' && <p className="station-track-time">Dernier relevé vers {track.playedAt}, heure locale</p>}
           {!isNts && trackForSave && saveTrack(trackForSave)}
         </div> : <p className="station-track-unavailable">
-          {loading ? 'Recherche du titre en cours…' : isNts ? 'Émission indisponible pour le moment.' : 'Titre ou pochette non confirmé par la station.'}
+          {loading ? 'Recherche du titre en cours…' : isNts
+            ? 'Émission indisponible pour le moment.' : 'Titre non confirmé par la station pour le moment.'}
         </p>}
-      </div>}
+      </div>
     </div>;
   }
   return <div className="radio-track" aria-live="polite">
