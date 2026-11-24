@@ -66,7 +66,7 @@ test('homepage, archives and publication tools all use edition-specific artwork'
   const policy=readFileSync(new URL('../scripts/automation-policy.mjs',import.meta.url),'utf8');
   const preparation=readFileSync(new URL('../scripts/prepare-edition.mjs',import.meta.url),'utf8');
   const content=readFileSync(new URL('../app/content.ts',import.meta.url),'utf8');
-  assert.match(page,/editionCover\(issue\.coverImageId\)\.src/);
+  assert.match(page,/editionCover\(weeklyArtId\)\.src/);
   assert.match(page,/editionCover\(archivedIssue\.coverImageId\)\.src/);
   assert.match(page,/editionCover\(edition\.coverImageId\)\.src/);
   assert.match(policy,/draft\.coverImageId = nextEditionImageId\(earlier\)/);
