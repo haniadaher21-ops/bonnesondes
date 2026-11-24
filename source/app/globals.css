@@ -160,6 +160,9 @@ nav .library-nav { display: flex; align-items: center; gap: 7px; padding: 7px 12
 .station-description, .station-now-playing { flex: 1; }
 .station-now-playing { width: 100%; padding: 10px 0 14px; min-height: 110px; }
 .station-track-layout { display: flex; align-items: flex-start; gap: 12px; width: 100%; min-width: 0; }
+.station-spinitron-fallback { width: 100%; min-width: 0; flex: 1; }
+.station-spinitron-frame { width: 100%; height: 146px; border: 1px solid var(--line); background: #fff; display: block; }
+
 .station-track-copy { flex: 1; min-width: 0; }
 .station-cover { display: block; width: 88px; height: 88px; flex: none; object-fit: cover; border: 1px solid #c6b6a2; background: #e7d9c4; }
 .station-cover-placeholder { width: 88px; height: 88px; flex: none; border: 1px solid #c6b6a2; background: #e7d9c4; color: #8f7f6b; display: grid; place-items: center; }
