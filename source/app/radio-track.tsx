@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Disc3 } from 'lucide-react';
+import { Disc3, ExternalLink } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { RadioMetadata } from './content';
 import { parseNovaNowPlaying } from './nova-nowplaying.mjs';
 import { radioArtworkUrl } from './radio-artwork.mjs';
 import { findNovaCatalogueArtwork } from './nova-catalogue-artwork.mjs';
 import { parseCampusParisReader, parseRadioCultLive, parseSpinitronReader } from './campus-nowplaying.mjs';
+import { spotifyRadioSearchUrl } from './spotify-radio-link.mjs';
 
 type BroadcastStep = {
   embedType: string;
@@ -123,6 +124,7 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
   const displayedArtwork = directArtwork || matchedArtwork;
   const usingCatalogue = (isNova || isCampusSource) && !directArtwork && !!matchedArtwork;
   const trackForSave = track ? { ...track, artwork: displayedArtwork } : null;
+  const spotifyUrl = !isNts && track?.artist ? spotifyRadioSearchUrl(track.title, track.artist) : null;
 
   // A new image is only searched for if Nova has no usable official cover,
   // or if the official image fails to load in the browser.
@@ -161,6 +163,10 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
           {isNova && track.playedAt && <p className="station-track-time">À {track.playedAt}, selon Nova</p>}
           {isCampusSource && track.kind==='last-confirmed' && <p className="station-track-time">Dernier relevé vers {track.playedAt}, heure locale</p>}
           {!isNts && trackForSave && saveTrack(trackForSave)}
+          {spotifyUrl && <a className="radio-spotify-link" href={spotifyUrl} target="_blank"
+            rel="noopener noreferrer" aria-label={'Rechercher ' + track.title + ' de ' + track.artist + ' sur Spotify'}>
+            Retrouver sur Spotify <ExternalLink size={13} aria-hidden="true" />
+          </a>}
         </div> : <p className="station-track-unavailable">
           {loading ? 'Recherche du titre en cours…' : isNts
             ? 'Émission indisponible pour le moment.' : 'Titre non confirmé par la station pour le moment.'}
@@ -176,6 +182,11 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
     </div>
       : <p>{isNts ? 'Émission indisponible pour le moment.' : isNova ? 'Aucun titre récent confirmé par Nova. Réessaie dans quelques instants.' : 'Titre indisponible pour le moment.'}</p>}
     {!isNts && trackForSave && saveTrack(trackForSave)}
+    {spotifyUrl && track && <a className="radio-spotify-link" href={spotifyUrl}
+      target="_blank" rel="noopener noreferrer"
+      aria-label={'Rechercher ' + track.title + ' de ' + track.artist + ' sur Spotify'}>
+      Retrouver sur Spotify <ExternalLink size={13} aria-hidden="true" />
+    </a>}
     {isNova && <a className="text-link" href="https://jina.ai/reader/" target="_blank" rel="noopener noreferrer">Données de Nova via Jina Reader</a>}
     {isNts && <a className="text-link" href="https://www.nts.live/supporters" target="_blank" rel="noopener noreferrer">Titres en direct avec NTS Supporters ↗</a>}
   </div>;
