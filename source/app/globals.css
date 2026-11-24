@@ -141,6 +141,22 @@ nav .library-nav { display: flex; align-items: center; gap: 7px; padding: 7px 12
 .station > svg { color: var(--accent); margin-bottom: 18px; }
 .station h2 { font: 35px/1 var(--display); margin: 5px 0 8px; }
 .station > .text-link { margin-top: auto; padding-top: 15px; }
+.station-reorder-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 2px 0 16px; }
+.station-reorder-toolbar p { color: var(--muted); font-size: 13px; display: inline-flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+.station-reorder-toolbar button { flex: none; }
+.station-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; width: 100%; margin-bottom: 18px; }
+.station-card-top > svg { color: var(--accent); }
+.station-order-controls { display: inline-flex; align-items: center; gap: 2px; }
+.station-order-controls button { border: 1px solid transparent; background: transparent; color: var(--muted); width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; }
+.station-order-controls button:not(:disabled):hover, .station-order-controls button:focus-visible { border-color: var(--line); background: #e9ddc7; color: var(--ink); }
+.station-order-controls button:disabled { opacity: .35; cursor: default; }
+.station-drag-handle { cursor: grab !important; touch-action: none; }
+.station-drag-handle:active { cursor: grabbing !important; }
+.station-drop-target { outline: 3px solid var(--accent); outline-offset: -4px; }
+@media (max-width: 540px) {
+  .station-reorder-toolbar { align-items: flex-start; flex-direction: column; gap: 6px; }
+  .station-reorder-toolbar button { padding: 5px 0; }
+}
 .station-description, .station-now-playing { flex: 1; }
 .station-now-playing { width: 100%; padding: 10px 0 14px; min-height: 110px; }
 .station-track-layout { display: flex; align-items: flex-start; gap: 12px; width: 100%; min-width: 0; }
