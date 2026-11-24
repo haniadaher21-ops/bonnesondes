@@ -50,7 +50,7 @@ test('KCRW Eclectic24 exposes verified album art, artist and actual broadcaster 
 test('WXYC official flowsheet reveals songs but never treats a finished DJ set as live',()=>{
   const row={entry_type:'track',show_id:5,artist_name:'Nina Simone',track_title:'Stars',
     add_time:'2026-11-24T13:30:00Z',artwork_url:'https://example.org/album.png'};
-  const response=entries=>'Title: WXYC URL Source: https://api.wxyc.org/flowsheet?limit=30 Markdown Content:\\n'+
+  const response=entries=>'Title: WXYC URL Source: https://api.wxyc.org/flowsheet?limit=30 Markdown Content: '+
     JSON.stringify({entries});
   const date=new Date('2026-11-24T13:40:00Z');
   assert.deepEqual(parseWxycReader(response([row]),date),{
