@@ -175,9 +175,8 @@ export const stations: Station[] = [
     name: 'Radio Campus Paris', category: 'campus', label: 'Paris · Radio associative',
     description: 'Scènes locales, hip-hop, soul et musiques indépendantes : à écouter sur le site officiel.',
     url: 'https://www.radiocampusparis.org/',
+    stream: 'https://www.radiocampusparis.org/stream/',
     metadata: {provider:'campus-paris-reader',endpoint:'https://r.jina.ai/https://www.radiocampusparis.org/c-etait-quoi-ce-titre'},
-    // Only an old HTTP stream was verifiable. Do not put broken mixed-content
-    // audio into the HTTPS player; link to the broadcaster until HTTPS is confirmed.
   },
 ];
 
