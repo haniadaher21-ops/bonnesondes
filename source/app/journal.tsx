@@ -9,6 +9,7 @@ import { editionImage } from '../editorial/edition-art.mjs';
 import { editionShelf } from '../editorial/shelves.mjs';
 import RadioTrack, { type OnAir } from './radio-track';
 import { isHlsStream, loadHlsLibrary, supportsNativeHls, type HlsRadioPlayer } from './hls-radio';
+import { installRadioMediaSession } from './radio-media-session.mjs';
 import ProfileSync from './profile-sync';
 import TastePreferences from './taste-preferences';
 import { playableYouTubeId, youtubeEmbedSrc, youtubeThumbnailCandidates } from './youtube-player.mjs';
@@ -318,6 +319,19 @@ export default function Journal() {
   useEffect(() => {
     if (page === 'radio') void loadHlsLibrary().catch(() => {});
   }, [page]);
+
+  // Register media-session actions for system pause/play keys, Bluetooth
+  // headsets and the lock-screen controls. The audio element remains mounted
+  // while navigating between tabs, so the hardware keys keep working.
+  useEffect(() => {
+    if (!radioOpen || activeMix || activeVideo) return;
+    const audio = radioAudioRef.current;
+    if (!audio) return;
+    return installRadioMediaSession(audio, station.name, {
+      artwork: (process.env.NEXT_PUBLIC_BASE_PATH ?? '') + '/bonnes-ondes-mark.svg',
+      onError: () => setAudioError(true),
+    });
+  }, [radioOpen, station.name, activeMix, activeVideo]);
 
   // Keep the audio element mounted before a user clicks « Écouter »:
   // calling play() in that same trusted event enables one-click listening.
