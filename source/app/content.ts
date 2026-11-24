@@ -66,6 +66,7 @@ export type RadioMetadata =
   | { provider: 'nts'; endpoint: string; channel: '1' | '2' }
   | { provider: 'nova-page'; endpoint: string }
   | { provider: 'spinitron-reader'; endpoint: string; timezone: string }
+  | { provider: 'kcrw-json'; endpoint: string }
   | { provider: 'campus-paris-reader' | 'radiocult-live'; endpoint: string };
 
 export interface Station {
@@ -131,6 +132,7 @@ export const stations: Station[] = [
     description: 'La sélection continue des DJ de KCRW : soul, pop, indie et découvertes inattendues.',
     url: 'https://www.kcrw.com/shows/eclectic24/latest',
     stream: 'https://streams.kcrw.com/e24_mp3',
+    metadata: {provider:'kcrw-json',endpoint:'https://tracklist-api.kcrw.com/Music/all/1'},
   },
   {
     name: 'KALX 90.7', category: 'campus', label: 'UC Berkeley · College radio',
