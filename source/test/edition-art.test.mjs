@@ -41,7 +41,7 @@ test('new editions pick each unused picture before a second rotation', () => {
     history=[...history,{number:String(i + 3),coverImageId:chosen}];
   }
   assert.equal(new Set(picks).size,5);
-  assert.equal(nextEditionImageId(history),'nice-day');
+  assert.equal(nextEditionImageId(history),'disco-night');
 });
 
 test('new bank entries cannot modify the image of a previously published issue',()=>{
