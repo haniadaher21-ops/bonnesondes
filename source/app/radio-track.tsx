@@ -133,6 +133,10 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
   const usingCatalogue = (isNova || isCampusSource) && !directArtwork && !!matchedArtwork;
   const trackForSave = track ? { ...track, artwork: displayedArtwork } : null;
   const spotifyUrl = !isNts && track?.artist ? spotifyRadioSearchUrl(track.title, track.artist) : null;
+  const spinitronWidgetUrl = metadata?.provider === 'spinitron-reader'
+    ? 'https://widgets.spinitron.com/widget/now-playing-v2?station=' + metadata.stationCode
+      + '&num=1&cover=1&player=0&sharing=0&merch=0'
+    : null;
 
   // A new image is only searched for if Nova has no usable official cover,
   // or if the official image fails to load in the browser.
@@ -161,9 +165,13 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
 
   if (compact) {
     return <div className="station-now-playing" aria-live="polite">
-      <p className="eyebrow">{isNts ? 'ÉMISSION EN DIRECT' : isNova || track?.kind==='last-confirmed'
+      <p className="eyebrow">{isNts ? 'ÉMISSION EN DIRECT' : spinitronWidgetUrl && !track
+        ? 'DERNIER TITRE SUR SPINITRON' : isNova || track?.kind==='last-confirmed'
         ? 'DERNIER TITRE IDENTIFIÉ' : 'EN CE MOMENT'}</p>
-      <div className="station-track-layout">
+      {spinitronWidgetUrl && !track ? <div className="station-spinitron-fallback">
+        <iframe title="Dernier titre diffusé selon Spinitron" src={spinitronWidgetUrl}
+          className="station-spinitron-frame" loading="lazy" referrerPolicy="strict-origin-when-cross-origin" />
+      </div> : <div className="station-track-layout">
         {cover}
         {track ? <div className="station-track-copy">
           <strong className="station-track-title">{track.title}</strong>
@@ -179,7 +187,7 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
           {loading ? 'Recherche du titre en cours…' : isNts
             ? 'Émission indisponible pour le moment.' : 'Titre non confirmé par la station pour le moment.'}
         </p>}
-      </div>
+      </div>}
     </div>;
   }
   return <div className="radio-track" aria-live="polite">
