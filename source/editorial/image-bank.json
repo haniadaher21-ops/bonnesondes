@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "sourceFolder": "https://drive.google.com/drive/folders/1gIRXeHlolANWpqWSdlrENC2zFORWRCp3",
+  "images": [
+    {
+      "id": "nice-day",
+      "file": "/edition-images/nice-day.jpg",
+      "alt": "Illustration colorée d'une personne aux platines, avec la phrase A nice day calls for nice music",
+      "driveFileId": "1DajqrBtanxJKCjMv4wQAbkNIXk1G0uwg"
+    },
+    {
+      "id": "positive-grooves",
+      "file": "/edition-images/positive-grooves.jpg",
+      "alt": "Étiquette de vinyle blanche Positive Grooves, avec une silhouette noire dansante",
+      "driveFileId": "1JAGrEH9pEr5pWyEjnMa3-nbCMfiWJlVd"
+    },
+    {
+      "id": "orange-guitar",
+      "file": "/edition-images/orange-guitar.jpg",
+      "alt": "Gravure colorée d'une guitare orange et de mains sur fond bleu",
+      "driveFileId": "1Dg20hT3pyngYqw9hhfx3VYEkVsiAPh_8"
+    },
+    {
+      "id": "blue-city",
+      "file": "/edition-images/blue-city.jpg",
+      "alt": "Paysage urbain nocturne imprimé en bleu, ponctué de fenêtres et d'une étoile lumineuse",
+      "driveFileId": "1M0r4Vp0e53d85pqVEg7HVNHzzm1AxyA3"
+    },
+    {
+      "id": "blue-vinyl",
+      "file": "/edition-images/blue-vinyl.jpg",
+      "alt": "Dessin bleu de deux mains tenant un disque vinyle sur papier crème",
+      "driveFileId": "1QaYXX5nQOC19bWbTL7hx1oO8M7MpMU56"
+    },
+    {
+      "id": "disco-night",
+      "file": "/edition-images/disco-night.jpg",
+      "alt": "Boule à facettes bleue entourée d'étoiles multicolores sur fond vert foncé",
+      "driveFileId": "1Z6CTbI6Ulamj6175OUn6rrOw_S4mhOCS"
+    },
+    {
+      "id": "dog-dj",
+      "file": "/edition-images/dog-dj.jpg",
+      "alt": "Illustration d'un chien en veste verte faisant le DJ sur fond rouge et bleu",
+      "driveFileId": "1fTdXRvrKyKiz0Pf8gG9cuwG2Z2eHyb01"
+    }
+  ]
+}
