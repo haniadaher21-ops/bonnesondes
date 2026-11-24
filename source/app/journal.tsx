@@ -11,10 +11,10 @@ import ProfileSync from './profile-sync';
 import TastePreferences from './taste-preferences';
 import { playableYouTubeId, youtubeEmbedSrc, youtubeThumbnailCandidates } from './youtube-player.mjs';
 import { collectionRecommendations, restoreLibrary, toggleSaved, libraryStorageKey } from './library-store.mjs';
-import { moveStationBefore, normalizeStationOrder, shiftStation, stationOrderStorageKey } from './station-order.mjs';
+import { moveStationWithinGroup, normalizeStationOrder, shiftStationWithinGroup, stationOrderStorageKey } from './station-order.mjs';
 
 const pages = [
-  ['rotation', 'Sélection'], ['radio', 'Radios'], ['playlists', 'Playlists'],
+  ['rotation', 'Sélection'], ['radio', 'Radios'], ['campus', 'Radios Campus'], ['playlists', 'Playlists'],
   ['live', 'Live'], ['mix', 'Mix'], ['editions', 'Archives'], ['library', 'Ma collection'],
 ] as const;
 type Page = typeof pages[number][0] | 'archive' | 'preferences';
@@ -279,6 +279,9 @@ export default function Journal() {
   const orderedStations = stationOrder
     .map(name => stations.find(item => item.name === name))
     .filter((item): item is typeof stations[number] => Boolean(item));
+  const visibleStations = orderedStations.filter(item => page === 'campus'
+    ? item.category === 'campus' : item.category !== 'campus');
+  const visibleStationNames = visibleStations.map(item => item.name);
 
   const shelf = editionShelf(issues, issue, 'playlists', [...playlists, ...library.playlists]);
   const liveShelf = editionShelf(issues, issue, 'live', live);
@@ -528,17 +531,22 @@ export default function Journal() {
         </>}
       </>}
 
-      {page === 'radio' && <>
-        <PageHeading label="EN DIRECT" title="Radios" />
+      {(page === 'radio' || page === 'campus') && <>
+        <PageHeading label="EN DIRECT" title={page === 'campus' ? 'Radios Campus' : 'Radios'} />
         <div className="station-reorder-toolbar">
           <p>Fais glisser <GripVertical size={15} aria-hidden="true" /> pour déplacer une radio. Sur mobile ou au clavier, utilise les flèches.</p>
           <button className="text-link" type="button" onClick={() =>
-            setStationOrder(stations.map(item => item.name))} disabled={!stationOrderReady}>
+            setStationOrder(order => {
+              const group = new Set(visibleStationNames);
+              const defaultOrder = stations.map(item => item.name).filter(name => group.has(name));
+              let index = 0;
+              return order.map(name => group.has(name) ? defaultOrder[index++] : name);
+            })} disabled={!stationOrderReady}>
             Réinitialiser l’ordre
           </button>
         </div>
         <div className="station-grid">
-          {orderedStations.map((item, index) => <article className={
+          {visibleStations.map((item, index) => <article className={
             'station' + (stationDropTarget === item.name ? ' station-drop-target' : '')
           } key={item.name}
             onDragOver={event => {
@@ -551,7 +559,7 @@ export default function Journal() {
               const dragged = draggingStation.current;
               if (!dragged) return;
               event.preventDefault();
-              setStationOrder(order => moveStationBefore(order, dragged, item.name));
+              setStationOrder(order => moveStationWithinGroup(order, visibleStationNames, dragged, item.name));
               draggingStation.current = null;
               setStationDropTarget(null);
             }}>
@@ -571,12 +579,12 @@ export default function Journal() {
                 </button>
                 <button type="button" className="station-shift" aria-label={'Monter ' + item.name}
                   title="Monter" disabled={!stationOrderReady || index === 0}
-                  onClick={() => setStationOrder(order => shiftStation(order, item.name, -1))}>
+                  onClick={() => setStationOrder(order => shiftStationWithinGroup(order, visibleStationNames, item.name, -1))}>
                   <ArrowUp size={16} aria-hidden="true" />
                 </button>
                 <button type="button" className="station-shift" aria-label={'Descendre ' + item.name}
-                  title="Descendre" disabled={!stationOrderReady || index === orderedStations.length - 1}
-                  onClick={() => setStationOrder(order => shiftStation(order, item.name, 1))}>
+                  title="Descendre" disabled={!stationOrderReady || index === visibleStations.length - 1}
+                  onClick={() => setStationOrder(order => shiftStationWithinGroup(order, visibleStationNames, item.name, 1))}>
                   <ArrowDown size={16} aria-hidden="true" />
                 </button>
               </div>
