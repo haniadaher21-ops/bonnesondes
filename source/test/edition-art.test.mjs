@@ -12,7 +12,7 @@ test('Drive photos remain valid JPG assets even after future automatic imports',
   for (const image of imageBank.images) {
     assert.ok(image.id && !seen.has(image.id));
     seen.add(image.id);
-    assert.match(image.file, /^\/edition-images\/[a-z-]+\.jpg$/);
+    assert.match(image.file, /^\/edition-images\/[a-z0-9-]+\.jpg$/);
     assert.ok(typeof image.alt === 'string' && image.alt.length > 20);
     if (image.driveFileId) assert.match(image.driveFileId, /^[a-zA-Z0-9_-]+$/);
     else {
