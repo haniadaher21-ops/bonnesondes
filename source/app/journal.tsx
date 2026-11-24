@@ -7,6 +7,7 @@ import { archive, catalog, issues, live, parsePlaylist, personalPlaylist, playli
 import { selectEdition } from '../editorial/edition.mjs';
 import { editionShelf } from '../editorial/shelves.mjs';
 import RadioTrack, { type OnAir } from './radio-track';
+import { isHlsStream, loadHlsLibrary, supportsNativeHls, type HlsRadioPlayer } from './hls-radio';
 import ProfileSync from './profile-sync';
 import TastePreferences from './taste-preferences';
 import { playableYouTubeId, youtubeEmbedSrc, youtubeThumbnailCandidates } from './youtube-player.mjs';
@@ -177,6 +178,8 @@ export default function Journal() {
   const [radioOpen, setRadioOpen] = useState(false);
   const [audioError, setAudioError] = useState(false);
   const radioAudioRef = useRef<HTMLAudioElement>(null);
+  const hlsRadioRef = useRef<HlsRadioPlayer | null>(null);
+  const radioPlaybackGeneration = useRef(0);
   const [playlistError, setPlaylistError] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [curator, setCurator] = useState('');
@@ -302,9 +305,18 @@ export default function Journal() {
     setCurator(''); setGenre(''); setSeason(''); setShelfMood('');
   };
 
+  // Preload the HLS engine when entering Radios so a click normally starts
+  // the FIP stream without waiting for an external script.
+  useEffect(() => {
+    if (page === 'radio') void loadHlsLibrary().catch(() => {});
+  }, [page]);
+
   // Keep the audio element mounted before a user clicks « Écouter »:
   // calling play() in that same trusted event enables one-click listening.
   const stopRadio = () => {
+    radioPlaybackGeneration.current += 1;
+    hlsRadioRef.current?.destroy();
+    hlsRadioRef.current = null;
     const audio = radioAudioRef.current;
     if (audio) {
       audio.pause();
@@ -336,22 +348,53 @@ export default function Journal() {
 
   const tune = (next: typeof station) => {
     const audio = radioAudioRef.current;
-    // Invoke play() synchronously from the click/change event, not in an effect
-    // after the panel mounts: otherwise browsers may require a second click.
+    const request = ++radioPlaybackGeneration.current;
+    hlsRadioRef.current?.destroy();
+    hlsRadioRef.current = null;
+    setAudioError(false);
+    // Invoke play() from the same click for MP3 and native Safari HLS.
+    // For Chrome/Firefox, HLS.js is preloaded on entering the Radios tab.
     if (audio) {
       audio.pause();
-      if (next.stream) {
-        if (audio.getAttribute('src') !== next.stream) audio.src = next.stream;
-        void audio.play().catch(() => setAudioError(true));
-      } else {
-        audio.removeAttribute('src');
-        audio.load();
+      audio.removeAttribute('src');
+      audio.load();
+      if (next.stream && isHlsStream(next.stream)) {
+        if (supportsNativeHls(audio)) {
+          audio.src = next.stream;
+          void audio.play().catch(() => {
+            if (request === radioPlaybackGeneration.current) setAudioError(true);
+          });
+        } else {
+          void loadHlsLibrary().then(Hls => {
+            if (request !== radioPlaybackGeneration.current) return;
+            if (!Hls.isSupported()) {
+              setAudioError(true);
+              return;
+            }
+            const hls = new Hls({ enableWorker: true });
+            hlsRadioRef.current = hls;
+            hls.on(Hls.Events.ERROR, (_event, data) => {
+              if (data.fatal && request === radioPlaybackGeneration.current) setAudioError(true);
+            });
+            hls.loadSource(next.stream!);
+            hls.attachMedia(audio);
+            void audio.play().catch(() => {
+              if (request === radioPlaybackGeneration.current) setAudioError(true);
+            });
+          }).catch(() => {
+            if (request === radioPlaybackGeneration.current) setAudioError(true);
+          });
+        }
+      } else if (next.stream) {
+        audio.src = next.stream;
+        void audio.play().catch(() => {
+          if (request === radioPlaybackGeneration.current) setAudioError(true);
+        });
       }
     }
     setActiveVideo(null);
     setActiveMix(null);
     setStation(next);
-    setAudioError(false);
     setRadioOpen(true);
   };
 
@@ -708,7 +751,9 @@ export default function Journal() {
           onError={() => setAudioError(true)} />
         {radioOpen && <>
           {!station.stream && station.embed && <iframe className="radio-frame" title={station.name + ' en direct'} src={station.embed} allow="autoplay" />}
-          {audioError && <p role="status">Le flux n’a pas démarré. Utilise Play dans le lecteur ou essaie le site de la station.</p>}
+          {audioError && <p role="status">{isHlsStream(station.stream)
+            ? 'Le direct FIP ne peut pas démarrer dans ce navigateur. Essaie Play ou ouvre le site de FIP.'
+            : 'Le flux n’a pas démarré. Utilise Play dans le lecteur ou essaie le site de la station.'}</p>}
           <SourceLink item={station}>Ouvrir le site de la radio</SourceLink>
         </>}
       </div>
