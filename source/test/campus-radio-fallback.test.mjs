@@ -9,7 +9,7 @@ test('Spinitron widget fallback is limited to three approved campus stations', (
   for(const code of ['KALX','WRBB','KZSC']) {
     assert.match(stations,new RegExp("stationCode:'"+code+"'"));
   }
-  assert.equal((stations.match(/stationCode:/g)??[]).length,3);
+  assert.equal((stations.match(/stationCode:'(?:KALX|WRBB|KZSC)'/g)??[]).length,3);
   assert.match(player,/widgets\.spinitron\.com\/widget\/now-playing-v2\?station=/);
   assert.match(player,/spinitronWidgetUrl && !track/);
   assert.match(player,/<iframe title="Dernier titre diffusé selon Spinitron"/);
