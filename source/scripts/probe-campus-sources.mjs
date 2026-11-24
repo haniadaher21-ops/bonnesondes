@@ -1,9 +1,12 @@
-const stations=['KALX','WRBB','KZSC'];
-await Promise.all(stations.map(async station=>{
- const url='https://widgets.spinitron.com/widget/now-playing-v2?station='+station+'&num=1&cover=1&player=0&sharing=0&merch=0&callback=bonnesOndesProbe';
- try{
- const r=await fetch(url,{signal:AbortSignal.timeout(10000)});
- const s=await r.text();
- console.log('SPINITRON_JSONP '+JSON.stringify({station,status:r.status,type:r.headers.get('content-type'),cors:r.headers.get('access-control-allow-origin'),sample:s.slice(0,1100),last:s.slice(-200)}));
- }catch(e){console.log('SPINITRON_JSONP '+JSON.stringify({station,error:String(e)}))}
+const cases=[
+ ['without-callback','https://widgets.spinitron.com/widget/now-playing-v2?station=KALX&num=1&cover=1',{}],
+ ['callback-und-pref','https://widgets.spinitron.com/widget/now-playing-v2?callback=_spinitron987654321&station=KALX&num=1&cover=1',{}],
+ ['callback-referer','https://widgets.spinitron.com/widget/now-playing-v2?callback=_spinitron987654321&station=KALX&num=1&cover=1',{Referer:'https://haniadaher21-ops.github.io/bonnesondes/'}],
+ ['callback-origin','https://widgets.spinitron.com/widget/now-playing-v2?callback=_spinitron987654321&station=KALX&num=1&cover=1',{Origin:'https://haniadaher21-ops.github.io',Referer:'https://haniadaher21-ops.github.io/bonnesondes/'}],
+];
+await Promise.all(cases.map(async ([name,url,headers])=>{
+try{
+const r=await fetch(url,{signal:AbortSignal.timeout(11000),headers});const s=await r.text();
+console.log('SPINITRON_VALIDATION '+JSON.stringify({name,status:r.status,type:r.headers.get('content-type'),length:s.length,head:s.slice(0,220)}));
+}catch(e){console.log('SPINITRON_VALIDATION '+JSON.stringify({name,error:String(e)}))}
 }));
