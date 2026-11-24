@@ -29,6 +29,13 @@ function ageMinutes(localTime, timezone, now) {
 export function parseSpinitronReader(text, timezone, now=new Date()) {
   if (typeof text!=='string' || !text.includes('Markdown Content:')) return null;
   const markdown=text.slice(text.indexOf('Markdown Content:')+'Markdown Content:'.length);
+  // The same clock time occurs every day. Match the actual station-local
+  // broadcast date, otherwise a cached page from yesterday could look live.
+  const stationDate=new Intl.DateTimeFormat('en-US',{
+    timeZone:timezone,month:'short',day:'numeric',year:'numeric',
+  }).format(now);
+  const header=markdown.split(/\[\d{1,2}:\d{2}\s*[AP]M\]\(/)[0];
+  if (!header.includes(stationDate)) return null;
   const rows=markdown.matchAll(/\[(\d{1,2}:\d{2}\s*[AP]M)\]\(https:\/\/[^)\s]+\/pl\/[^)]+[?&]sp=\d+\)!\[Image\s+\d+:\s*([^\]]+)\]\((https:\/\/[^)\s]+)\)/g);
   for (const row of rows) {
     const age=ageMinutes(row[1],timezone,now);
@@ -74,4 +81,26 @@ export function parseRadioCultLive(payload) {
   const art=metadata.artwork;
   const artwork=safeArtwork(typeof art==='string' ? art : art?.['256x256'] ?? art?.default ?? art?.original);
   return {title,artist,artwork,kind:'live'};
+}
+
+
+// KCRW publishes an official cross-channel JSON history. Filter strictly to
+// Eclectic24, use broadcaster timestamps and official artwork, and reject
+// stale/missing/invalid metadata. Never infer an exact Spotify track ID.
+export function parseKcrwNowPlaying(payload, now=new Date()) {
+  if(!Array.isArray(payload)) return null;
+  const recent=payload.filter(row=>row && row.program_id==='e24'
+    && typeof row.title==='string' && typeof row.artist==='string'
+    && typeof row.datetime==='string').map(row=>({
+      row,age:now.getTime()-Date.parse(row.datetime),
+    })).filter(item=>Number.isFinite(item.age) && item.age>=-120_000 && item.age<=40*60_000)
+    .sort((a,b)=>a.age-b.age)[0];
+  if(!recent) return null;
+  const row=recent.row;
+  const title=normalize(row.title),artist=normalize(row.artist);
+  if(!title||!artist || /^(unknown|on air|advertisement|music|station)$/i.test(title)) return null;
+  return {
+    title,artist,artwork:safeArtwork(row.albumImageLarge)||safeArtwork(row.albumImage),
+    kind:'last-confirmed',playedAt:normalize(row.time),
+  };
 }
