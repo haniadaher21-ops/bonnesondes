@@ -20,7 +20,7 @@ type BroadcastStep = {
   visual?: string;
 };
 
-export type OnAir = { title: string; artist?: string; playedAt?: string; artwork?: string; kind?: 'last-confirmed' | 'live' };
+export type OnAir = { title: string; artist?: string; playedAt?: string; artwork?: string; kind?: string };
 
 async function readOnAir(response: Response, metadata: RadioMetadata): Promise<OnAir | null> {
   if (!response.ok) throw new Error('Métadonnées indisponibles');
@@ -84,23 +84,24 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
       setLoading(false);
       return;
     }
+    const activeMetadata = metadata;
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
 
     async function refresh() {
       try {
-        const headers=metadata.provider==='nova-page' ? {
+        const headers=activeMetadata.provider==='nova-page' ? {
           'X-Respond-With':'html',
           'X-Target-Selector':'.what_was_title .swiper-slide:first-child',
           'X-Cache-Tolerance':'30',
         } : undefined;
-        const response = await fetch(metadata.endpoint, { signal: controller.signal, cache: 'no-store', headers });
-        const onAir = await readOnAir(response, metadata);
+        const response = await fetch(activeMetadata.endpoint, { signal: controller.signal, cache: 'no-store', headers });
+        const onAir = await readOnAir(response, activeMetadata);
         if (!controller.signal.aborted) { setTrack(onAir); setLoading(false); }
       } catch {
         if (!controller.signal.aborted) { setTrack(null); setLoading(false); }
       } finally {
-        if (!controller.signal.aborted) timer = setTimeout(refresh, ['spinitron-reader','campus-paris-reader'].includes(metadata.provider) ? 120_000 : metadata.provider === 'radiocult-live' ? 60_000 : metadata.provider === 'nova-page' ? 30_000 : compact ? 30_000 : 15_000);
+        if (!controller.signal.aborted) timer = setTimeout(refresh, ['spinitron-reader','campus-paris-reader'].includes(activeMetadata.provider) ? 120_000 : activeMetadata.provider === 'radiocult-live' ? 60_000 : activeMetadata.provider === 'nova-page' ? 30_000 : compact ? 30_000 : 15_000);
       }
     }
 
