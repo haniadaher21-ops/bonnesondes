@@ -1,0 +1,21 @@
+name: Vérifier la synchronisation des photos Drive
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'source/scripts/probe-drive-folder.py'
+      - '.github/workflows/probe-drive-folder.yml'
+permissions:
+  contents: read
+jobs:
+  probe:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'gdown==5.2.0'
+      - run: python source/scripts/probe-drive-folder.py
