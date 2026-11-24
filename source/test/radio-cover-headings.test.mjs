@@ -9,7 +9,7 @@ const libraryStore=readFileSync(new URL('../app/library-store.mjs',import.meta.u
 const css=readFileSync(new URL('../app/globals.css',import.meta.url),'utf8');
 
 test('subtitles under every tab page heading are removed, not replaced by empty markup',()=>{
-  assert.equal([...page.matchAll(/<PageHeading\b/g)].length,8);
+  assert.equal([...page.matchAll(/<PageHeading\b/g)].length,9);
   assert.doesNotMatch(page,/<PageHeading[^>]*\snote=/);
   assert.match(page,/function PageHeading\(\{ label, title \}: \{ label: string; title: string \}\)/);
   assert.match(page,/<h1>\{title\}<span>\.<\/span><\/h1><\/header>/);
