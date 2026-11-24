@@ -84,7 +84,7 @@ test('unknown recordings never receive guessed covers and errors fail closed',as
 test('radio cards attempt the exact cover lookup on failure or missing artwork and save the resolved image',()=>{
  const ui=readFileSync(new URL('../app/radio-track.tsx',import.meta.url),'utf8');
  assert.match(ui,/findNovaCatalogueArtwork\(track.artist, track.title\)/);
- assert.match(ui,/isNova \&\& !directArtwork \&\& !!matchedArtwork/);
+ assert.match(ui,/\(isNova \|\| isCampusSource\) \&\& !directArtwork \&\& !!matchedArtwork/);
  assert.match(ui,/onFailure=\{markArtworkFailed\}/);
  assert.match(ui,/artwork: displayedArtwork/);
  assert.match(ui,/saveTrack\(trackForSave\)/);
