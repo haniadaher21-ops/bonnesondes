@@ -181,9 +181,10 @@ test('keeps published data intact when CLI approval fails or is omitted', async 
     assert.match(checked.stdout, /Édition 002 valide/);
     assert.equal(readFileSync(published, 'utf8'), '[]\n');
     assert.equal(run('--approve').status, 0);
-    assert.deepEqual(JSON.parse(readFileSync(published, 'utf8')), [draft]);
+    const approved = { ...draft, coverImageId: 'nice-day' };
+    assert.deepEqual(JSON.parse(readFileSync(published, 'utf8')), [approved]);
     assert.equal(run('--approve').status, 1);
-    assert.deepEqual(JSON.parse(readFileSync(published, 'utf8')), [draft]);
+    assert.deepEqual(JSON.parse(readFileSync(published, 'utf8')), [approved]);
   } finally {
     rmSync(copy, { recursive: true, force: true });
   }
