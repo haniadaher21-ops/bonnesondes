@@ -29,6 +29,13 @@ function ageMinutes(localTime, timezone, now) {
 export function parseSpinitronReader(text, timezone, now=new Date()) {
   if (typeof text!=='string' || !text.includes('Markdown Content:')) return null;
   const markdown=text.slice(text.indexOf('Markdown Content:')+'Markdown Content:'.length);
+  // The same clock time occurs every day. Match the actual station-local
+  // broadcast date, otherwise a cached page from yesterday could look live.
+  const stationDate=new Intl.DateTimeFormat('en-US',{
+    timeZone:timezone,month:'short',day:'numeric',year:'numeric',
+  }).format(now);
+  const header=markdown.split(/\[\d{1,2}:\d{2}\s*[AP]M\]\(/)[0];
+  if (!header.includes(stationDate)) return null;
   const rows=markdown.matchAll(/\[(\d{1,2}:\d{2}\s*[AP]M)\]\(https:\/\/[^)\s]+\/pl\/[^)]+[?&]sp=\d+\)!\[Image\s+\d+:\s*([^\]]+)\]\((https:\/\/[^)\s]+)\)/g);
   for (const row of rows) {
     const age=ageMinutes(row[1],timezone,now);
@@ -74,4 +81,60 @@ export function parseRadioCultLive(payload) {
   const art=metadata.artwork;
   const artwork=safeArtwork(typeof art==='string' ? art : art?.['256x256'] ?? art?.default ?? art?.original);
   return {title,artist,artwork,kind:'live'};
+}
+
+
+// KCRW publishes an official cross-channel JSON history. Filter strictly to
+// Eclectic24, use broadcaster timestamps and official artwork, and reject
+// stale/missing/invalid metadata. Never infer an exact Spotify track ID.
+export function parseKcrwNowPlaying(payload, now=new Date()) {
+  if(!Array.isArray(payload)) return null;
+  const recent=payload.filter(row=>row && row.program_id==='e24'
+    && typeof row.title==='string' && typeof row.artist==='string'
+    && typeof row.datetime==='string').map(row=>({
+      row,age:now.getTime()-Date.parse(row.datetime),
+    })).filter(item=>Number.isFinite(item.age) && item.age>=-120_000 && item.age<=40*60_000)
+    .sort((a,b)=>a.age-b.age)[0];
+  if(!recent) return null;
+  const row=recent.row;
+  const title=normalize(row.title),artist=normalize(row.artist);
+  if(!title||!artist || /^(unknown|on air|advertisement|music|station)$/i.test(title)) return null;
+  return {
+    title,artist,artwork:safeArtwork(row.albumImageLarge)||safeArtwork(row.albumImage),
+    kind:'last-confirmed',playedAt:normalize(row.time),
+  };
+}
+
+
+// WXYC's public flowsheet is the DJ-entered broadcast log. Use the most
+// recent track only when its show hasn't ended, and never call a show title
+// or talkset a song. Jina is used only as a CORS-safe pass-through for JSON.
+export function parseWxycReader(text, now=new Date()) {
+  if(typeof text!=='string') return null;
+  const marker='Markdown Content:';
+  const i=text.indexOf(marker);
+  if(i<0)return null;
+  let payload;
+  try{payload=JSON.parse(text.slice(i+marker.length).trim());}
+  catch{return null;}
+  const entries=payload?.entries;
+  if(!Array.isArray(entries)||!entries.length)return null;
+  const newest=[...entries].sort((a,b)=>Date.parse(b.add_time)-Date.parse(a.add_time));
+  // A just-ended show cannot donate its last song to a new, unlogged show.
+  const latest=newest[0];
+  if(latest?.entry_type==='show_end')return null;
+  for(const row of newest){
+    if(row?.show_id!==latest?.show_id) break;
+    if(row?.entry_type!=='track')continue;
+    const age=now.getTime()-Date.parse(row.add_time);
+    if(!Number.isFinite(age)||age< -120_000 || age>40*60_000)return null;
+    const artist=normalize(row.artist_name),title=normalize(row.track_title);
+    if(!artist||!title ||/^(unknown|station|unidentified)$/i.test(title))return null;
+    return {
+      title,artist,artwork:safeArtwork(row.artwork_url),
+      playedAt:new Intl.DateTimeFormat('fr-FR',{timeZone:'America/New_York',hour:'2-digit',minute:'2-digit'}).format(new Date(row.add_time)),
+      kind:'last-confirmed',
+    };
+  }
+  return null;
 }

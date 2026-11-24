@@ -27,15 +27,16 @@ test('accessible up/down controls work without a mouse', () => {
   assert.deepEqual(shiftStation(['FIP', 'WFMU'], 'FIP', -1), ['FIP', 'WFMU']);
 });
 
-test('all nine approved college and independent radios are represented', () => {
+test('seven campus stations remain, Worldwide FM moves to Radios and Campus Paris is absent', () => {
   const stations = readFileSync(new URL('../app/content.ts', import.meta.url), 'utf8');
   const names = ['KCRW Eclectic24', 'KALX 90.7', 'WNUR 89.3', 'WRBB 104.9', 'WFMU',
-    'KZSC 88.1', 'WXYC 89.3', 'Worldwide FM', 'Radio Campus Paris'];
+    'KZSC 88.1', 'WXYC 89.3', 'Worldwide FM'];
   for (const name of names) assert.ok(stations.includes("name: '" + name + "'"), name);
+  assert.doesNotMatch(stations,/name: 'Radio Campus Paris'/);
+  assert.match(stations,/name: 'Worldwide FM', label: 'Londres/);
   assert.ok(stations.includes('https://streams.kcrw.com/e24_mp3'));
   assert.ok(stations.includes('https://stream0.wfmu.org/freeform-128k'));
   assert.ok(stations.includes('https://worldwide-fm.radiocult.fm/stream'));
-  assert.ok(stations.includes("stream: 'https://www.radiocampusparis.org/stream/'"));
 });
 
 test('radio UI includes drag handle, keyboard alternatives and local persistence', () => {

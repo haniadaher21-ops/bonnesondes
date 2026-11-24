@@ -65,7 +65,8 @@ export type RadioMetadata =
   | { provider: 'radio-france' | 'azuracast'; endpoint: string }
   | { provider: 'nts'; endpoint: string; channel: '1' | '2' }
   | { provider: 'nova-page'; endpoint: string }
-  | { provider: 'spinitron-reader'; endpoint: string; timezone: string }
+  | { provider: 'spinitron-reader'; endpoint: string; timezone: string; stationCode: 'KALX' | 'WRBB' | 'KZSC' }
+  | { provider: 'kcrw-json' | 'wxyc-reader'; endpoint: string }
   | { provider: 'campus-paris-reader' | 'radiocult-live'; endpoint: string };
 
 export interface Station {
@@ -77,6 +78,7 @@ export interface Station {
   metadata?: RadioMetadata;
   embed?: string;
   category?: 'campus';
+  playlistUrl?: string;
 }
 // Official Radio France Open API liveStream values for the themed FIP channels.
 const fipStreams: Record<number, string> = {
@@ -117,6 +119,13 @@ export const stations: Station[] = [
   { name: 'NTS 2', label: 'NTS', description: 'Le deuxième canal de NTS en direct.', url: 'https://www.nts.live/', stream: 'https://stream-relay-geo.ntslive.net/stream2',
     metadata: { provider: 'nts', endpoint: 'https://www.nts.live/api/v2/live', channel: '2' },
   },
+  {
+    name: 'Worldwide FM', label: 'Londres · Indépendante',
+    description: 'La radio de Gilles Peterson : soul, jazz, grooves du monde et nouveaux talents.',
+    url: 'https://www.worldwidefm.net/',
+    stream: 'https://worldwide-fm.radiocult.fm/stream',
+    metadata: {provider:'radiocult-live',endpoint:'https://api.radiocult.fm/api/station/worldwide-fm/schedule/live'}, 
+  },
   // College radio and independent broadcasters. Streams are public HTTPS
   // station feeds; a browser player may still be restricted by the broadcaster.
   {
@@ -124,59 +133,49 @@ export const stations: Station[] = [
     description: 'La sélection continue des DJ de KCRW : soul, pop, indie et découvertes inattendues.',
     url: 'https://www.kcrw.com/shows/eclectic24/latest',
     stream: 'https://streams.kcrw.com/e24_mp3',
+    metadata: {provider:'kcrw-json',endpoint:'https://tracklist-api.kcrw.com/Music/all/1'},
   },
   {
     name: 'KALX 90.7', category: 'campus', label: 'UC Berkeley · College radio',
     description: 'Une radio libre et éclectique, entre pépites indépendantes, raretés et émissions de passionnés.',
     url: 'https://www.kalx.berkeley.edu/media/live-streaming/',
     stream: 'https://stream.kalx.berkeley.edu:8443/kalx-128.mp3',
-    metadata: {provider:'spinitron-reader',endpoint:'https://r.jina.ai/https://programming.kalx.berkeley.edu/KALX/',timezone:'America/Los_Angeles'}, 
+    metadata: {provider:'spinitron-reader',endpoint:'https://r.jina.ai/https://programming.kalx.berkeley.edu/KALX/',timezone:'America/Los_Angeles',stationCode:'KALX'}, 
   },
   {
     name: 'WNUR 89.3', category: 'campus', label: 'Northwestern · College radio',
     description: 'Rock indépendant, jazz, hip-hop et expérimentations musicales depuis Evanston.',
     url: 'https://wnur.northwestern.edu/stream/',
     stream: 'https://stream.rcs.revma.com/w4pmmfkdx4zuv',
+    playlistUrl: 'https://www.wnur.org/recent-playlists',
   },
   {
     name: 'WRBB 104.9', category: 'campus', label: 'Northeastern · College radio',
     description: 'Les sélections étudiantes de Boston, entre R&B, hip-hop, indie, pop et découvertes.',
     url: 'https://wrbbradio.org/',
     stream: 'https://audio-edge-qse4n.yyz.g.radiomast.io/dafd1179-5404-4939-9c1c-a014c6964254',
-    metadata: {provider:'spinitron-reader',endpoint:'https://r.jina.ai/https://spinitron.com/WRBB/',timezone:'America/New_York'}, 
+    metadata: {provider:'spinitron-reader',endpoint:'https://r.jina.ai/https://spinitron.com/WRBB/',timezone:'America/New_York',stationCode:'WRBB'}, 
   },
   {
     name: 'WFMU', category: 'campus', label: 'New Jersey · Indépendante',
     description: 'Radio freeform culte : raretés, musique sans frontières et programmes très personnels.',
     url: 'https://wfmu.org/',
     stream: 'https://stream0.wfmu.org/freeform-128k',
+    playlistUrl: 'https://wfmu.org/now-playing-widget.html',
   },
   {
     name: 'KZSC 88.1', category: 'campus', label: 'UC Santa Cruz · College radio',
     description: 'Soul, funk, hip-hop, jazz et sélection musicale libre de Santa Cruz.',
     url: 'https://kzsc.org/listen/',
     stream: 'https://kzscfms1-geckohost.radioca.st/kzschigh',
-    metadata: {provider:'spinitron-reader',endpoint:'https://r.jina.ai/https://spinitron.com/KZSC/',timezone:'America/Los_Angeles'}, 
+    metadata: {provider:'spinitron-reader',endpoint:'https://r.jina.ai/https://spinitron.com/KZSC/',timezone:'America/Los_Angeles',stationCode:'KZSC'}, 
   },
   {
     name: 'WXYC 89.3', category: 'campus', label: 'UNC Chapel Hill · College radio',
     description: 'Une programmation aventureuse, des émissions thématiques et des découvertes inattendues.',
     url: 'https://wxyc.org/listen/',
     stream: 'https://audio-mp3.ibiblio.org/wxyc.mp3',
-  },
-  {
-    name: 'Worldwide FM', category: 'campus', label: 'Londres · Indépendante',
-    description: 'La radio de Gilles Peterson : soul, jazz, grooves du monde et nouveaux talents.',
-    url: 'https://www.worldwidefm.net/',
-    stream: 'https://worldwide-fm.radiocult.fm/stream',
-    metadata: {provider:'radiocult-live',endpoint:'https://api.radiocult.fm/api/station/worldwide-fm/schedule/live'}, 
-  },
-  {
-    name: 'Radio Campus Paris', category: 'campus', label: 'Paris · Radio associative',
-    description: 'Scènes locales, hip-hop, soul et musiques indépendantes : à écouter sur le site officiel.',
-    url: 'https://www.radiocampusparis.org/',
-    stream: 'https://www.radiocampusparis.org/stream/',
-    metadata: {provider:'campus-paris-reader',endpoint:'https://r.jina.ai/https://www.radiocampusparis.org/c-etait-quoi-ce-titre'},
+    metadata: {provider:'wxyc-reader',endpoint:'https://r.jina.ai/https://api.wxyc.org/flowsheet?limit=30'},
   },
 ];
 

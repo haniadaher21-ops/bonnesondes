@@ -36,15 +36,15 @@ test('the first radio row is FIP, NTS 1 and La Belle Aventure', () => {
   }
 });
 
-test('original eleven radio positions are retained, followed by nine new stations', () => {
+test('Worldwide FM joins Radios and seven campus stations remain', () => {
   const order=[...main.matchAll(/\bname: '([^']+)'|fip\('([^']+)'/g)].map(m=>m[1]||m[2]);
   assert.deepEqual(order,[
     'FIP','NTS 1','Radio La Belle Aventure',
     'Radio Nova','FIP Groove','Nouvo Nova',
     'FIP Rock','FIP Jazz','Nova la nuit',
-    'FIP Electro','NTS 2',
+    'FIP Electro','NTS 2','Worldwide FM',
     'KCRW Eclectic24','KALX 90.7','WNUR 89.3','WRBB 104.9','WFMU',
-    'KZSC 88.1','WXYC 89.3','Worldwide FM','Radio Campus Paris',
+    'KZSC 88.1','WXYC 89.3',
   ]);
 });
 

@@ -635,6 +635,10 @@ export default function Journal() {
             <p className="eyebrow">{item.label}</p><h2>{item.name}</h2>
             <RadioTrack metadata={item.metadata} compact
               saveTrack={track => saveButton(currentRadioTrack(track, item.name), 'text-link radio-save', true)} />
+            {!item.metadata && item.playlistUrl && <a className="text-link" href={item.playlistUrl}
+              target="_blank" rel="noopener noreferrer">
+              Voir les titres sur le site de la radio <ArrowUpRight size={14} aria-hidden="true" />
+            </a>}
             {item.stream || item.embed
               ? <button className="text-link" onClick={() => tune(item)}><Play size={14} /> Écouter</button>
               : <SourceLink item={item}>Écouter sur le site de la radio</SourceLink>}
