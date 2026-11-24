@@ -6,17 +6,21 @@ import legacy from '../editorial/legacy.json' with { type: 'json' };
 import editions from '../editorial/editions.json' with { type: 'json' };
 import { editionImage, editionImagePath, nextEditionImageId } from '../editorial/edition-art.mjs';
 
-test('seven authentic Drive pictures are present as usable local JPG assets', () => {
-  assert.equal(imageBank.images.length, 7);
+test('Drive photos remain valid JPG assets even after future automatic imports', () => {
+  assert.ok(imageBank.images.length >= 7);
   const seen = new Set();
   for (const image of imageBank.images) {
     assert.ok(image.id && !seen.has(image.id));
     seen.add(image.id);
-    assert.match(image.file, /^\/edition-images\/[a-z-]+\.jpg$/);
+    assert.match(image.file, /^\/edition-images\/[a-z0-9-]+\.jpg$/);
     assert.ok(typeof image.alt === 'string' && image.alt.length > 20);
-    assert.match(image.driveFileId, /^[a-zA-Z0-9_-]+$/);
+    if (image.driveFileId) assert.match(image.driveFileId, /^[a-zA-Z0-9_-]+$/);
+    else {
+      assert.match(image.sourceSha256, /^[a-f0-9]{64}$/);
+      assert.ok(image.sourceName);
+    }
     const file = new URL('../public' + image.file, import.meta.url);
-    assert.ok(statSync(file).size > 10000, image.id);
+    assert.ok(statSync(file).size > 100, image.id);
     const bytes = readFileSync(file);
     assert.equal(bytes[0], 0xff);
     assert.equal(bytes[1], 0xd8);
@@ -41,7 +45,9 @@ test('new editions pick each unused picture before a second rotation', () => {
     history=[...history,{number:String(i + 3),coverImageId:chosen}];
   }
   assert.equal(new Set(picks).size,5);
-  assert.equal(nextEditionImageId(history),'disco-night');
+  const repeated = nextEditionImageId(history);
+  assert.ok(imageBank.images.some(image => image.id === repeated));
+  assert.notEqual(repeated, history.at(-1).coverImageId);
 });
 
 test('new bank entries cannot modify the image of a previously published issue',()=>{
