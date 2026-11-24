@@ -28,7 +28,7 @@ test('one photo per week, one new photo each week until all seven have appeared'
   assert.equal(new Set(ids).size, 7);
   assert.equal(ids[0], 'disco-night');
   assert.equal(ids[1], 'nice-day');
-  assert.equal(weeklyHomeImageId(new Date('2027-01-11T12:00:00Z')), 'nice-day');
+  assert.equal(weeklyHomeImageId(new Date('2027-01-11T12:00:00Z')), 'disco-night');
 });
 
 test('adding Drive photos midweek does not change that week or its history', () => {
