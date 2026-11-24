@@ -5,7 +5,7 @@ import { ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, Bookmark, Disc3, GripVert
 import { archive, catalog, issues, live, parsePlaylist, personalPlaylist, playlists, stations, type Format, type Recommendation } from './content';
 
 import { selectEdition } from '../editorial/edition.mjs';
-import { editionImage } from '../editorial/edition-art.mjs';
+import { editionImage, weeklyHomeImageId } from '../editorial/edition-art.mjs';
 import { editionShelf } from '../editorial/shelves.mjs';
 import RadioTrack, { type OnAir } from './radio-track';
 import { isHlsStream, loadHlsLibrary, supportsNativeHls, type HlsRadioPlayer } from './hls-radio';
@@ -170,6 +170,7 @@ function Section({ label, title, children, id }: { label?: string; title: string
 export default function Journal() {
   const [page, setPage] = useState<Page>('rotation');
   const [issue, setIssue] = useState(issues[0]);
+  const [weeklyArtId, setWeeklyArtId] = useState('disco-night');
   const [archivedEditionDate, setArchivedEditionDate] = useState<string | null>(null);
   const [library, setLibrary] = useState<Library>(emptyLibrary);
   const [ready, setReady] = useState(false);
@@ -215,7 +216,10 @@ export default function Journal() {
     };
     readHash();
     window.addEventListener('hashchange', readHash);
-    const updateEdition = () => setIssue(selectEdition(issues) ?? issues[0]);
+    const updateEdition = () => {
+      setIssue(selectEdition(issues) ?? issues[0]);
+      setWeeklyArtId(weeklyHomeImageId(new Date()) ?? 'disco-night');
+    };
     updateEdition();
     const editionTimer = setInterval(updateEdition, 1000);
     window.addEventListener('focus', updateEdition);
@@ -538,8 +542,8 @@ export default function Journal() {
             <a className="text-link" href="#essential-albums">Voir la sélection <ArrowDown size={15} /></a></div>
         </header>
         <article className="feature">
-          <div className="feature-art"><img key={issue.coverImageId ?? issue.number}
-            src={editionCover(issue.coverImageId).src} alt={editionCover(issue.coverImageId).alt} /></div>
+          <div className="feature-art"><img key={weeklyArtId}
+            src={editionCover(weeklyArtId).src} alt={editionCover(weeklyArtId).alt} /></div>
           <div className="feature-copy">
             <p className="eyebrow">Mix de la semaine</p>
             <h2>{featured.title}</h2>
