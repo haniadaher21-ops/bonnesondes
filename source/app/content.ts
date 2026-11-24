@@ -117,6 +117,13 @@ export const stations: Station[] = [
   { name: 'NTS 2', label: 'NTS', description: 'Le deuxième canal de NTS en direct.', url: 'https://www.nts.live/', stream: 'https://stream-relay-geo.ntslive.net/stream2',
     metadata: { provider: 'nts', endpoint: 'https://www.nts.live/api/v2/live', channel: '2' },
   },
+  {
+    name: 'Worldwide FM', label: 'Londres · Indépendante',
+    description: 'La radio de Gilles Peterson : soul, jazz, grooves du monde et nouveaux talents.',
+    url: 'https://www.worldwidefm.net/',
+    stream: 'https://worldwide-fm.radiocult.fm/stream',
+    metadata: {provider:'radiocult-live',endpoint:'https://api.radiocult.fm/api/station/worldwide-fm/schedule/live'}, 
+  },
   // College radio and independent broadcasters. Streams are public HTTPS
   // station feeds; a browser player may still be restricted by the broadcaster.
   {
@@ -163,20 +170,6 @@ export const stations: Station[] = [
     description: 'Une programmation aventureuse, des émissions thématiques et des découvertes inattendues.',
     url: 'https://wxyc.org/listen/',
     stream: 'https://audio-mp3.ibiblio.org/wxyc.mp3',
-  },
-  {
-    name: 'Worldwide FM', category: 'campus', label: 'Londres · Indépendante',
-    description: 'La radio de Gilles Peterson : soul, jazz, grooves du monde et nouveaux talents.',
-    url: 'https://www.worldwidefm.net/',
-    stream: 'https://worldwide-fm.radiocult.fm/stream',
-    metadata: {provider:'radiocult-live',endpoint:'https://api.radiocult.fm/api/station/worldwide-fm/schedule/live'}, 
-  },
-  {
-    name: 'Radio Campus Paris', category: 'campus', label: 'Paris · Radio associative',
-    description: 'Scènes locales, hip-hop, soul et musiques indépendantes : à écouter sur le site officiel.',
-    url: 'https://www.radiocampusparis.org/',
-    stream: 'https://www.radiocampusparis.org/stream/',
-    metadata: {provider:'campus-paris-reader',endpoint:'https://r.jina.ai/https://www.radiocampusparis.org/c-etait-quoi-ce-titre'},
   },
 ];
 
