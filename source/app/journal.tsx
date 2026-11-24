@@ -548,9 +548,10 @@ export default function Journal() {
               setStationDropTarget(item.name);
             }}
             onDrop={event => {
-              if (!draggingStation.current) return;
+              const dragged = draggingStation.current;
+              if (!dragged) return;
               event.preventDefault();
-              setStationOrder(order => moveStationBefore(order, draggingStation.current!, item.name));
+              setStationOrder(order => moveStationBefore(order, dragged, item.name));
               draggingStation.current = null;
               setStationDropTarget(null);
             }}>
