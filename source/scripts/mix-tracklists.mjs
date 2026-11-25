@@ -29,6 +29,7 @@ const numbered=/^\s*\d{1,3}[.)]\s+/;
 const footer=/^(?:follow|subscribe|support|credits?|links?|socials?|contact|booking|filmed|recorded|produced|thank|more (?:music|mixes)|abonnez|suivez|crédits?|écouter|listen|source|disclaimer|copyright|about)\b/i;
 function lineTrack(line){
   const value=line.replace(timestamp,'').replace(numbered,'').replace(/^\s*[•*]\s*/,'').trim();
+  if(/^(?:artist|artiste|track|title|titre)\s*[-–—/]\s*(?:artist|artiste|track|title|titre)$/i.test(value))return;
   if(footer.test(value)||/https?:\/\/|@[\w]+|^#/.test(value))return;
   const m=value.match(/^(.+?)\s+[-–—]\s+(.+)$/);
   return m?pair(m[1],m[2]):undefined;
@@ -43,6 +44,7 @@ export function descriptionTracks(description){
   const flush=()=>{if(run.length>=3)timed.push(...run);run=[];};
   for(const raw of lines){
     const line=raw.trim();
+    if(/^(?:artist|artiste|track|title|titre)\s*[-–—/]\s*(?:artist|artiste|track|title|titre)$/i.test(line)){inBlock=true;flush();continue;}
     if(heading.test(line)){inBlock=true;flush();continue;}
     if(!line){flush();if(explicit.length)inBlock=false;continue;}
     if(footer.test(line)){inBlock=false;flush();continue;}
@@ -81,6 +83,22 @@ function htmlText(html){
 }
 export function fipTracks(html){
   if(typeof html!=='string')return [];
+  // Radio France renders this episode's own timeline as Song cards. Restrict
+  // the extraction to the list immediately after its programming heading.
+  const markup=html.replace(/<!--[\s\S]*?-->/g,'');
+  const section=markup.match(/<h[1-6]\b[^>]*>\s*Programmation musicale\s*<\/h[1-6]>([\s\S]*?)<ul\b[^>]*class=["'][^"']*\btimeline\b[^"']*["'][^>]*>([\s\S]*?)<\/ul>/i);
+  if(section && section[1].length<4000){
+    const rows=[];
+    for(const match of section[2].matchAll(/<li\b[^>]*\bclass=["'][^"']*\btimeline-item\b[^"']*["'][^>]*>([\s\S]*?)<\/li>/gi)){
+      const card=match[1];
+      if(!/<div\b[^>]*\b__typename=["']Song["']/i.test(card))continue;
+      const artist=card.match(/<p\b[^>]*\bid=["']title-[^"']+["'][^>]*>([\s\S]*?)<\/p>/i);
+      const title=card.match(/<p\b[^>]*\bid=["']subtext-[^"']+["'][^>]*>([\s\S]*?)<\/p>/i);
+      if(artist&&title)rows.push({artist:htmlText(artist[1]),title:htmlText(title[1])});
+    }
+    const tracks=normalizeTracks(rows);
+    if(tracks.length>=2)return tracks;
+  }
   // Accept only a MusicPlaylist's structured recordings, not unrelated recommendations.
   for(const match of html.matchAll(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)){
     try{
@@ -122,7 +140,11 @@ export async function enrichRadioTracklists(candidates,{fetcher=fetch,now=new Da
   for(const item of candidates){
     const nts=item.format==='Radio show'&&ntsEndpoint(item);
     const fip=item.format==='Radio show'&&item.sourceId==='fip-tape'&&/^https:\/\/www\.radiofrance\.fr\/fip\/podcasts\/fip-tape\/la-mixtape-de-[a-z0-9-]+-\d+\/?$/.test(item.url);
-    if(!nts&&!fip){items.push(item);continue;}
+    if(!nts&&!fip){
+      if(item.tracklist?.method==='youtube-description'&&now-Date.parse(item.tracklist.checkedAt)>=30*86400000){const {tracklist,...rest}=item;items.push(rest);}
+      else items.push(item);
+      continue;
+    }
     const provider=nts?'NTS':'FIP Tape';
     const counts=diagnostics.bySource[provider]??={attempted:0,available:0,missing:0,errors:0,cached:0};
     const cached=item.tracklist;
