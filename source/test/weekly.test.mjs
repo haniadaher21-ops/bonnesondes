@@ -426,3 +426,13 @@ test('a relevant soulful mix published months ago can qualify once it reaches 10
  assert.equal(report.selected.youtube[0].item.id,'Soulful older');
  assert.equal(report.complete,true);
 });
+
+test('the optional verified FIP Tape survives public edition serialization', async()=>{
+  const {publicEdition}=await import('../scripts/automation-policy.mjs');
+  const fip=item('FIP Tape bonus','Radio show',{creator:'',source:'FIP · Fip Tape',provider:'FIP',sourceId:'fip-tape',mixKind:'editorial-mixtape',
+    date:'2026-11-17',url:'https://www.radiofrance.fr/fip/podcasts/fip-tape/la-mixtape-de-example-1234567'});
+  const report=weeklyShortlist({...readyOptions,candidates:[...completeCandidates,fip],profile:emptyTasteProfile()});
+  assert.equal(report.complete,true,report.errors.join('; '));
+  assert.equal(report.draft.mixes.length,4);
+  assert.equal(publicEdition(report,readyOptions.earlier,readyOptions.catalog).mixes.length,4);
+});
