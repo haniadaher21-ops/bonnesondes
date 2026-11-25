@@ -94,7 +94,7 @@ jobs:
           JS
 
       - name: Comparer les classements sur de vrais mixes et le profil synchronisé
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'editorial/tracklist-affinity'
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'audit/tracklist-results-encrypted'
         env:
           YOUTUBE_DATA_API_KEY: ${{ secrets.YOUTUBE_DATA_API_KEY }}
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
@@ -125,7 +125,13 @@ jobs:
           const before=weeklyShortlist({...options,tracklistWeight:0}),after=weeklyShortlist(options);
           const rows=after.rankings.filter(x=>x.item.format==='Radio show');
           const summary={profileArtists:profile.favoriteArtists.length,eligibleMixes:rows.length,tracklists:rows.filter(x=>x.tracklistAffinity.available).length,boosted:rows.filter(x=>x.tracklistAffinity.points>0).length,lowered:rows.filter(x=>x.tracklistAffinity.points<0).length,groups:Object.fromEntries(['nts','nova','youtube','fip'].map(k=>[k,{before:before.selected[k].map(x=>x.item.title),after:after.selected[k].map(x=>x.item.title),changed:before.selected[k].map(x=>x.item.id).join('|')!==after.selected[k].map(x=>x.item.id).join('|')}]))};
-          console.log('Affinité réelle (agrégée):',JSON.stringify(summary));
+          const {randomBytes,createCipheriv,publicEncrypt}=await import('node:crypto');
+          const secret=randomBytes(32),iv=randomBytes(12);
+          const cipher=createCipheriv('aes-256-gcm',secret,iv);
+          const payload=rows.filter(x=>x.tracklistAffinity.points>0).map(x=>({title:x.item.title,url:x.item.url,source:x.item.source,points:x.tracklistAffinity.points,score:x.score}));
+          const ciphertext=Buffer.concat([cipher.update(JSON.stringify(payload),'utf8'),cipher.final()]);
+          const encryptedKey=publicEncrypt({key:"-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnQCIHn0qKOC4fQAVP5rS\nkWeb0GdYqfa8VthP9am1VvP405/t+qnJlciVKwwAWXdrNoKFLbzo6CHfwMFj+WsN\ncGYP9/8+X7rQgdZB618oUc3+trgv0VdgscoIEiWs+Xyd1Kx8f/szuJz2PZj0BCWb\nYQVWIK14YM2jRiA6vk2dmyEHp4BioPCNaT7Vy92s7CZPypUP/6rLoCC2UCFBvfeX\n4zMJJjrRTNeKJWBlI0MvrpFmSUIcTRdBcCanfEMrxZ6Gig85rULtfQBViNuMc035\nWm4+EsyVJnXAkO3WrOHe2ETRCEVlzVO5s+azsKRF3rcz9Atq6bAzAsESoYn0rw3y\nqQIDAQAB\n-----END PUBLIC KEY-----",oaepHash:'sha256'},secret);
+          console.log('AUDIT_CIPHERTEXT:',[encryptedKey,iv,cipher.getAuthTag(),ciphertext].map(x=>x.toString('base64')).join('.'));
           assert.ok(summary.tracklists>0,'Aucune tracklist éligible pour la comparaison');
           assert.equal(before.rankings.length,after.rankings.length);
           assert.ok(after.rankings.every(x=>Number.isFinite(x.score)));
