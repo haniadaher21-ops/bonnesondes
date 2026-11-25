@@ -55,6 +55,22 @@ export function descriptionTracks(description){
   const rows=normalizeTracks(explicit.length>=2?explicit:timed);
   return rows.length>=2?rows:[];
 }
+// YouTube descriptions can list title before artist. Confirm orientation using a
+// declared order or repeated artist names in the video title. Never guess.
+export function youtubeDescriptionTracks(description,videoTitle){
+  const rows=descriptionTracks(description);
+  if(!rows.length)return {tracks:[],status:'unavailable'};
+  const order=String(description??'').match(/^\s*(?:track\s*list\s*[:(]\s*)?(artist|track|title|artiste|titre)\s*[-–—/]\s*(artist|track|title|artiste|titre)\s*\)?\s*$/im);
+  const artistWord=x=>/^(?:artist|artiste)$/i.test(x);
+  if(order&&artistWord(order[1])!==artistWord(order[2]))return {tracks:artistWord(order[1])?rows:rows.map(x=>({artist:x.title,title:x.artist})),status:'available'};
+  const norm=x=>' '+String(x??'').normalize('NFKD').replace(/\p{M}/gu,'').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim()+' ';
+  const name=norm(videoTitle);
+  const count=key=>new Set(rows.map(x=>norm(x[key])).filter(x=>x.trim().length>=3&&name.includes(x))).size;
+  const forward=count('artist'),reverse=count('title');
+  if(forward>=2&&forward>=reverse+2)return {tracks:rows,status:'available'};
+  if(reverse>=2&&reverse>=forward+2)return {tracks:rows.map(x=>({artist:x.title,title:x.artist})),status:'available'};
+  return {tracks:[],status:'ambiguous',unresolvedCount:rows.length};
+}
 function htmlText(html){
   return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'')
     .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,'')
