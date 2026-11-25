@@ -48,3 +48,9 @@ test('YouTube requires corroborated artist order and corrects reversed lists',()
  assert.equal(youtubeDescriptionTracks(desc,'Sunday mix').status,'ambiguous');
  assert.equal(youtubeDescriptionTracks('Tracklist:\nArtist - Title\nSade - By Your Side\nSAULT - Free','Sunday mix').status,'available');
 });
+
+test('FIP extracts artist and title only from the official episode timeline',()=>{
+ const song=(artist,title,id)=>'<li class="timeline-item"><div __typename="Song"><p id="title-'+id+'"><span>'+artist+'</span></p><p id="subtext-'+id+'">'+title+'</p></div></li>';
+ const html='<h2>Programmation musicale<!----></h2><div class="List"><ul class="items g-list timeline">'+song('Serge Gainsbourg','Flash Forward','a')+song('Linda Sikhakhane','Uzalo','b')+'</ul></div>'+song('Unrelated','Recommendation','c');
+ assert.deepEqual(fipTracks(html),[{artist:'Serge Gainsbourg',title:'Flash Forward'},{artist:'Linda Sikhakhane',title:'Uzalo'}]);
+});
