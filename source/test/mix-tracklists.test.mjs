@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {normalizeTracks,ntsTracks,descriptionTracks,fipTracks,enrichRadioTracklists} from '../scripts/mix-tracklists.mjs';
+import {normalizeTracks,ntsTracks,descriptionTracks,youtubeDescriptionTracks,fipTracks,enrichRadioTracklists} from '../scripts/mix-tracklists.mjs';
 import {rollCandidates} from '../scripts/automation-policy.mjs';
 const now=new Date('2026-11-25T09:00:00Z');
 const tracks=[{artist:'Cleo Sol',title:'Why Don’t You'},{artist:'SAULT',title:'Free'}];
@@ -39,4 +39,12 @@ test('missing tracklist is non-blocking and a rate limit suspends the provider',
  assert.equal(requests,1);assert.equal(result.items.length,2);
  assert.equal(result.items[0].tracklist.status,'unavailable');
  assert.equal(result.diagnostics.errors,2);
+});
+
+test('YouTube requires corroborated artist order and corrects reversed lists',()=>{
+ const desc='Tracklist:\nOakland Pt. 2 - Karri\nHennessy Tears - JVCK JAMES\nSong - Other';
+ const r=youtubeDescriptionTracks(desc,'R&B playlist | Karri, JVCK JAMES');
+ assert.equal(r.status,'available');assert.deepEqual(r.tracks[0],{artist:'Karri',title:'Oakland Pt. 2'});
+ assert.equal(youtubeDescriptionTracks(desc,'Sunday mix').status,'ambiguous');
+ assert.equal(youtubeDescriptionTracks('Tracklist:\nArtist - Title\nSade - By Your Side\nSAULT - Free','Sunday mix').status,'available');
 });
