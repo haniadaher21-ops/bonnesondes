@@ -21,6 +21,13 @@ export function livePerformer(title, knownArtist) {
   const raw=title.trim();
   if(!raw)return;
   const candidates=[
+    raw.match(/^(.+?)\s+performs?\s+.+?\s+for\s+Mahogany Sessions?\b/i)?.[1],
+    raw.match(/^(.+?)\s*[-–—]\s*.+?\s*\|\s*Audiotree (?:Live|From Nothing|Far Out)\b/i)?.[1],
+    raw.match(/^(.+?)\s*[-–—]\s*.+?\s*(?:\||\()?\s*(?:A Take Away Show|(?:Blogothèque )?Live Session|Mahogany Sessions?|Concert à emporter|Soirée de Poche)\b/i)?.[1],
+    raw.match(/^(.+?)\s*\|\s*(?:Live Session|A Take Away Show|Concert à emporter|Soirée de Poche)\b/i)?.[1],
+    raw.match(/^(.+?)\s+on Audiotree Live\b/i)?.[1],
+    raw.match(/^(.+?)\s*\|\s*Audiotree (?:From Nothing|Far Out)\b/i)?.[1],
+    raw.match(/^(.+?)(?:\s*[-–—]\s*|,\s*)(?:Braths Sessions?|Baloise Session|ARTE Concert Festival|live (?:at|in)|Full Concert|Concert intégral)\b/i)?.[1],
     raw.match(/^(.+?)\s+covers?\s+.+?\s+(?:for\s+)?Like A Version\b/i)?.[1],
     raw.match(/^(.+?)\s*:\s*Tiny Desk(?:\s+Concert)?\b/i)?.[1],
     raw.match(/^(.+?)\s*[-–—]\s*.+?\s*\(?Live on KEXP\)?/i)?.[1],
@@ -98,13 +105,20 @@ export function isYouTubeMix(item) {
     && item.mixStyleVerified===true && preferredYouTubeMixStyles.includes(item.mixStyle)
     && !excludesElectronicMix(item) && !excludesJazz(item);
 }
+export function isFipTape(item) {
+  const url=sourceUrl(item?.url);
+  return item?.format==='Radio show' && item?.sourceId==='fip-tape'
+    && item?.mixKind==='editorial-mixtape' && item?.source==='FIP · Fip Tape'
+    && ['www.radiofrance.fr','radiofrance.fr'].includes(url?.hostname)
+    && /^\/fip\/podcasts\/fip-tape\/la-mixtape-de-[a-z0-9-]+-\d+\/?$/.test(url.pathname);
+}
 const spokenProgram = /(?:\binterview\b|\btalk(?:show)?\b|\bnews\b|\bpodcast\b|\bdiscussion\b|\bchronique\b|\binvité(?:e|s|es)?\b|\binvitée\b|\bmatinale\b|\bentretien\b)/i;
 export function isFreshMusicMix(item, startsOn, today) {
-  if(item?.format!=='Radio show' || !['dj-set','curated-mix'].includes(item.mixKind) || !isoDate(item.date)
+  if(item?.format!=='Radio show' || !(['dj-set','curated-mix'].includes(item.mixKind) || isFipTape(item)) || !isoDate(item.date)
     || !isoDate(startsOn) || !isoDate(today) || spokenProgram.test(item.title??''))return false;
   // NTS is weekly, Nova can use its last set, and YouTube must reach 100k
   // views. Give YouTube up to a year, favoring freshness within that window.
-  const lookback=item.mixKind==='curated-mix'?365:isNovaMix(item)?14:7;
+  const lookback=item.mixKind==='curated-mix'?365:isFipTape(item)?90:isNovaMix(item)?14:7;
   const min=new Date(Date.parse(startsOn)-lookback*86400000).toISOString().slice(0,10);
   const max=new Date(Date.parse(startsOn)-86400000).toISOString().slice(0,10);
   return item.date>=min && item.date<=max && item.date<=today;

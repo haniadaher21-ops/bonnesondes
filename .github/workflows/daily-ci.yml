@@ -27,3 +27,43 @@ jobs:
           cache-dependency-path: source/package-lock.json
       - run: npm ci
       - run: npm test && npm run typecheck
+
+      - name: Vérifier les nouvelles sources sur les services réels
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'editorial/expand-mix-live-sources'
+        env:
+          YOUTUBE_DATA_API_KEY: ${{ secrets.YOUTUBE_DATA_API_KEY }}
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync} from 'node:fs';
+          import {discover} from './scripts/discovery.mjs';
+          import {verifyLives} from './scripts/weekly-evidence.mjs';
+          import {collectYouTubeMixes,targetedMixChannels} from './scripts/youtube-mixes.mjs';
+          import {nextEditionMonday} from './scripts/weekly-ranking.mjs';
+          import {parisDate} from './editorial/edition.mjs';
+          const key=process.env.YOUTUBE_DATA_API_KEY;
+          assert.ok(key,'Clé YouTube absente');
+          const now=new Date(), today=parisDate(now), startsOn=nextEditionMonday(now);
+          const ids=['blogotheque','mahogany','audiotree','arte-concert','npr-tiny-desk','fip-tape'];
+          const sources=JSON.parse(readFileSync('editorial/sources.json','utf8')).filter(s=>ids.includes(s.id));
+          const channels=[...sources.filter(s=>s.channelId).map(s=>({id:s.channelId,name:s.name})),...targetedMixChannels.map(s=>({id:s.channelId,name:s.name}))];
+          const response=await fetch('https://www.googleapis.com/youtube/v3/channels?'+new URLSearchParams({part:'snippet',id:channels.map(c=>c.id).join(',')}),{headers:{'x-goog-api-key':key},signal:AbortSignal.timeout(15000)});
+          assert.ok(response.ok,'YouTube channels HTTP '+response.status);
+          const verified=(await response.json()).items;
+          for(const c of channels){
+            const actual=verified.find(x=>x.id===c.id);
+            assert.ok(actual,'Chaîne introuvable: '+c.name);
+            console.log('Chaîne confirmée:',c.name,'=>',actual.snippet.title,actual.snippet.customUrl);
+          }
+          const result=await discover({sources,now});
+          for(const s of result.sources)console.log('Collecte:',s.sourceId,s.status,'candidats:',result.candidates.filter(x=>x.sourceId===s.sourceId).length,'erreurs:',JSON.stringify(s.errors??[]));
+          console.log('Candidats réels:',JSON.stringify(result.candidates.map(x=>({source:x.sourceId,title:x.title,url:x.url}))));
+          const lives=await verifyLives(result.candidates,sources,key);
+          console.log('Lives vérifiés:',lives.status,JSON.stringify(lives.items.map(x=>({source:x.sourceId,title:x.title,creator:x.creator,minutes:x.minutes}))));
+          const mix=await collectYouTubeMixes({startsOn,today,key});
+          console.log('Mixes:',mix.status,'trouvés:',mix.found,'éligibles:',mix.eligible,'requêtes:',mix.queries);
+          console.log('Mixes vérifiés:',JSON.stringify(mix.items.map(x=>({source:x.source,title:x.title,views:x.viewCount,style:x.mixStyle}))));
+          for(const source of sources.filter(s=>s.format==='Live session'))assert.ok(lives.items.some(x=>x.sourceId===source.id&&x.creator),'Aucun live avec artiste identifié: '+source.id);
+          assert.ok(mix.status==='ok','Collecte YouTube incomplète');
+          assert.ok(result.candidates.some(x=>x.sourceId==='fip-tape'),'Aucun épisode FIP Tape confirmé');
+          JS

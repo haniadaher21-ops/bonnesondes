@@ -41,7 +41,8 @@ function youtubeCandidates(xml, source) {
     const title = text(entry.title);
     const alternate = sourceUrl(entry.link?.['@_href']);
     return !alternate?.pathname.startsWith('/shorts/') && !excludedVideo.test(title)
-      && (!source.titleContains || label(title).includes(label(source.titleContains)));
+      && (!source.titleContains || label(title).includes(label(source.titleContains)))
+      && (!source.titleMatchesAny || source.titleMatchesAny.some(marker => label(title).includes(label(marker))));
   }).slice(0, 15).flatMap(entry => {
     const id = entry['yt:videoId'];
     const title = text(entry.title);
@@ -144,6 +145,16 @@ async function verifyCandidate(item, source, request) {
     return { ...item, title: text(metadata.title), creator: livePerformer(text(metadata.title), source.artist) ?? item.creator,
       videoSourceUrl: item.url, officialVideo: true, embed: { provider: 'youtube', id: item.id.slice(8) } };
   }
+  if (source.id === 'fip-tape') {
+    const url = sourceUrl(item.url);
+    if (!url || !/^\/fip\/podcasts\/fip-tape\/la-mixtape-de-[a-z0-9-]+-\d+\/?$/.test(url.pathname))
+      throw new Error('Épisode FIP Tape non confirmé.');
+    const response = await request(item.url);
+    const resolved = response.url && sourceUrl(response.url);
+    await response.body?.cancel();
+    if (resolved && (resolved.hostname.replace(/^www\./,'') !== 'radiofrance.fr' || resolved.pathname !== url.pathname))
+      throw new Error('Épisode FIP Tape redirigé hors de sa fiche.');
+  }
   if (source.method === 'nts-episodes') {
     await (await request(item.url)).body?.cancel();
   }
@@ -225,6 +236,7 @@ async function collect(source, request, collectedAt) {
         ...(source.format === 'Radio show' && source.mixKind === 'dj-set' && {
           mixKind:'dj-set',...(source.mixSelection && {novaMixVerified:true}),
         }),
+        ...(source.id === 'fip-tape' && {mixKind:'editorial-mixtape'}),
         verificationStatus: verified.verificationStatus ?? 'source-verified',
       });
     }

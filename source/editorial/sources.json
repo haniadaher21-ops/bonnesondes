@@ -329,5 +329,83 @@
     "url": "https://www.nts.live/shows/not-waving",
     "feed": "https://www.nts.live/api/v2/shows/not-waving/episodes",
     "mixKind": "dj-set"
+  },
+  {
+    "id": "blogotheque",
+    "name": "La Blogothèque",
+    "mode": "automatic",
+    "method": "youtube-atom",
+    "url": "https://www.youtube.com/@blogotheque",
+    "channelId": "UCFAKGci5lneha2x4XMbzYrQ",
+    "titleMatchesAny": [
+      "take away show",
+      "live session",
+      "concert à emporter",
+      "soiree de poche",
+      "soirée de poche"
+    ],
+    "provider": "YouTube",
+    "format": "Live session"
+  },
+  {
+    "id": "mahogany",
+    "name": "Mahogany Sessions",
+    "mode": "automatic",
+    "method": "youtube-atom",
+    "url": "https://www.youtube.com/@mahoganysessions",
+    "channelId": "UCG36u-k09zdIPQh5EEdVgTA",
+    "titleMatchesAny": [
+      "mahogany session",
+      "mahogany sessions",
+      "mahogany live"
+    ],
+    "provider": "YouTube",
+    "format": "Live session"
+  },
+  {
+    "id": "audiotree",
+    "name": "Audiotree",
+    "mode": "automatic",
+    "method": "youtube-atom",
+    "url": "https://www.youtube.com/@audiotree",
+    "channelId": "UCWjmAUHmajb1-eo5WKk_22A",
+    "titleMatchesAny": [
+      "audiotree live",
+      "audiotree from nothing",
+      "audiotree far out"
+    ],
+    "provider": "YouTube",
+    "format": "Live session"
+  },
+  {
+    "id": "arte-concert",
+    "name": "ARTE Concert",
+    "mode": "automatic",
+    "method": "youtube-atom",
+    "url": "https://www.youtube.com/@arteconcert",
+    "channelId": "UC-smeLB9AnOTeypr1YyjJ3A",
+    "titleMatchesAny": [
+      "braths session",
+      "baloise session",
+      "arte concert festival",
+      "live at",
+      "live in",
+      "full concert",
+      "concert intégral"
+    ],
+    "provider": "YouTube",
+    "format": "Live session"
+  },
+  {
+    "id": "fip-tape",
+    "name": "FIP · Fip Tape",
+    "provider": "FIP",
+    "format": "Radio show",
+    "mode": "automatic",
+    "method": "podcast-rss",
+    "url": "https://www.radiofrance.fr/fip/podcasts/fip-tape",
+    "feed": "https://radiofrance-podcast.net/podcast09/35099478-7c72-4f9e-a6de-1b928400e9e5/podcast_6da709ab-470a-4054-97cd-b1241f9fedaa.xml",
+    "itemPrefix": "/fip/podcasts/fip-tape/",
+    "mixKind": "editorial-mixtape"
   }
 ]
