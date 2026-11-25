@@ -189,13 +189,28 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   const neutral=weeklyShortlist({candidates:rankedCandidates,sources:collection.sources,
     profile:emptyTasteProfile(),earlier,catalog:legacyItems,startsOn,now,
     seen:Object.fromEntries(previous.map(item=>[canonicalUrl(item.url),item.firstSeenAt]))});
+  const withoutTracklists=weeklyShortlist({candidates:rankedCandidates,sources:collection.sources,
+    profile,earlier,catalog:legacyItems,startsOn,now,tracklistWeight:0,
+    seen:Object.fromEntries(previous.map(item=>[canonicalUrl(item.url),item.firstSeenAt]))});
+  const tracklistComparison={
+    rankedMixes:report.rankings.filter(x=>x.item.format==='Radio show').length,
+    available:report.rankings.filter(x=>x.tracklistAffinity.available).length,
+    boosted:report.rankings.filter(x=>x.tracklistAffinity.points>0).length,
+    lowered:report.rankings.filter(x=>x.tracklistAffinity.points<0).length,
+    groups:Object.fromEntries(['nts','nova','youtube','fip'].map(section=>[section,{
+      before:withoutTracklists.selected[section].map(row=>row.item.title),
+      after:report.selected[section].map(row=>row.item.title),
+      changed:withoutTracklists.selected[section].map(row=>row.item.id).join('|')!==report.selected[section].map(row=>row.item.id).join('|')
+    }]))
+  };
+  console.log('Comparaison tracklists',JSON.stringify(tracklistComparison));
   const comparison=Object.fromEntries(Object.entries(report.selected).map(([section,rows])=>[section,{
     personalized:rows.map(row=>row.item.title),neutral:neutral.selected[section].map(row=>row.item.title),
     changed:rows.map(row=>row.item.id).join('|')!==neutral.selected[section].map(row=>row.item.id).join('|'),
   }]));
   async function writeReport(build='not-run') {
     const result=observationReport(report,{profileRevision:remote.revision,profileUpdatedAt:remote.profileUpdatedAt,
-      profileSignalCounts,comparison,incremental,albumEvidence:evidence,catalogues:[...catalogues.status,...endorsements.status,...press.status],sources:collection.sources,liveStatus:lives.status,
+      profileSignalCounts,comparison,tracklistComparison,incremental,albumEvidence:evidence,catalogues:[...catalogues.status,...endorsements.status,...press.status],sources:collection.sources,liveStatus:lives.status,
       youtubeMixes:youtubeMixSummary,build});
     if(env.BONNES_ONDES_OBSERVATION_DIR) {
       await mkdir(env.BONNES_ONDES_OBSERVATION_DIR,{recursive:true});
@@ -209,6 +224,8 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     sources,albumCatalogues:readJson(new URL('../editorial/album-catalogues.json',import.meta.url)),
     archivalLives:readJson(new URL('../editorial/live-archive.json',import.meta.url)),albums:registered,profileRevision:remote.revision,
     youtubeMixSearches:await readFile(new URL('./youtube-mixes.mjs',import.meta.url),'utf8'),
+    tracklistAffinity:await readFile(new URL('./tracklist-affinity.mjs',import.meta.url),'utf8'),
+    mixTracklists:await readFile(new URL('./mix-tracklists.mjs',import.meta.url),'utf8'),
     ranking:await readFile(new URL('./weekly-ranking.mjs',import.meta.url),'utf8'),
     evidence:await readFile(new URL('./weekly-evidence.mjs',import.meta.url),'utf8'),
     editorial:await readFile(new URL('./editorial-endorsements.mjs',import.meta.url),'utf8'),
