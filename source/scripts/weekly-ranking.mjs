@@ -1,4 +1,5 @@
 import { canonicalUrl, editionItems, isoDate, parisDate, sourceUrl, validateEdition } from '../editorial/edition.mjs';
+import { buildArtistAffinity, mixTracklistAffinity } from './tracklist-affinity.mjs';
 import { spotifyPlaylistId } from './discovery-feeds.mjs';
 import { normalized } from './weekly-evidence.mjs';
 import { excludesJazz, excludesElectronicMix, editorialEndorsement, isFreshMusicMix, isNovaMix, isNtsMix, isYouTubeMix, isFipTape, MIN_YOUTUBE_MIX_VIEWS } from './recommendation-policy.mjs';
@@ -34,7 +35,7 @@ const matchingValue = (needles, fields) => needles.find(needle => {
 });
 const feedbackWeight = { Loved: 24, Interesting: 10, 'Worth revisiting': 12, 'Not for me': -40 };
 
-function rank(item, profile, today, tasteWeight, previouslySeen) {
+function rank(item, profile, today, tasteWeight, previouslySeen, artistIndex, tracklistWeight, now) {
   const signals = [];
   let affinity = 0;
   function signal(value, points, reason) {
@@ -85,6 +86,8 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
   signal(styleBalance > 0, 7, 'Genre ou ambiance déjà apprécié');
   signal(styleBalance < 0, -12, 'Genre ou ambiance déjà écarté');
 
+  const tracklistAffinity = mixTracklistAffinity(item, artistIndex, now);
+  signal(tracklistAffinity.points && tracklistWeight, tracklistAffinity.points * tracklistWeight, 'Affinité des artistes dans la tracklist vérifiée');
   const date = item.releaseDate ?? item.date;
   const age = isoDate(date) ? (Date.parse(today) - Date.parse(date)) / DAY : undefined;
   // A new album must be current, not a years-old review that ranks on reputation alone.
@@ -124,7 +127,7 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
     Playlist: item.playlistOrigin === 'publisher-discovered' ? 'Lien vérifié et publié par ' + (item.creator ?? item.provider ?? 'le média source') : 'Playlist vérifiée sur Spotify',
     'Live session': 'Performance publiée par une chaîne officielle, vidéo intégrable de ' + Math.round(item.minutes * 60) + ' secondes',
   }[item.format];
-  return { item, score, publicReason: evidence + '.', reason: [evidence, ...signals].join('. ') + '.', signals, age };
+  return { item, score, publicReason: evidence + '.', reason: [evidence, ...signals].join('. ') + '.', signals, age, tracklistAffinity };
 }
 
 function exclusion(item, today, startsOn) {
@@ -149,11 +152,12 @@ function exclusion(item, today, startsOn) {
   if (isoDate(item.date) && item.date > today) return 'Publication encore à venir';
 }
 
-export function weeklyShortlist({ candidates, sources = [], profile, earlier, catalog, startsOn, now = new Date(), tasteWeight = 0.7, seen = {} }) {
-  if (!isoDate(startsOn) || !Number.isFinite(tasteWeight) || tasteWeight < 0 || tasteWeight > 1) throw new Error('Date ou poids de profil invalide.');
+export function weeklyShortlist({ candidates, sources = [], profile, earlier, catalog, startsOn, now = new Date(), tasteWeight = 0.7, tracklistWeight = 1, seen = {} }) {
+  if (!isoDate(startsOn) || !Number.isFinite(tasteWeight) || tasteWeight < 0 || tasteWeight > 1 || !Number.isFinite(tracklistWeight) || tracklistWeight < 0 || tracklistWeight > 1) throw new Error('Date ou poids de profil invalide.');
   const today = parisDate(now);
   const albumWindowStart = addDays(startsOn, -14);
   const known = [...catalog, ...earlier.flatMap(editionItems)];
+  const artistIndex = buildArtistAffinity(profile, known);
   const knownIds = new Set(known.map(item => item.id));
   const knownUrls = new Set(known.map(item => canonicalUrl(item.url)));
   const rejected = [];
@@ -166,7 +170,7 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
       continue;
     }
     const previouslySeen = Object.hasOwn(seen, canonicalUrl(item.url));
-    rankings.push({ ...rank(item, profile, today, tasteWeight, previouslySeen), previouslySeen });
+    rankings.push({ ...rank(item, profile, today, tasteWeight, previouslySeen, artistIndex, tracklistWeight, now), previouslySeen });
   }
   rankings.sort((a, b) => b.score - a.score || a.item.id.localeCompare(b.item.id));
   const selected = {};
