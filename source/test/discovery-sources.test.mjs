@@ -4,7 +4,7 @@ import { discover, renderReport } from '../scripts/discovery.mjs';
 import { emptyTasteProfile, normalizeTasteProfile } from '../editorial/taste-profile.mjs';
 import configuredSources from '../editorial/sources.json' with {type:'json'};
 import { isDedicatedNovaMixEpisode } from '../scripts/nova-mixes.mjs';
-import { isNovaMix } from '../scripts/recommendation-policy.mjs';
+import { isNovaMix, isFipTape, isFreshMusicMix, livePerformer } from '../scripts/recommendation-policy.mjs';
 
 const rss = items => '<rss><channel>' + items.join('') + '</channel></rss>';
 const xmlItem = (title, url, extra = '') => '<item><title>' + title + '</title><link>' + url
@@ -199,4 +199,41 @@ test('Worldmix and Teuf d’appart are music series; stale episodes remain rejec
   assert.equal(result.candidates[0].novaMixVerified,true);
   assert.equal(isNovaMix(result.candidates[0]),true);
  }
+});
+
+test('new live sources identify actual artists and filter non-performance uploads',async()=>{
+ const titles={
+  'blogotheque':'Rostam - In a River | Live Session',
+  'mahogany':'Artist - Song | Mahogany Session',
+  'audiotree':'INOHA on Audiotree Live (Full Session)',
+  'arte-concert':'BERWYN - Braths Sessions - ARTE Concert',
+ };
+ const expected=['Rostam','Artist','INOHA','BERWYN'];
+ const sources=Object.keys(titles).map(id=>configuredSources.find(x=>x.id===id));
+ assert.ok(configuredSources.some(x=>x.id==='npr-tiny-desk'));
+ for(const [index,source] of sources.entries()){
+  const title=titles[source.id],id='aaaaaaaaaaa';
+  const feed='<feed><yt:channelId>'+source.channelId+'</yt:channelId>'
+   +'<entry><yt:videoId>'+id+'</yt:videoId><yt:channelId>'+source.channelId+'</yt:channelId><title>'+title+'</title><published>2026-11-17T00:00:00Z</published><link rel="alternate" href="https://www.youtube.com/watch?v='+id+'"/></entry>'
+   +'<entry><yt:videoId>bbbbbbbbbbb</yt:videoId><yt:channelId>'+source.channelId+'</yt:channelId><title>Unrelated documentary</title><published>2026-11-17T00:00:00Z</published><link rel="alternate" href="https://www.youtube.com/watch?v=bbbbbbbbbbb"/></entry></feed>';
+  const result=await discover({sources:[source],fetcher:async url=>url.includes('/oembed')?Response.json({title}):new Response(feed)});
+  assert.equal(result.candidates.length,1,source.id);
+  assert.equal(result.candidates[0].creator,expected[index],source.id);
+  assert.equal(livePerformer(title),expected[index],source.id);
+ }
+});
+test('FIP Tape is optional, individually verified and eligible within its own window',async()=>{
+ const src=configuredSources.find(x=>x.id==='fip-tape');
+ const url='https://www.radiofrance.fr/fip/podcasts/fip-tape/la-mixtape-de-james-blake-1234567';
+ const xml=rss([xmlItem('La mixtape de James Blake',url),xmlItem('Podcast index',src.url)]);
+ let confirmed=false;
+ const result=await discover({sources:[src],fetcher:async target=>{
+  if(target===src.feed)return new Response(xml);
+  assert.equal(target,url);confirmed=true;return new Response('Episode');
+ }});
+ assert.equal(confirmed,true);
+ assert.equal(result.candidates.length,1);
+ assert.equal(isFipTape(result.candidates[0]),true);
+ assert.equal(isFreshMusicMix(result.candidates[0],'2026-11-23','2026-11-22'),true);
+ assert.equal(isFipTape({...result.candidates[0],url:'https://example.test/fip/podcasts/fip-tape/la-mixtape-de-james-blake-1234567'}),false);
 });
