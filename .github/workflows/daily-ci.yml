@@ -92,3 +92,41 @@ jobs:
           console.log('Tracklists YouTube:',JSON.stringify({status:mixes.status,eligible:mixes.items.length,available:mixes.items.filter(x=>x.tracklist?.status==='available').map(x=>({title:x.title,count:x.tracklist.tracks.length,example:x.tracklist.tracks.slice(0,2)}))}));
           assert.ok(items.some(x=>x.sourceId==='fip-tape'&&x.tracklist?.status==='available'),'Aucune tracklist FIP Tape confirmée');
           JS
+
+      - name: Comparer les classements sur de vrais mixes et le profil synchronisé
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'editorial/tracklist-affinity'
+        env:
+          YOUTUBE_DATA_API_KEY: ${{ secrets.YOUTUBE_DATA_API_KEY }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          BONNES_ONDES_RUNNER_TOKEN: ${{ secrets.BONNES_ONDES_RUNNER_TOKEN }}
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync} from 'node:fs';
+          import {discover} from './scripts/discovery.mjs';
+          import {enrichRadioTracklists} from './scripts/mix-tracklists.mjs';
+          import {collectYouTubeMixes} from './scripts/youtube-mixes.mjs';
+          import {weeklyShortlist} from './scripts/weekly-ranking.mjs';
+          import {editionForCycle} from './scripts/automation-policy.mjs';
+          import {parisDate,editionItems} from './editorial/edition.mjs';
+          import {legacyEdition,legacyItems,publishedFile,readJson} from './scripts/editorial-files.mjs';
+          import {readRunnerProfile} from './private-sync/client.mjs';
+          import {normalizeTasteProfile} from './editorial/taste-profile.mjs';
+          const now=new Date(),startsOn=editionForCycle(now);
+          const remote=await readRunnerProfile({url:process.env.SUPABASE_URL,publicKey:process.env.SUPABASE_PUBLISHABLE_KEY},process.env.BONNES_ONDES_RUNNER_TOKEN);
+          const profile=normalizeTasteProfile(remote.profile);
+          const sources=JSON.parse(readFileSync('editorial/sources.json','utf8')).filter(s=>s.method==='nts-episodes'||s.id==='fip-tape'||s.provider==='Radio Nova');
+          const result=await discover({sources,now});
+          const {items}=await enrichRadioTracklists(result.candidates,{now});
+          const mixes=await collectYouTubeMixes({startsOn,today:parisDate(now),key:process.env.YOUTUBE_DATA_API_KEY,profile});
+          const earlier=[legacyEdition,...readJson(publishedFile)];
+          const options={candidates:[...items,...mixes.items],profile,earlier,catalog:legacyItems,startsOn,now};
+          const before=weeklyShortlist({...options,tracklistWeight:0}),after=weeklyShortlist(options);
+          const rows=after.rankings.filter(x=>x.item.format==='Radio show');
+          const summary={profileArtists:profile.favoriteArtists.length,eligibleMixes:rows.length,tracklists:rows.filter(x=>x.tracklistAffinity.available).length,boosted:rows.filter(x=>x.tracklistAffinity.points>0).length,lowered:rows.filter(x=>x.tracklistAffinity.points<0).length,groups:Object.fromEntries(['nts','nova','youtube','fip'].map(k=>[k,{before:before.selected[k].map(x=>x.item.title),after:after.selected[k].map(x=>x.item.title),changed:before.selected[k].map(x=>x.item.id).join('|')!==after.selected[k].map(x=>x.item.id).join('|')}]))};
+          console.log('Affinité réelle (agrégée):',JSON.stringify(summary));
+          assert.ok(summary.tracklists>0,'Aucune tracklist éligible pour la comparaison');
+          assert.equal(before.rankings.length,after.rankings.length);
+          assert.ok(after.rankings.every(x=>Number.isFinite(x.score)));
+          JS

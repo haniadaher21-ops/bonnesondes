@@ -1,7 +1,7 @@
 import { canonicalUrl, isoDate, parisDate, sourceUrl, validateEdition } from '../editorial/edition.mjs';
 import { normalized } from './weekly-evidence.mjs';
 import { nextEditionImageId } from '../editorial/edition-art.mjs';
-import { isFreshMusicMix, isNtsMix, isNovaMix, isYouTubeMix } from './recommendation-policy.mjs';
+import { isFreshMusicMix, isNtsMix, isNovaMix, isYouTubeMix, isFipTape } from './recommendation-policy.mjs';
 
 const DAY = 86400000;
 const publicFields = ['id','title','creator','format','source','publisher','url','sourceUrl','artwork','date','minutes',
@@ -59,7 +59,7 @@ export function publicEdition(report, earlier, catalog) {
   const draft = {...report.draft};
   draft.coverImageId = nextEditionImageId(earlier);
   const artists = new Set();
-  if(draft.mixPolicy==='nts-nova-youtube-v1' && (draft.mixes.length!==3
+  if(draft.mixPolicy==='nts-nova-youtube-v1' && (draft.mixes.length!==3+draft.mixes.filter(isFipTape).length || draft.mixes.filter(isFipTape).length>1
     || draft.mixes.filter(isNtsMix).length!==1||draft.mixes.filter(isNovaMix).length!==1
     || draft.mixes.filter(isYouTubeMix).length!==1))
     throw new Error('Sélection obligatoire : un NTS, un Nova et un YouTube crédible.');
