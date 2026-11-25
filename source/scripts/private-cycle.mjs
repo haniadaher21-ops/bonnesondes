@@ -9,6 +9,7 @@ import { canonicalUrl, editionItems, parisDate } from '../editorial/edition.mjs'
 import { emptyTasteProfile, normalizeTasteProfile } from '../editorial/taste-profile.mjs';
 import { readRunnerProfile, syncRpc } from '../private-sync/client.mjs';
 import { collectAlbumCatalogues, readPublicPage } from './album-catalogues.mjs';
+import {enrichRadioTracklists} from './mix-tracklists.mjs';
 import { collectYouTubeMixes } from './youtube-mixes.mjs';
 import { collectEditorialEndorsements } from './editorial-endorsements.mjs';
 import { collectMusicPress, matchMusicPress } from './music-press.mjs';
@@ -142,12 +143,14 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   // Never carry a past verification into this run if its primary source is unavailable.
   const base = previous.filter(item => !albumKeys.has(canonicalUrl(item.url))).map(item=>
     item.format==='Album' && item.verificationStatus==='primary-verified' ? {...item,verificationStatus:'release-date-needed'} : item);
-  const candidates = rollCandidates(base,[...collection.candidates,...newlyDiscoveredYouTubeMixes,...albums],now);
+  const rolled = rollCandidates(base,[...collection.candidates,...newlyDiscoveredYouTubeMixes,...albums],now);
+  const {items:candidates,diagnostics:tracklists}=await enrichRadioTracklists(rolled,{fetcher,now});
+  console.log('Tracklists des mixes',JSON.stringify(tracklists));
   const headers = {'x-bo-runner':env.BONNES_ONDES_RUNNER_TOKEN};
   const beforeKeys=new Set(state.candidates.map(item=>canonicalUrl(item.url)));
   const incremental={before:state.candidates.length,after:candidates.length,new:candidates.filter(item=>!beforeKeys.has(canonicalUrl(item.url))).length,
     catalogueCache:cached,
-    retained:candidates.filter(item=>beforeKeys.has(canonicalUrl(item.url))).length};
+    retained:candidates.filter(item=>beforeKeys.has(canonicalUrl(item.url))).length,tracklists:{...tracklists,youtubeAvailable:candidates.filter(item=>item.tracklist?.method==='youtube-description'&&item.tracklist.status==='available').length}};
   const profileSignalCounts=Object.fromEntries(['favoriteArtists','favoriteRadios','favoritePublications','spotify','explore','avoid'].map(key=>[key,profile[key].length]));
   profileSignalCounts.reactions=profile.signals.items.length;
   async function saveState() {

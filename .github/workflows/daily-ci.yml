@@ -67,3 +67,28 @@ jobs:
           assert.ok(mix.status==='ok','Collecte YouTube incomplète');
           assert.ok(result.candidates.some(x=>x.sourceId==='fip-tape'),'Aucun épisode FIP Tape confirmé');
           JS
+
+      - name: Sonder les tracklists réelles sans toucher aux données privées
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'editorial/mix-tracklists'
+        env:
+          YOUTUBE_DATA_API_KEY: ${{ secrets.YOUTUBE_DATA_API_KEY }}
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync} from 'node:fs';
+          import {discover} from './scripts/discovery.mjs';
+          import {enrichRadioTracklists} from './scripts/mix-tracklists.mjs';
+          import {collectYouTubeMixes} from './scripts/youtube-mixes.mjs';
+          import {nextEditionMonday} from './scripts/weekly-ranking.mjs';
+          import {parisDate} from './editorial/edition.mjs';
+          const sources=JSON.parse(readFileSync('editorial/sources.json','utf8')).filter(s=>['nts-dont-trip','nts-floating-points','fip-tape'].includes(s.id));
+          const now=new Date();
+          const result=await discover({sources,now});
+          const {items,diagnostics}=await enrichRadioTracklists(result.candidates,{now});
+          console.log('Tracklists radio:',JSON.stringify(diagnostics));
+          console.log('Tracklists épisodes:',JSON.stringify(items.map(x=>({source:x.sourceId,title:x.title,status:x.tracklist?.status,tracks:x.tracklist?.tracks?.length,example:x.tracklist?.tracks?.slice(0,2),url:x.tracklist?.sourceUrl}))));
+          assert.ok(items.some(x=>x.sourceId?.startsWith('nts-')&&x.tracklist?.status==='available'),'Aucune tracklist NTS confirmée');
+          const mixes=await collectYouTubeMixes({startsOn:nextEditionMonday(now),today:parisDate(now),key:process.env.YOUTUBE_DATA_API_KEY});
+          console.log('Tracklists YouTube:',JSON.stringify({status:mixes.status,eligible:mixes.items.length,available:mixes.items.filter(x=>x.tracklist?.status==='available').map(x=>({title:x.title,count:x.tracklist.tracks.length,example:x.tracklist.tracks.slice(0,2)}))}));
+          assert.ok(items.some(x=>x.sourceId==='fip-tape'&&x.tracklist?.status==='available'),'Aucune tracklist FIP Tape confirmée');
+          JS
