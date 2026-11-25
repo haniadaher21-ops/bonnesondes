@@ -1,4 +1,4 @@
-import {descriptionTracks,tracklistEvidence} from './mix-tracklists.mjs';
+import {youtubeDescriptionTracks,tracklistEvidence} from './mix-tracklists.mjs';
 import {isoDate,sourceUrl} from '../editorial/edition.mjs';
 import {excludesJazz,excludesElectronicMix,MIN_YOUTUBE_MIX_VIEWS} from './recommendation-policy.mjs';
 
@@ -87,9 +87,9 @@ export function verifiedYouTubeMix(video, startsOn, today, channel) {
     officialVideo:true,videoSourceUrl:'https://www.youtube.com/watch?v='+id,
     embed:{provider:'youtube',id},tags,
   };
-  const tracks=descriptionTracks(snippet.description);
-  const evidence=tracklistEvidence(tracks,candidate.url,'youtube-description',new Date(today+'T00:00:00Z'));
-  candidate.tracklist=evidence??{status:'unavailable',sourceUrl:candidate.url,method:'youtube-description',checkedAt:today+'T00:00:00.000Z'};
+  const parsed=youtubeDescriptionTracks(snippet.description,title);
+  const evidence=tracklistEvidence(parsed.tracks,candidate.url,'youtube-description',new Date(today+'T00:00:00Z'));
+  candidate.tracklist=evidence??{status:parsed.status,...(parsed.unresolvedCount&&{unresolvedCount:parsed.unresolvedCount}),sourceUrl:candidate.url,method:'youtube-description',checkedAt:today+'T00:00:00.000Z'};
   const cover=sourceUrl(snippet.thumbnails?.high?.url??snippet.thumbnails?.medium?.url);
   if(cover && (cover.hostname==='i.ytimg.com'||cover.hostname==='img.youtube.com'))candidate.artwork=cover.href;
   return candidate;
