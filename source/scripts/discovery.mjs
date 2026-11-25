@@ -41,7 +41,8 @@ function youtubeCandidates(xml, source) {
     const title = text(entry.title);
     const alternate = sourceUrl(entry.link?.['@_href']);
     return !alternate?.pathname.startsWith('/shorts/') && !excludedVideo.test(title)
-      && (!source.titleContains || label(title).includes(label(source.titleContains)));
+      && (!source.titleContains || label(title).includes(label(source.titleContains)))
+      && (!source.titleMatchesAny || source.titleMatchesAny.some(marker => label(title).includes(label(marker))));
   }).slice(0, 15).flatMap(entry => {
     const id = entry['yt:videoId'];
     const title = text(entry.title);
@@ -225,6 +226,7 @@ async function collect(source, request, collectedAt) {
         ...(source.format === 'Radio show' && source.mixKind === 'dj-set' && {
           mixKind:'dj-set',...(source.mixSelection && {novaMixVerified:true}),
         }),
+        ...(source.id === 'fip-tape' && {mixKind:'editorial-mixtape'}),
         verificationStatus: verified.verificationStatus ?? 'source-verified',
       });
     }
