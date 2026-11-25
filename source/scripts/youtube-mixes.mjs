@@ -108,12 +108,12 @@ export async function collectYouTubeMixes({startsOn,today,profile={},key,fetcher
   for(const {q,channelId} of queries){
     try{
       const data=await request('search',{part:'snippet',type:'video',videoDuration:'long',
-        order:'viewCount',maxResults:channelId?'15':'25',publishedAfter:after,publishedBefore:before,q,...(channelId&&{channelId})});
+        order:'viewCount',maxResults:channelId?'50':'25',publishedAfter:after,publishedBefore:before,...(channelId?{channelId}:{q})});
       if(!Array.isArray(data.items))throw new Error('YouTube search invalid response');
       for(const item of data.items)if(videoId(item.id?.videoId))found.add(item.id.videoId);
     }catch(e){errors.push(String(e.message).slice(0,90));}
   }
-  const candidates=[],ids=[...found].slice(0,250),videos=[];
+  const candidates=[],ids=[...found].slice(0,375),videos=[];
   for(let offset=0;offset<ids.length;offset+=50){
     try{
       const data=await request('videos',{part:'snippet,status,contentDetails,statistics',id:ids.slice(offset,offset+50).join(',')});
