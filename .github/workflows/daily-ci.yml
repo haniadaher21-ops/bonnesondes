@@ -56,14 +56,14 @@ jobs:
             console.log('Chaîne confirmée:',c.name,'=>',actual.snippet.title,actual.snippet.customUrl);
           }
           const result=await discover({sources,now});
-          for(const s of result.sources)console.log('Collecte:',s.sourceId,s.status,'candidats:',s.items?.length??0,'erreurs:',JSON.stringify(s.errors??[]));
+          for(const s of result.sources)console.log('Collecte:',s.sourceId,s.status,'candidats:',result.candidates.filter(x=>x.sourceId===s.sourceId).length,'erreurs:',JSON.stringify(s.errors??[]));
           console.log('Candidats réels:',JSON.stringify(result.candidates.map(x=>({source:x.sourceId,title:x.title,url:x.url}))));
           const lives=await verifyLives(result.candidates,sources,key);
           console.log('Lives vérifiés:',lives.status,JSON.stringify(lives.items.map(x=>({source:x.sourceId,title:x.title,creator:x.creator,minutes:x.minutes}))));
           const mix=await collectYouTubeMixes({startsOn,today,key});
           console.log('Mixes:',mix.status,'trouvés:',mix.found,'éligibles:',mix.eligible,'requêtes:',mix.queries);
           console.log('Mixes vérifiés:',JSON.stringify(mix.items.map(x=>({source:x.source,title:x.title,views:x.viewCount,style:x.mixStyle}))));
-          assert.ok(lives.items.length,'Aucun live vérifié');
+          for(const source of sources.filter(s=>s.format==='Live session'))assert.ok(lives.items.some(x=>x.sourceId===source.id&&x.creator),'Aucun live avec artiste identifié: '+source.id);
           assert.ok(mix.status==='ok','Collecte YouTube incomplète');
           assert.ok(result.candidates.some(x=>x.sourceId==='fip-tape'),'Aucun épisode FIP Tape confirmé');
           JS
