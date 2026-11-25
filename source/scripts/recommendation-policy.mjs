@@ -22,9 +22,9 @@ export function livePerformer(title, knownArtist) {
   if(!raw)return;
   const candidates=[
     raw.match(/^(.+?)\s+performs?\s+.+?\s+for\s+Mahogany Sessions?\b/i)?.[1],
-    raw.match(/^(.+?)\s*\|\s*(?:Live Session|A Take Away Show|Concert à emporter|Soirée de Poche)\b/i)?.[1],
     raw.match(/^(.+?)\s*[-–—]\s*.+?\s*\|\s*Audiotree (?:Live|From Nothing|Far Out)\b/i)?.[1],
     raw.match(/^(.+?)\s*[-–—]\s*.+?\s*(?:\||\()?\s*(?:A Take Away Show|(?:Blogothèque )?Live Session|Mahogany Sessions?|Concert à emporter|Soirée de Poche)\b/i)?.[1],
+    raw.match(/^(.+?)\s*\|\s*(?:Live Session|A Take Away Show|Concert à emporter|Soirée de Poche)\b/i)?.[1],
     raw.match(/^(.+?)\s+on Audiotree Live\b/i)?.[1],
     raw.match(/^(.+?)\s*\|\s*Audiotree (?:From Nothing|Far Out)\b/i)?.[1],
     raw.match(/^(.+?)(?:\s*[-–—]\s*|,\s*)(?:Braths Sessions?|Baloise Session|ARTE Concert Festival|live (?:at|in)|Full Concert|Concert intégral)\b/i)?.[1],
