@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {collectYouTubeMixes,verifiedYouTubeMix,youtubeMixQueries} from '../scripts/youtube-mixes.mjs';
+import {collectYouTubeMixes,verifiedYouTubeMix,youtubeMixQueries,targetedMixChannels} from '../scripts/youtube-mixes.mjs';
 import {isFreshMusicMix} from '../scripts/recommendation-policy.mjs';
 import {rollCandidates} from '../scripts/automation-policy.mjs';
 import {observationReport} from '../scripts/observation-report.mjs';
@@ -69,13 +69,14 @@ test('reject older uploads, short tracks, jazz, interviews and disabled embeds',
  assert.equal(verifiedYouTubeMix({...video(),snippet:{...video().snippet,tags:['jazz']}},'2026-11-23','2026-11-22',channel()),undefined);
 });
 test('search verifies view counts and subscriber counts through two different official APIs',async()=>{
- let searches=0,videos=0,channels=0;const valid=video();
+ let searches=0,videos=0,channels=0;const valid=video();const requestedChannels=[];
  const fetcher=async(url,args)=>{
   const target=new URL(url);
   assert.equal(args.headers['x-goog-api-key'],'fixture-api-key');
   assert.equal(target.searchParams.has('key'),false);
   if(target.pathname.endsWith('/search')){
     searches++;
+    if(target.searchParams.has('channelId'))requestedChannels.push(target.searchParams.get('channelId'));
     assert.equal(target.searchParams.get('publishedAfter'),'2025-11-23T00:00:00Z');
     assert.equal(target.searchParams.get('order'),'viewCount');
     return Response.json({items:[{id:{videoId:valid.id}},{id:{videoId:valid.id}}]});
@@ -93,7 +94,9 @@ test('search verifies view counts and subscriber counts through two different of
   throw new Error('Unexpected YouTube endpoint');
  };
  const r=await collectYouTubeMixes({startsOn:'2026-11-23',today:'2026-11-22',profile:{explore:['Soul']},key:'fixture-api-key',fetcher});
- assert.equal(searches,youtubeMixQueries.length+1);
+ assert.equal(searches,youtubeMixQueries.length+targetedMixChannels.length+1);
+ assert.deepEqual(requestedChannels,targetedMixChannels.map(x=>x.channelId));
+ assert.equal(new Set(requestedChannels).size,4);
  assert.equal(videos,1);assert.equal(channels,1);
  assert.equal(r.items.length,1);
  assert.equal(r.items[0].title,valid.snippet.title);
@@ -131,4 +134,16 @@ test('public preview preserves the verified YouTube audience evidence and embedd
  assert.equal(report.selected.youtube[0].embed.provider,'youtube');
  assert.equal(report.selected.youtube[0].viewCount,150000);
  assert.equal(report.selected.youtube[0].subscriberCount,56000);
+});
+
+test('official targeted mix channel does not bypass views or genre',()=>{
+ const source=targetedMixChannels.find(x=>x.name==='My Analog Journal');
+ const v=video('3C01eaL5_Xw','Brazilian soul with guest selector');
+ v.snippet.channelId=source.channelId;v.snippet.channelTitle='MAJ';
+ const c={...channel(),id:source.channelId};
+ assert.equal(verifiedYouTubeMix(v,'2026-11-23','2026-11-22',c)?.creator,'My Analog Journal');
+ v.statistics.viewCount='99999';
+ assert.equal(verifiedYouTubeMix(v,'2026-11-23','2026-11-22',c),undefined);
+ v.statistics.viewCount='150000';v.snippet.title='Techno DJ set';
+ assert.equal(verifiedYouTubeMix(v,'2026-11-23','2026-11-22',c),undefined);
 });
