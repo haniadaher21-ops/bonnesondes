@@ -237,3 +237,14 @@ test('FIP Tape is optional, individually verified and eligible within its own wi
  assert.equal(isFreshMusicMix(result.candidates[0],'2026-11-23','2026-11-22'),true);
  assert.equal(isFipTape({...result.candidates[0],url:'https://example.test/fip/podcasts/fip-tape/la-mixtape-de-james-blake-1234567'}),false);
 });
+
+test('actual title patterns from the live source smoke test identify the performers',()=>{
+ const titles=[
+  ['Adèle Castillon | Live Session for The Collective by Stradivarius','Adèle Castillon'],
+  ['Olive Jones performs Mary for Mahogany Sessions','Olive Jones'],
+  ['The Paper Kites perform Stormwall for Mahogany Sessions','The Paper Kites'],
+  ['INOHA - Burden | Audiotree Live','INOHA'],
+  ["Crossing i's Dotting t's - All Feelings Aside | Audiotree Live","Crossing i's Dotting t's"],
+ ];
+ for(const [title,artist] of titles)assert.equal(livePerformer(title),artist);
+});
