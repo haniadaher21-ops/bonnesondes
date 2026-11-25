@@ -90,10 +90,5 @@ jobs:
           assert.ok(items.some(x=>x.sourceId?.startsWith('nts-')&&x.tracklist?.status==='available'),'Aucune tracklist NTS confirmée');
           const mixes=await collectYouTubeMixes({startsOn:nextEditionMonday(now),today:parisDate(now),key:process.env.YOUTUBE_DATA_API_KEY});
           console.log('Tracklists YouTube:',JSON.stringify({status:mixes.status,eligible:mixes.items.length,available:mixes.items.filter(x=>x.tracklist?.status==='available').map(x=>({title:x.title,count:x.tracklist.tracks.length,example:x.tracklist.tracks.slice(0,2)}))}));
-          for(const item of result.candidates.filter(x=>x.sourceId==='fip-tape').slice(0,1)){
-            const response=await fetch(item.url,{signal:AbortSignal.timeout(10000)});
-            const html=await response.text();
-            const start=html.indexOf('Programmation musicale');
-            console.log('FIP timeline HTML:',html.slice(start,start+9000));
-          }
+          assert.ok(items.some(x=>x.sourceId==='fip-tape'&&x.tracklist?.status==='available'),'Aucune tracklist FIP Tape confirmée');
           JS
