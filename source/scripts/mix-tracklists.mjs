@@ -137,7 +137,9 @@ export async function enrichRadioTracklists(candidates,{fetcher=fetch,now=new Da
     if(!response.ok)throw new Error('HTTP '+response.status);
     return response;
   };
-  for(const item of candidates){
+  // Fresh episodes first so the weekly candidates do not wait behind the archive.
+  const ordered=[...candidates].sort((a,b)=>String(b.date??'').localeCompare(String(a.date??'')));
+  for(const item of ordered){
     const nts=item.format==='Radio show'&&ntsEndpoint(item);
     const fip=item.format==='Radio show'&&item.sourceId==='fip-tape'&&/^https:\/\/www\.radiofrance\.fr\/fip\/podcasts\/fip-tape\/la-mixtape-de-[a-z0-9-]+-\d+\/?$/.test(item.url);
     if(!nts&&!fip){
@@ -172,5 +174,14 @@ export async function enrichRadioTracklists(candidates,{fetcher=fetch,now=new Da
       items.push({...item,tracklist:cached?.status==='available'?cached:{status:'unavailable',sourceUrl:url,method:nts?'nts-api':'fip-page',checkedAt:now.toISOString()}});
     }
   }
-  return {items,diagnostics};
+  // Keep metadata in the existing bounded private runner document. Older
+  // tracklists can be fetched again, instead of growing storage indefinitely.
+  let bytes=0;
+  const bounded=new Map();
+  for(const item of items){
+    const size=item.tracklist?Buffer.byteLength(JSON.stringify(item.tracklist)):0;
+    if(bytes+size>500000){const {tracklist,...rest}=item;bounded.set(item.id,rest);}
+    else{bytes+=size;bounded.set(item.id,item);}
+  }
+  return {items:candidates.map(item=>bounded.get(item.id)??item),diagnostics:{...diagnostics,storedBytes:bytes}};
 }
