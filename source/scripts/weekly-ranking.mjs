@@ -1,7 +1,7 @@
 import { canonicalUrl, editionItems, isoDate, parisDate, sourceUrl, validateEdition } from '../editorial/edition.mjs';
 import { spotifyPlaylistId } from './discovery-feeds.mjs';
 import { normalized } from './weekly-evidence.mjs';
-import { excludesJazz, excludesElectronicMix, editorialEndorsement, isFreshMusicMix, isNovaMix, isNtsMix, isYouTubeMix, MIN_YOUTUBE_MIX_VIEWS } from './recommendation-policy.mjs';
+import { excludesJazz, excludesElectronicMix, editorialEndorsement, isFreshMusicMix, isNovaMix, isNtsMix, isYouTubeMix, isFipTape, MIN_YOUTUBE_MIX_VIEWS } from './recommendation-policy.mjs';
 
 const DAY = 86400000;
 const addDays = (date, days) => new Date(Date.parse(date) + days * DAY).toISOString().slice(0, 10);
@@ -10,6 +10,7 @@ const groups = [
   { name: 'nts', count: 1, max: 1, match: isNtsMix },
   { name: 'nova', count: 1, max: 1, match: isNovaMix },
   { name: 'youtube', count: 1, max: 1, match: isYouTubeMix },
+  { name: 'fip', count: 0, max: 1, match: isFipTape },
   { name: 'playlists', count: 1, max: 1, match: item => item.format === 'Playlist' },
   { name: 'live', count: 3, max: 3, match: item => item.format === 'Live session' },
 ];
@@ -118,6 +119,7 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
       ? 'Mix '+({rnb:'R&B',soul:'soul',blues:'blues',pop:'pop','light-house':'house douce',funk:'funk'}[item.mixStyle]??'musical')
         +' mis en ligne le '+date+' sur '+(item.provider??item.source)
         +' ; '+Number(item.viewCount??0).toLocaleString('fr-FR')+' vues vérifiées'
+      : isFipTape(item) ? 'Voyage musical thématique publié le '+date+' par FIP'
       : 'DJ set musical diffusé le '+date+' sur '+(item.provider??item.source),
     Playlist: item.playlistOrigin === 'publisher-discovered' ? 'Lien vérifié et publié par ' + (item.creator ?? item.provider ?? 'le média source') : 'Playlist vérifiée sur Spotify',
     'Live session': 'Performance publiée par une chaîne officielle, vidéo intégrable de ' + Math.round(item.minutes * 60) + ' secondes',
@@ -128,7 +130,7 @@ function rank(item, profile, today, tasteWeight, previouslySeen) {
 function exclusion(item, today, startsOn) {
   if (!item.id || !item.title || !item.source || !sourceUrl(item.url) || !sourceUrl(item.sourceUrl)) return 'Lien ou provenance manquante';
   if (excludesJazz(item)) return 'Jazz exclu des recommandations';
-  if (item.format==='Radio show' && item.mixKind==='curated-mix' && excludesElectronicMix(item))
+  if (item.format==='Radio show' && (item.mixKind==='curated-mix' || isFipTape(item)) && excludesElectronicMix(item))
     return 'Mix électro exclu par les préférences';
   if (item.format === 'Album') {
     if (!editorialEndorsement(item)) return 'Aucune recommandation éditoriale vérifiée';
@@ -220,7 +222,7 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
     number: String(Number(previous?.number ?? 1) + 1).padStart(3, '0'),
     startsOn, label: 'semaine du ' + startsOn, albumWindowStart, featuredId: picks('nts')[0]?.id,
     mixPolicy:'nts-nova-youtube-v1',
-    albums: picks('albums'), mixes: [...picks('nts'), ...picks('nova'), ...picks('youtube')], playlists: picks('playlists'), live: picks('live'),
+    albums: picks('albums'), mixes: [...picks('nts'), ...picks('nova'), ...picks('youtube'), ...picks('fip')], playlists: picks('playlists'), live: picks('live'),
   };
   const gaps = Object.fromEntries(groups.filter(group => selected[group.name].length < group.count)
     .map(group => [group.name, group.count - selected[group.name].length]));
