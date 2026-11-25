@@ -6,6 +6,7 @@ export function observationReport(report, diagnostics) {
     personalized:report.personalized,profileRevision:diagnostics.profileRevision,
     profileUpdatedAt:diagnostics.profileUpdatedAt,profileSignalCounts:diagnostics.profileSignalCounts,
     comparisonToNeutral:diagnostics.comparison,
+    tracklistComparison:diagnostics.tracklistComparison,
     gaps:report.gaps,errors:report.errors,incremental:diagnostics.incremental,
     selected:Object.fromEntries(Object.entries(report.selected).map(([section,rows])=>[section,rows.map(row=>({
       id:row.item.id,title:row.item.title,creator:row.item.creator,source:row.item.source,provider:row.item.provider,
@@ -41,6 +42,7 @@ export function renderObservation(report) {
       +(row.releaseProofUrl?' · Date : <'+row.releaseProofUrl+'>':'')
       +(row.listeningProofUrl?' · Lien d’écoute : <'+row.listeningProofUrl+'>':'')),...(!rows.length?['Aucun candidat admissible.']:[])]),
     '## Influence du profil (mêmes candidats, profil neutre comparé)',JSON.stringify(report.comparisonToNeutral),
+    ...(report.tracklistComparison?['## Effet des tracklists (même profil)',JSON.stringify(report.tracklistComparison)]:[]),
     '## Places manquantes',JSON.stringify(report.gaps),
     '## Preuves albums',...report.albumEvidence.map(row=>'- '+safe(row.creator)+' — '+safe(row.title)+' · '
       +(row.eligible?'vérifié':safe(row.reason))+' · '+safe(row.verifiedReleaseDate)+' · <'+row.sourceUrl+'>'),
