@@ -3,6 +3,12 @@ import {excludesJazz,excludesElectronicMix,MIN_YOUTUBE_MIX_VIEWS} from './recomm
 
 // Prioritize the listener's R&B, soul, blues, pop and mellow-house taste.
 // Every YouTube result must earn 100,000 genuine reported views on that video.
+export const targetedMixChannels=[
+  {channelId:'UC8TZwtZ17WKFJSmwTZQpBTA',name:'My Analog Journal',q:'soul funk R&B vinyl'},
+  {channelId:'UCJOtExbMu0RqIdiE4nMUPxQ',name:'The Lot Radio',q:'soul R&B soulful house'},
+  {channelId:'UCmfF7JZv26UUKyRedViGIlw',name:'HÖR Berlin',q:'soul funk soulful house'},
+  {channelId:'UCQmEioliO9mSfg3VpcMjPoQ',name:'Soulection',q:'soul R&B mix'},
+];
 export const youtubeMixQueries=[
   'R&B soul vinyl DJ mix',
   '90s RnB neo soul slow jams DJ set',
@@ -57,19 +63,20 @@ export function verifiedYouTubeMix(video, startsOn, today, channel) {
   // proof of popularity for a specific mix.
   const views=statistics.viewCount===undefined?NaN:Number(statistics.viewCount);
   const subscribers=channel?.statistics?.subscriberCount===undefined?NaN:Number(channel.statistics.subscriberCount);
-  const known=credibleCurators.test(channelTitle??'');
+  const targeted=targetedMixChannels.find(x=>x.channelId===channelId);
+  const known=!!targeted||credibleCurators.test(channelTitle??'');
   const style=classifyYouTubeMixStyle(snippet);
   const respected=Number.isSafeInteger(views) && Number.isSafeInteger(subscribers)
     && views>=MIN_YOUTUBE_MIX_VIEWS && subscribers>=2500;
   if(!videoId(id)||!channelIdValid(channelId)||channel?.id!==channelId||!isoDate(date)||!title||!channelTitle
     || !isoDate(startsOn)||!isoDate(today)||date<youtubeWindowStart(startsOn)||date>=startsOn||date>today
     || status.privacyStatus!=='public'||status.embeddable!==true||length<20*60
-    || !mixTitle.test(title)||notMix.test(title)||spamTitle.test(title)
+    || !(mixTitle.test(title) || (targeted && (targeted.name==='My Analog Journal' || /the\s*lot\s*radio|hÖr|soulection\s+radio/i.test(title))))||notMix.test(title)||spamTitle.test(title)
     || snippet.liveBroadcastContent==='live'||!style || !respected)return;
   const tags=tagsOf(snippet);
   const candidate={
-    id:'youtube-'+id,title,creator:channelTitle,format:'Radio show',
-    source:'YouTube · '+channelTitle,provider:'YouTube',sourceId:'youtube-mix-'+channelId,
+    id:'youtube-'+id,title,creator:targeted?.name??channelTitle,format:'Radio show',
+    source:'YouTube · '+(targeted?.name??channelTitle),provider:'YouTube',sourceId:'youtube-mix-'+channelId,
     sourceUrl:'https://www.youtube.com/channel/'+channelId,
     url:'https://www.youtube.com/watch?v='+id,date,dateKind:'published',
     publishedAt:snippet.publishedAt,minutes:length/60,mixKind:'curated-mix',
@@ -89,7 +96,7 @@ export async function collectYouTubeMixes({startsOn,today,profile={},key,fetcher
   const choices=(Array.isArray(profile.explore)?profile.explore:[])
     .filter(x=>typeof x==='string'&&/^[\p{L}\d &-]{3,30}$/u.test(x)
       && genreRules.some(([,re])=>re.test(x)) && !excludesElectronicMix({title:x}) && !/jazz/i.test(x)).slice(0,1);
-  const queries=[...youtubeMixQueries,...choices.map(x=>x+' soulful vinyl DJ mix')];
+  const queries=[...targetedMixChannels,...[...youtubeMixQueries,...choices.map(x=>x+' soulful vinyl DJ mix')].map(q=>({q}))];
   const after=youtubeWindowStart(startsOn)+'T00:00:00Z',before=startsOn+'T00:00:00Z';
   const found=new Set(),errors=[];
   const request=async(path,params)=>{
@@ -98,15 +105,15 @@ export async function collectYouTubeMixes({startsOn,today,profile={},key,fetcher
     if(!response.ok)throw new Error('YouTube '+path+' '+response.status);
     return response.json();
   };
-  for(const q of queries){
+  for(const {q,channelId} of queries){
     try{
       const data=await request('search',{part:'snippet',type:'video',videoDuration:'long',
-        order:'viewCount',maxResults:'25',publishedAfter:after,publishedBefore:before,q});
+        order:'viewCount',maxResults:channelId?'15':'25',publishedAfter:after,publishedBefore:before,q,...(channelId&&{channelId})});
       if(!Array.isArray(data.items))throw new Error('YouTube search invalid response');
       for(const item of data.items)if(videoId(item.id?.videoId))found.add(item.id.videoId);
     }catch(e){errors.push(String(e.message).slice(0,90));}
   }
-  const candidates=[],ids=[...found].slice(0,150),videos=[];
+  const candidates=[],ids=[...found].slice(0,250),videos=[];
   for(let offset=0;offset<ids.length;offset+=50){
     try{
       const data=await request('videos',{part:'snippet,status,contentDetails,statistics',id:ids.slice(offset,offset+50).join(',')});
