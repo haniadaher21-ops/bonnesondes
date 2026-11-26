@@ -21,6 +21,15 @@ const pages = [
   ['live', 'Live'], ['mix', 'Mix'], ['editions', 'Archives'], ['library', 'Ma collection'],
 ] as const;
 type Page = typeof pages[number][0] | 'archive' | 'preferences';
+const radioMoodGroups = [
+  { title: 'Découverte en tous genres', names: ['FIP', 'Radio La Belle Aventure', 'Radio Nova', 'Nouvo Nova'] },
+  { title: 'Radios anglaises', names: ['Worldwide FM', 'NTS 1', 'NTS 2'] },
+];
+const featuredStationNames = radioMoodGroups.flatMap(group => group.names);
+const defaultStationNames = [...featuredStationNames, ...stations.map(item => item.name).filter(name => !featuredStationNames.includes(name))];
+// Keep the previous campus/thematic order while applying the requested order of
+// the two featured groups once. Subsequent changes remain browser-local.
+const groupedStationOrderKey = stationOrderStorageKey + '.mood-v1';
 const formatLabels: Record<Format, string> = {
   Album: 'Album', 'Radio show': 'DJ set / mix', Playlist: 'Playlist', 'Live session': 'Session live', Track: 'Morceau',
 };
@@ -181,7 +190,7 @@ export default function Journal() {
   const [activeMix, setActiveMix] = useState<Recommendation | null>(null);
   const [videoExpanded, setVideoExpanded] = useState(false);
   const [station, setStation] = useState(stations[0]);
-  const [stationOrder, setStationOrder] = useState<string[]>(stations.map(item => item.name));
+  const [stationOrder, setStationOrder] = useState<string[]>(defaultStationNames);
   const [stationOrderReady, setStationOrderReady] = useState(false);
   const draggingStation = useRef<string | null>(null);
   const [stationDropTarget, setStationDropTarget] = useState<string | null>(null);
@@ -239,11 +248,13 @@ export default function Journal() {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(stationOrderStorageKey);
-      const parsed = stored ? JSON.parse(stored) : [];
-      setStationOrder(normalizeStationOrder(stations.map(item => item.name), parsed));
+      const stored = localStorage.getItem(groupedStationOrderKey);
+      const legacy = stored === null ? localStorage.getItem(stationOrderStorageKey) : null;
+      const parsed = stored !== null ? JSON.parse(stored) : legacy ? JSON.parse(legacy) : [];
+      const saved = stored !== null ? parsed : [...featuredStationNames, ...(Array.isArray(parsed) ? parsed : [])];
+      setStationOrder(normalizeStationOrder(defaultStationNames, saved));
     } catch {
-      setStationOrder(stations.map(item => item.name));
+      setStationOrder(defaultStationNames);
       setStorageMessage('Impossible de retrouver l’ordre personnalisé des radios.');
     }
     setStationOrderReady(true);
@@ -251,7 +262,7 @@ export default function Journal() {
 
   useEffect(() => {
     if (!stationOrderReady) return;
-    try { localStorage.setItem(stationOrderStorageKey, JSON.stringify(stationOrder)); }
+    try { localStorage.setItem(groupedStationOrderKey, JSON.stringify(stationOrder)); }
     catch { setStorageMessage('Impossible d’enregistrer l’ordre des radios sur ce navigateur.'); }
   }, [stationOrder, stationOrderReady]);
 
@@ -298,6 +309,10 @@ export default function Journal() {
   const visibleStations = orderedStations.filter(item => page === 'campus'
     ? item.category === 'campus' : item.category !== 'campus');
   const visibleStationNames = visibleStations.map(item => item.name);
+  const stationGroups = page === 'campus' ? [{ title: '', items: visibleStations }] : [
+    ...radioMoodGroups.map(group => ({ title: group.title, items: visibleStations.filter(item => group.names.includes(item.name)) })),
+    { title: 'Radios thématiques', items: visibleStations.filter(item => !featuredStationNames.includes(item.name)) },
+  ];
 
   const shelf = editionShelf(issues, issue, 'playlists', [...playlists, ...library.playlists]);
   const liveShelf = editionShelf(issues, issue, 'live', live);
@@ -608,32 +623,36 @@ export default function Journal() {
       {(page === 'radio' || page === 'campus') && <>
         <PageHeading label="EN DIRECT" title={page === 'campus' ? 'Radios Campus' : 'Radios'} />
         <div className="station-reorder-toolbar">
-          <p>Fais glisser <GripVertical size={15} aria-hidden="true" /> pour déplacer une radio. Sur mobile ou au clavier, utilise les flèches.</p>
+          <p>Fais glisser <GripVertical size={15} aria-hidden="true" /> pour déplacer une radio{page === 'radio' ? ' dans sa catégorie' : ''}. Sur mobile ou au clavier, utilise les flèches.</p>
           <button className="text-link" type="button" onClick={() =>
             setStationOrder(order => {
               const group = new Set(visibleStationNames);
-              const defaultOrder = stations.map(item => item.name).filter(name => group.has(name));
+              const defaultOrder = defaultStationNames.filter(name => group.has(name));
               let index = 0;
               return order.map(name => group.has(name) ? defaultOrder[index++] : name);
             })} disabled={!stationOrderReady}>
             Réinitialiser l’ordre
           </button>
         </div>
-        <div className="station-grid">
-          {visibleStations.map((item, index) => <article className={
+        {stationGroups.filter(group => group.items.length > 0).map((group, groupIndex) => {
+          const groupNames = group.items.map(item => item.name);
+          return <section className="station-group" key={group.title || 'campus'} aria-label={group.title || 'Radios Campus'}>
+            {group.title && <h2 className="station-group-title">{group.title}</h2>}
+            <div className={'station-grid' + (page === 'radio' && groupIndex === 0 ? ' station-grid-discovery' : '')}>
+          {group.items.map((item, index) => <article className={
             'station' + (stationDropTarget === item.name ? ' station-drop-target' : '')
           } key={item.name}
             onDragOver={event => {
-              if (!draggingStation.current || draggingStation.current === item.name) return;
+              if (!draggingStation.current || draggingStation.current === item.name || !groupNames.includes(draggingStation.current)) return;
               event.preventDefault();
               event.dataTransfer.dropEffect = 'move';
               setStationDropTarget(item.name);
             }}
             onDrop={event => {
               const dragged = draggingStation.current;
-              if (!dragged) return;
+              if (!dragged || !groupNames.includes(dragged)) return;
               event.preventDefault();
-              setStationOrder(order => moveStationWithinGroup(order, visibleStationNames, dragged, item.name));
+              setStationOrder(order => moveStationWithinGroup(order, groupNames, dragged, item.name));
               draggingStation.current = null;
               setStationDropTarget(null);
             }}>
@@ -653,12 +672,12 @@ export default function Journal() {
                 </button>
                 <button type="button" className="station-shift" aria-label={'Monter ' + item.name}
                   title="Monter" disabled={!stationOrderReady || index === 0}
-                  onClick={() => setStationOrder(order => shiftStationWithinGroup(order, visibleStationNames, item.name, -1))}>
+                  onClick={() => setStationOrder(order => shiftStationWithinGroup(order, groupNames, item.name, -1))}>
                   <ArrowUp size={16} aria-hidden="true" />
                 </button>
                 <button type="button" className="station-shift" aria-label={'Descendre ' + item.name}
-                  title="Descendre" disabled={!stationOrderReady || index === visibleStations.length - 1}
-                  onClick={() => setStationOrder(order => shiftStationWithinGroup(order, visibleStationNames, item.name, 1))}>
+                  title="Descendre" disabled={!stationOrderReady || index === group.items.length - 1}
+                  onClick={() => setStationOrder(order => shiftStationWithinGroup(order, groupNames, item.name, 1))}>
                   <ArrowDown size={16} aria-hidden="true" />
                 </button>
               </div>
@@ -674,7 +693,9 @@ export default function Journal() {
               ? <button className="text-link" onClick={() => tune(item)}><Play size={14} /> Écouter</button>
               : <SourceLink item={item}>Écouter sur le site de la radio</SourceLink>}
           </article>)}
-        </div>
+            </div>
+          </section>;
+        })}
       </>}
 
       {page === 'playlists' && <>
