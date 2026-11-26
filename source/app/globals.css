@@ -400,3 +400,10 @@ input[type=checkbox] { accent-color: var(--accent); }
 
 @media (max-width: 780px) { .station-cover-placeholder { width: 72px; height: 72px; } }
 @media (max-width: 540px) { .station-cover-placeholder { width: 82px; height: 82px; } }
+
+/* Radio mood sections: one row of four discoveries on wider screens. */
+.station-group + .station-group { margin-top: 36px; }
+.station-group-title { font: clamp(24px, 3vw, 36px)/1.1 var(--display); margin: 0 0 16px; }
+@media (min-width: 1150px) {
+  .station-grid.station-grid-discovery { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
