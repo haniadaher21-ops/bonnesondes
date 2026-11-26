@@ -18,10 +18,10 @@ test('do not show a misleading Spotify song link without a title and artist', ()
   }
 });
 
-test('Spotify link appears in compact cards and expanded player, not on NTS broadcasts', () => {
+test('Spotify link appears in compact cards and expanded player, not on NTS or Worldwide FM broadcasts', () => {
   const source=readFileSync(new URL('../app/radio-track.tsx',import.meta.url),'utf8');
   const css=readFileSync(new URL('../app/globals.css',import.meta.url),'utf8');
-  assert.ok(source.includes("const spotifyUrl = !isNts && track?.artist ? spotifyRadioSearchUrl(track.title, track.artist) : null;"));
+  assert.ok(source.includes("const spotifyUrl = !isShow && track?.artist ? spotifyRadioSearchUrl(track.title, track.artist) : null;"));
   assert.equal((source.match(/className="radio-spotify-link"/g) ?? []).length, 2);
   assert.equal((source.match(/rel="noopener noreferrer"/g) ?? []).length >= 2, true);
   assert.match(source, /aria-label=\{'Rechercher ' \+ track.title \+ ' de ' \+ track.artist \+ ' sur Spotify'\}/);
