@@ -138,3 +138,42 @@ export function parseWxycReader(text, now=new Date()) {
   }
   return null;
 }
+
+
+ // Worldwide FM: the scheduled event is distinct from recognition metadata.
+export function parseRadioCultShow(payload) {
+  if (payload?.success !== true || payload.result?.status !== 'schedule') return null;
+  const title = typeof payload.result.content?.title === 'string' ? normalize(payload.result.content.title) : '';
+  return title ? { title, kind: 'show' } : null;
+}
+
+// Official weekly grid, via the same public reader used by other stations.
+// Never invent a show when today's grid or the matching time slot is missing.
+export function parseWorldwideSchedule(text, now = new Date()) {
+  if (typeof text !== 'string' || !text.includes('Markdown Content:')) return null;
+  const markdown = text.split('Markdown Content:').slice(1).join('Markdown Content:');
+  const zone = /TIMES ARE DISPLAYED IN\s*\[GMT\]/i.test(markdown) ? 'UTC' : 'Europe/London';
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-GB', {
+    timeZone: zone, weekday: 'short', day: '2-digit', month: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(now).map(part => [part.type, part.value]));
+  const minute = Number(parts.hour) * 60 + Number(parts.minute);
+  let today = false;
+  for (const raw of markdown.split(/\r?\n/)) {
+    const line = raw.trim().replace(/^#{1,6}\s+/, '').replace(/^\*\*|\*\*$/g, '');
+    const heading = line.match(/^(MON|TUE|WED|THU|FRI|SAT|SUN)\s+(\d{1,2})\.(\d{1,2})(?:\.\d{2,4})?$/i);
+    if (heading) {
+      today = heading[1].toLowerCase() === parts.weekday.toLowerCase() &&
+        Number(heading[2]) === Number(parts.day) && Number(heading[3]) === Number(parts.month);
+      continue;
+    }
+    if (!today) continue;
+    const clean = line.replace(/^[-*]\s+/, '').replace(/\*\*/g, '').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
+    const slot = clean.match(/^(\d{2}):(\d{2})\s*[-–—]\s*(\d{2}):(\d{2})\s+(.+)$/);
+    if (!slot) continue;
+    const start = Number(slot[1])*60+Number(slot[2]), end = Number(slot[3])*60+Number(slot[4]);
+    const title = normalize(slot[5]);
+    if (title && start <= minute && minute < end) return { title, kind: 'scheduled-show' };
+  }
+  return null;
+}

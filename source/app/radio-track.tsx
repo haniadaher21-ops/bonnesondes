@@ -7,7 +7,7 @@ import type { RadioMetadata } from './content';
 import { parseNovaNowPlaying } from './nova-nowplaying.mjs';
 import { radioArtworkUrl } from './radio-artwork.mjs';
 import { findNovaCatalogueArtwork } from './nova-catalogue-artwork.mjs';
-import { parseCampusParisReader, parseRadioCultLive, parseSpinitronReader, parseKcrwNowPlaying, parseWxycReader } from './campus-nowplaying.mjs';
+import { parseCampusParisReader, parseRadioCultShow, parseWorldwideSchedule, parseSpinitronReader, parseKcrwNowPlaying, parseWxycReader } from './campus-nowplaying.mjs';
 import { spotifyRadioSearchUrl } from './spotify-radio-link.mjs';
 
 type BroadcastStep = {
@@ -39,7 +39,7 @@ async function readOnAir(response: Response, metadata: RadioMetadata): Promise<O
     return parseCampusParisReader(await response.text());
   }
   if (metadata.provider === 'radiocult-live') {
-    return parseRadioCultLive(await response.json());
+    return parseRadioCultShow(await response.json());
   }
   if (metadata.provider === 'nova-page') {
     return parseNovaNowPlaying(await response.text());
@@ -104,8 +104,23 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
           'X-Target-Selector':'.what_was_title .swiper-slide:first-child',
           'X-Cache-Tolerance':'30',
         } : undefined;
-        const response = await fetch(activeMetadata.endpoint, { signal: controller.signal, cache: 'no-store', headers });
-        const onAir = await readOnAir(response, activeMetadata);
+        let onAir: OnAir | null = null;
+        if (activeMetadata.provider === 'radiocult-live') {
+          try {
+            const response = await fetch(activeMetadata.endpoint, { signal: controller.signal, cache: 'no-store' });
+            onAir = await readOnAir(response, activeMetadata);
+          } catch { /* The public schedule is the fallback when the live API is unavailable. */ }
+          if (!onAir && !controller.signal.aborted) {
+            const response = await fetch('https://r.jina.ai/https://www.worldwidefm.net/schedule', {
+              signal: controller.signal, cache: 'no-store',
+              headers: { 'X-Cache-Tolerance': '60', 'X-Respond-With': 'markdown' },
+            });
+            if (response.ok) onAir = parseWorldwideSchedule(await response.text());
+          }
+        } else {
+          const response = await fetch(activeMetadata.endpoint, { signal: controller.signal, cache: 'no-store', headers });
+          onAir = await readOnAir(response, activeMetadata);
+        }
         if (!controller.signal.aborted) { setTrack(onAir); setLoading(false); }
       } catch {
         if (!controller.signal.aborted) { setTrack(null); setLoading(false); }
@@ -122,8 +137,9 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
   }, [metadata]);
 
   const isNts = metadata?.provider === 'nts';
+  const isShow = isNts || metadata?.provider === 'radiocult-live';
   const isNova = metadata?.provider === 'nova-page';
-  const isCampusSource = ['spinitron-reader','wxyc-reader','kcrw-json','campus-paris-reader','radiocult-live'].includes(metadata?.provider ?? '');
+  const isCampusSource = ['spinitron-reader','wxyc-reader','kcrw-json','campus-paris-reader'].includes(metadata?.provider ?? '');
   const artKey = (metadata?.endpoint ?? '') + '|' + (track?.artist ?? '') + '|' + (track?.title ?? '');
   const failedUrls = failedArtwork.key === artKey ? failedArtwork.urls : [];
   const directArtwork = track?.artwork && !failedUrls.includes(track.artwork) ? track.artwork : undefined;
@@ -132,7 +148,7 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
   const displayedArtwork = directArtwork || matchedArtwork;
   const usingCatalogue = (isNova || isCampusSource) && !directArtwork && !!matchedArtwork;
   const trackForSave = track ? { ...track, artwork: displayedArtwork } : null;
-  const spotifyUrl = !isNts && track?.artist ? spotifyRadioSearchUrl(track.title, track.artist) : null;
+  const spotifyUrl = !isShow && track?.artist ? spotifyRadioSearchUrl(track.title, track.artist) : null;
   const spinitronWidgetUrl = metadata?.provider === 'spinitron-reader'
     ? 'https://widgets.spinitron.com/widget/now-playing-v2?station=' + metadata.stationCode
       + '&num=1&cover=1&player=0&sharing=0&merch=0'
@@ -157,7 +173,7 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
     }));
   };
   const cover = displayedArtwork ? <div className="station-cover-group">
-    <BroadcastArtwork key={displayedArtwork} artwork={displayedArtwork} title={track?.title ?? ''} isNts={isNts}
+    <BroadcastArtwork key={displayedArtwork} artwork={displayedArtwork} title={track?.title ?? ''} isNts={isShow}
       onFailure={markArtworkFailed} />
     {usingCatalogue && found?.storeUrl && <a className="station-cover-store" href={found.storeUrl}
       target="_blank" rel="noopener noreferrer" title="Voir ce morceau sur l’iTunes Store">Sur iTunes</a>}
@@ -165,7 +181,7 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
 
   if (compact) {
     return <div className="station-now-playing" aria-live="polite">
-      <p className="eyebrow">{isNts ? 'ÉMISSION EN DIRECT' : spinitronWidgetUrl && !track
+      <p className="eyebrow">{track?.kind === 'scheduled-show' ? 'ÉMISSION SELON LA GRILLE' : isShow ? 'ÉMISSION EN DIRECT' : spinitronWidgetUrl && !track
         ? 'DERNIER TITRE SUR SPINITRON' : isNova || track?.kind==='last-confirmed'
         ? 'DERNIER TITRE IDENTIFIÉ' : 'EN CE MOMENT'}</p>
       {spinitronWidgetUrl && !track ? <div className="station-spinitron-fallback">
@@ -175,35 +191,36 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
         {cover}
         {track ? <div className="station-track-copy">
           <strong className="station-track-title">{track.title}</strong>
-          {!isNts && track.artist && <p className="station-track-artist">{track.artist}</p>}
+          {!isShow && track.artist && <p className="station-track-artist">{track.artist}</p>}
           {isNova && track.playedAt && <p className="station-track-time">À {track.playedAt}, selon Nova</p>}
           {isCampusSource && track.kind==='last-confirmed' && <p className="station-track-time">Dernier relevé vers {track.playedAt}, heure locale</p>}
-          {!isNts && trackForSave && saveTrack(trackForSave)}
+          {!isShow && trackForSave && saveTrack(trackForSave)}
           {spotifyUrl && <a className="radio-spotify-link" href={spotifyUrl} target="_blank"
             rel="noopener noreferrer" aria-label={'Rechercher ' + track.title + ' de ' + track.artist + ' sur Spotify'}>
             Retrouver sur Spotify <ExternalLink size={13} aria-hidden="true" />
           </a>}
         </div> : <p className="station-track-unavailable">
-          {loading ? 'Recherche du titre en cours…' : isNts
+          {loading ? (isShow ? 'Recherche de l’émission en cours…' : 'Recherche du titre en cours…') : isShow
             ? 'Émission indisponible pour le moment.' : 'Titre non confirmé par la station pour le moment.'}
         </p>}
       </div>}
     </div>;
   }
   return <div className="radio-track" aria-live="polite">
-    <p className="eyebrow">{isNts ? 'Émission en cours' : isNova ? 'Dernier titre identifié chez Nova' : 'À l’antenne'}</p>
+    <p className="eyebrow">{track?.kind === 'scheduled-show' ? 'Émission selon la grille' : isShow ? 'Émission en cours' : isNova ? 'Dernier titre identifié chez Nova' : 'À l’antenne'}</p>
     {track ? <div className="station-track-layout">
       {cover}
-      <div className="station-track-copy"><strong>{track.title}</strong>{track.artist && <p>{track.artist}</p>}{track.playedAt && <p>Diffusé à {track.playedAt}, heure de Paris · selon Nova</p>}</div>
+      <div className="station-track-copy"><strong>{track.title}</strong>{!isShow && track.artist && <p>{track.artist}</p>}{track.playedAt && <p>Diffusé à {track.playedAt}, heure de Paris · selon Nova</p>}</div>
     </div>
-      : <p>{isNts ? 'Émission indisponible pour le moment.' : isNova ? 'Aucun titre récent confirmé par Nova. Réessaie dans quelques instants.' : 'Titre indisponible pour le moment.'}</p>}
-    {!isNts && trackForSave && saveTrack(trackForSave)}
+      : <p>{isShow ? 'Émission indisponible pour le moment.' : isNova ? 'Aucun titre récent confirmé par Nova. Réessaie dans quelques instants.' : 'Titre indisponible pour le moment.'}</p>}
+    {!isShow && trackForSave && saveTrack(trackForSave)}
     {spotifyUrl && track && <a className="radio-spotify-link" href={spotifyUrl}
       target="_blank" rel="noopener noreferrer"
       aria-label={'Rechercher ' + track.title + ' de ' + track.artist + ' sur Spotify'}>
       Retrouver sur Spotify <ExternalLink size={13} aria-hidden="true" />
     </a>}
     {isNova && <a className="text-link" href="https://jina.ai/reader/" target="_blank" rel="noopener noreferrer">Données de Nova via Jina Reader</a>}
+    {metadata?.provider === 'radiocult-live' && <a className="text-link" href="https://www.worldwidefm.net/schedule" target="_blank" rel="noopener noreferrer">Voir la grille de Worldwide FM</a>}
     {isNts && <a className="text-link" href="https://www.nts.live/supporters" target="_blank" rel="noopener noreferrer">Titres en direct avec NTS Supporters ↗</a>}
   </div>;
 }
