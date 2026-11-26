@@ -407,3 +407,5 @@ input[type=checkbox] { accent-color: var(--accent); }
 @media (min-width: 1150px) {
   .station-grid.station-grid-discovery { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+
+.station-cover.station-logo { object-fit: contain; background: #101010; }
