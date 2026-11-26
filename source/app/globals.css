@@ -409,3 +409,4 @@ input[type=checkbox] { accent-color: var(--accent); }
 }
 
 .station-cover.station-logo { object-fit: contain; background: #101010; }
+.station-cover.station-logo[alt="Logo NTS"] { background: #fff; }
