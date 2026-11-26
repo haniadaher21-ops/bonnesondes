@@ -20,11 +20,13 @@ test('all radios including Nova can show identifiable songs in the cards', () =>
   assert.match(radio, /'Titre non confirmé par la station pour le moment.'/);
 });
 
-test('NTS cards show the current broadcast and not a song-saving button', () => {
+test('NTS and Worldwide FM cards show the current broadcast and not a song-saving button', () => {
   assert.match(radio, /channel\.channel_name === metadata\.channel/);
   assert.match(radio, /now\?\.broadcast_title/);
-  assert.match(radio, /isNts \? 'ÉMISSION EN DIRECT'/);
-  assert.match(radio, /!isNts && trackForSave && saveTrack\(trackForSave\)/);
+  assert.match(radio, /const isShow = isNts \|\| metadata\?\.provider === 'radiocult-live'/);
+  assert.match(radio, /return parseRadioCultShow\(await response\.json\(\)\)/);
+  assert.match(radio, /isShow \? 'ÉMISSION EN DIRECT'/);
+  assert.match(radio, /!isShow && trackForSave && saveTrack\(trackForSave\)/);
   assert.ok(content.includes("name: 'NTS 1'"));
   assert.ok(content.includes("name: 'NTS 2'"));
 });
