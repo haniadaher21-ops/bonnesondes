@@ -71,3 +71,12 @@ test('all five FIP stations use the official HLS feeds rather than ad-preroll MP
   assert.doesNotMatch(content, /icecast\.radiofrance\.fr/);
   assert.doesNotMatch(content, /embed: 'https:\/\/embed\.radiofrance\.fr\/fip\/player\?id_station=' \+ station/);
 });
+
+test('NTS and Worldwide FM always display their station logos instead of song artwork', () => {
+  assert.match(radio, /const stationLogo = isNts/);
+  assert.match(radio, /NTS-Logo-Black\.png/);
+  assert.match(radio, /worldwidefm\.net\/image-placeholder\.png/);
+  assert.match(radio, /const cover = stationLogo \? <img className="station-cover station-logo"/);
+  assert.match(radio, /: displayedArtwork \? <div className="station-cover-group">/);
+  assert.match(radio, /: stationLogo \? <div className="station-track-layout">\{cover\}/);
+});
