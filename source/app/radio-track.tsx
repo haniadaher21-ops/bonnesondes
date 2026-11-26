@@ -138,6 +138,12 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
 
   const isNts = metadata?.provider === 'nts';
   const isShow = isNts || metadata?.provider === 'radiocult-live';
+  // Fixed station identities, not album covers or changing programme artwork.
+  const stationLogo = isNts
+    ? { src: 'https://cdn.shopify.com/s/files/1/2193/5809/files/NTS-Logo-Black.png?v=1701357054', name: 'NTS' }
+    : metadata?.provider === 'radiocult-live'
+      ? { src: 'https://www.worldwidefm.net/image-placeholder.png', name: 'Worldwide FM' }
+      : null;
   const isNova = metadata?.provider === 'nova-page';
   const isCampusSource = ['spinitron-reader','wxyc-reader','kcrw-json','campus-paris-reader'].includes(metadata?.provider ?? '');
   const artKey = (metadata?.endpoint ?? '') + '|' + (track?.artist ?? '') + '|' + (track?.title ?? '');
@@ -172,7 +178,9 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
       urls: prev.key === artKey ? [...new Set([...prev.urls, displayedArtwork])] : [displayedArtwork],
     }));
   };
-  const cover = displayedArtwork ? <div className="station-cover-group">
+  const cover = stationLogo ? <img className="station-cover station-logo" src={stationLogo.src}
+    alt={'Logo ' + stationLogo.name} width={88} height={88} loading="lazy" referrerPolicy="no-referrer" />
+    : displayedArtwork ? <div className="station-cover-group">
     <BroadcastArtwork key={displayedArtwork} artwork={displayedArtwork} title={track?.title ?? ''} isNts={isShow}
       onFailure={markArtworkFailed} />
     {usingCatalogue && found?.storeUrl && <a className="station-cover-store" href={found.storeUrl}
@@ -212,6 +220,7 @@ export default function RadioTrack({ metadata, saveTrack, compact = false }: {
       {cover}
       <div className="station-track-copy"><strong>{track.title}</strong>{!isShow && track.artist && <p>{track.artist}</p>}{track.playedAt && <p>Diffusé à {track.playedAt}, heure de Paris · selon Nova</p>}</div>
     </div>
+      : stationLogo ? <div className="station-track-layout">{cover}<p>{loading ? 'Recherche de l’émission en cours…' : 'Émission indisponible pour le moment.'}</p></div>
       : <p>{isShow ? 'Émission indisponible pour le moment.' : isNova ? 'Aucun titre récent confirmé par Nova. Réessaie dans quelques instants.' : 'Titre indisponible pour le moment.'}</p>}
     {!isShow && trackForSave && saveTrack(trackForSave)}
     {spotifyUrl && track && <a className="radio-spotify-link" href={spotifyUrl}
