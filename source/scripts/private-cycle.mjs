@@ -175,14 +175,15 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   const publicReleaseUrls=new Set([...registered,...catalogues.records,...press.records,...endorsements.records].map(row=>row.sourceUrl));
   const publicCorpus=items=>items.filter(item=>item.format==='Album'?publicReleaseUrls.has(item.releaseProofUrl)||publicReleaseUrls.has(item.sourceUrl):
     item.mixKind!=='curated-mix'&&publicSourceIds.has(item.sourceId)&&item.playlistOrigin!=='followed');
-  const artistCache=new Map(Array.isArray(state.publicArtistCache)?state.publicArtistCache.slice(-400):[]);
+  const artistCache=new Map(Array.isArray(state.publicArtistCache)?state.publicArtistCache.slice(-900):[]);
   const artistBackoff=state.artistMetadataBackoff??={};
+  const saveArtistCache=()=>{let bytes=0;const rows=[];for(const entry of [...artistCache].reverse()){const size=Buffer.byteLength(JSON.stringify(entry));if(bytes+size>750000||rows.length>=900)continue;rows.push(entry);bytes+=size;}state.publicArtistCache=rows.reverse();};
   if (mode === 'collect') {
     if(env.BONNES_ONDES_PUBLIC_METADATA==='true'){
       try{
         const {coverage}=await refreshPublicMetadata({options:{candidates,profile,earlier,catalog:legacyItems,startsOn,now},
-          publicCandidates:publicCorpus(candidates),cache:artistCache,backoff:artistBackoff,fetcher,limit:12});
-        state.publicArtistCache=[...artistCache].slice(-400);
+          publicCandidates:publicCorpus(candidates),cache:artistCache,backoff:artistBackoff,fetcher,limit:18,styleLimit:8});
+        saveArtistCache();
         console.log('Enrichissement public',JSON.stringify(coverage));
       }catch{console.log('Enrichissement public temporairement indisponible');}
     }
@@ -209,7 +210,7 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     const publicCandidates=publicCorpus(rankedCandidates);
     try {
       const comparison=await compareWeeklyWeighted({options:rankingOptions,weightedProfile:profile.weightedProfile,publicCandidates,cache:artistCache,backoff:artistBackoff,fetcher,limit:12});
-      state.publicArtistCache=[...artistCache].slice(-400);
+      saveArtistCache();
       state.weightedObservation={at:date,startsOn,profileRevision:remote.revision,coverage:comparison.coverage,
         before:Object.fromEntries(Object.entries(comparison.before.selected).map(([k,rows])=>[k,rows.map(row=>({id:row.item.id,title:row.item.title}))])),
         after:Object.fromEntries(Object.entries(comparison.after.selected).map(([k,rows])=>[k,rows.map(row=>({id:row.item.id,title:row.item.title}))])),
