@@ -3,6 +3,7 @@ import { normalized } from './release-metadata.mjs';
 import { isoDate } from '../editorial/edition.mjs';
 import { bandcampAlbum, bandcampLinks } from './bandcamp-albums.mjs';
 import { parseFeed } from './discovery-feeds.mjs';
+import {musicalTags} from './style-affinity.mjs';
 
 // Articles published within the previous month are leads, not proof that an
 // album was released then. Primary release dates and Spotify identity are
@@ -184,6 +185,26 @@ export async function stereogumPrimaryRecords(html,url,mentions,fetcher){
 // The roundup may place the artist and album in one unpunctuated
 // heading. Verify each linked original record independently and require an
 // exact heading match in either order; an incidental article link is not a pick.
+// Scope descriptive evidence to the exact artist/album heading. Do not copy
+// prose or classify artists mentioned in comparisons outside that section.
+export function pressStyleTags(html,record){
+  const sections=[...html.matchAll(/<h[234]\b[^>]*>([\s\S]*?)<\/h[234]>/gi)];
+  const artist=titleKey(record.creator),album=titleKey(record.title);
+  if(!artist||!album)return [];
+  const i=sections.findIndex(h=>{
+    const name=titleKey(text(h[1]));
+    return name===artist+' '+album||name===album+' '+artist;
+  });
+  if(i<0)return [];
+  const content=text(html.slice(sections[i].index+sections[i][0].length,sections[i+1]?.index??html.length)).slice(0,3500);
+  const genreRx=/\b(?:alternative r&b|contemporary r&b|neo[- ]soul|r&b|rnb|soul|funk|dream pop|indie pop|art pop|alternative pop|hyperpop|synth[- ]?pop|indie rock|psychedelic rock|folk rock|indie folk|folk|hip[- ]hop|grime|rap|afrobeats|reggaeton|blues|disco|trip[- ]hop|downtempo|bossa nova|ambient)\b/gi;
+  const tags=[];
+  for(const sentence of content.split(/[.!?](?=\s|$)/)){
+    if(/\b(?:not|rather than|unlike|sounds like|compared to|for fans of|reminiscent of|cover of)\b/i.test(sentence))continue;
+    tags.push(...(sentence.match(genreRx)??[]));
+  }
+  return musicalTags(tags);
+}
 export async function essentialPrimaryRecords(html,url,mentions,fetcher){
   const records=[];
   for(const link of bandcampLinks(html,url).slice(0,20)){
@@ -191,7 +212,7 @@ export async function essentialPrimaryRecords(html,url,mentions,fetcher){
       const primary=bandcampAlbum(await readPublicPage(link,fetcher),link,'Bandcamp Daily');
       if(!primary)continue;
       const match=matchMusicPress(primary,mentions)??mentions.find(m=>m.headline&&titleKey(m.headline)===titleKey(primary.title)+' '+titleKey(primary.creator));
-      if(match)records.push({...primary,...match});
+      if(match){const pressTags=pressStyleTags(html,primary);records.push({...primary,...match,tags:[...new Set([...(primary.tags??[]),...pressTags])],pressStyleEvidence:{tags:pressTags,url}});}
     }catch{/* Unverified records remain outside selection. */}
   }
   return records;
