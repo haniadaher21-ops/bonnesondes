@@ -1,3 +1,4 @@
+import {musicalTags} from './style-affinity.mjs';
 // Public metadata only. Never call with a private listening profile.
 const key = value => typeof value==='string'?value.normalize('NFKC').toLowerCase().trim().replace(/\s+/gu,' '):'';
 const mbid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
@@ -35,7 +36,7 @@ function retryDelay(res,now){
 }
 export async function enrichPublicArtists(names,{
   fetcher=fetch,cache=new Map(),backoff={},limit=20,pause=sleep,clock=Date.now,
-  diagnostics={}
+  diagnostics={},styleLimit=0
 }={}) {
   const unique=new Map(names.filter(x=>typeof x==='string'&&x.trim()&&x.length<=160).map(x=>[key(x),x]));
   const next=new Map();
@@ -132,5 +133,35 @@ export async function enrichPublicArtists(names,{
       else out.set(k,identity);
     }
   }
+  // Style requests use public IDs from the candidate graph only. No private
+  // artist names or weights are passed in. Interleave neighbors across seeds.
+  const verified=[...out.values()].filter(row=>row.status==='verified');
+  const seedTags=new Map([...cache.values()].filter(row=>['verified','identity'].includes(row.status)&&mbid.test(row.mbid??'')&&musicalTags(row.tags).length).map(row=>[row.mbid,musicalTags(row.tags)]));
+  const genreQueue=new Set();
+  for(const row of verified)if(!seedTags.has(row.mbid))genreQueue.add(row.mbid);
+  for(let i=0;i<10;i++)for(const row of verified){
+    const id=row.neighbors?.[i]?.mbid;
+    if(mbid.test(id??'')&&!seedTags.has(id))genreQueue.add(id);
+  }
+  let styleCalls=0,styleHits=0;
+  const styles=new Map(seedTags);
+  for(const id of genreQueue){
+    const k='genre:'+id,saved=cache.get(k),age=clock()-Date.parse(saved?.checkedAt);
+    if(saved?.status==='genre'&&age>=0&&age<(saved.tags.length?30:7)*DAY){styles.set(id,saved.tags);styleHits++;continue;}
+    if(styleCalls>=Math.max(0,Math.min(30,styleLimit))||Date.parse(backoff['musicbrainz.org'])>clock())continue;
+    styleCalls++;
+    const data=await get('https://musicbrainz.org/ws/2/artist/'+id+'?inc=genres&fmt=json');
+    if(data?.id!==id||!Array.isArray(data.genres))continue;
+    const tags=musicalTags(data.genres.filter(t=>Number(t.count)>0).map(t=>t.name));
+    styles.set(id,tags);
+    cache.delete(k);cache.set(k,{status:'genre',mbid:id,tags,checkedAt:new Date(clock()).toISOString()});
+  }
+  for(const [k,row] of out){
+    if(row.status!=='verified')continue;
+    out.set(k,{...row,tags:styles.get(row.mbid)??musicalTags(row.tags),
+      neighbors:(row.neighbors??[]).map(n=>({...n,tags:styles.get(n.mbid)??[]}))});
+  }
+  Object.assign(diagnostics,{styleCalls,styleHits,styledArtists:styles.size,
+    styledEdges:[...out.values()].reduce((sum,r)=>sum+(musicalTags(r.tags).length?(r.neighbors??[]).filter(n=>musicalTags(n.tags).length).length:0),0)});
   return out;
 }
