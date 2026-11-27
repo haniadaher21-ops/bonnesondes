@@ -191,9 +191,9 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
       }
       row.weightedAffinity=match;
       row.score=Math.round((row.score+match.points*weightedWeight)*100)/100;
-      if(item.format==='Album'&&weightedProfile.style_preferences?.length){
+      if(['Album','Live session','Radio show'].includes(item.format)&&weightedProfile.style_preferences?.length){
         const knownArtist=candidateArtistCredits(item,now).some(name=>weightedIndex.known.has(name.normalize('NFKC').toLowerCase().trim().replace(/\s+/gu,' ')));
-        row.editorialWork=editorialWorkScore(item,{styles:weightedProfile.style_preferences,affinity:match,known:knownArtist,now});
+        row.editorialWork=editorialWorkScore(item,{styles:weightedProfile.style_preferences,affinity:match,known:knownArtist,now,credits:candidateArtistCredits(item,now),metadata:artistMetadata,knownArtists:weightedIndex.known,tracklistVerified:row.tracklistAffinity?.available===true});
         // Explicit negative feedback and avoidance remain effective; the new
         // editorial score must not quietly override the user's manual choices.
         const feedback=profile.signals.items.find(entry=>entry.id===item.id);
