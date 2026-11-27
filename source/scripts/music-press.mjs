@@ -205,11 +205,12 @@ export function pressStyleTags(html,record){
   }
   return musicalTags(tags);
 }
-export async function essentialPrimaryRecords(html,url,mentions,fetcher){
+export async function essentialPrimaryRecords(html,url,mentions,fetcher,limit=20){
   const records=[];
-  for(const link of bandcampLinks(html,url).slice(0,20)){
+  if(!mentions.length)return records;
+  for(const link of bandcampLinks(html,url).slice(0,limit)){
     try{
-      const primary=bandcampAlbum(await readPublicPage(link,fetcher),link,'Bandcamp Daily');
+      const primary=bandcampAlbum(await readPublicPage(link,fetcher),link,mentions[0].editorialSource??'Musical press');
       if(!primary)continue;
       const match=matchMusicPress(primary,mentions)??mentions.find(m=>m.headline&&titleKey(m.headline)===titleKey(primary.title)+' '+titleKey(primary.creator));
       if(match){const pressTags=pressStyleTags(html,primary);records.push({...primary,...match,tags:[...new Set([...(primary.tags??[]),...pressTags])],pressStyleEvidence:{tags:pressTags,url}});}
@@ -230,7 +231,15 @@ export async function collectMusicPress(sources,{fetcher=fetch,today=new Date().
       if(source.method==='npr-new-music-friday') {
         const items=nprMusicFridayMentions(html,source,today);
         mentions.push(...items);
-        status.push({source:source.name,status:items.length?'ok':'empty',articles:items.length?1:0,mentions:items.length});
+        let articles=0,primaryCount=0;
+        for(const url of [...new Set(items.map(x=>x.editorialUrl))].slice(0,4)){
+          try{
+            const article=await readPublicPage(url,fetcher);articles++;
+            const primary=await essentialPrimaryRecords(article,url,items.filter(x=>x.editorialUrl===url),fetcher,10);
+            records.push(...primary);primaryCount+=primary.length;
+          }catch{/* The official RSS mention remains a lead, not release proof. */}
+        }
+        status.push({source:source.name,status:items.length?'ok':'empty',articles,mentions:items.length,primaryRecords:primaryCount});
         continue;
       }
       const links=musicPressLinks(html,source);
@@ -241,8 +250,12 @@ export async function collectMusicPress(sources,{fetcher=fetch,today=new Date().
           const items=musicPressMentions(article,source,url,today);
           examined++; verified+=items.length; mentions.push(...items);
           if(source.method==='bandcamp-essential')records.push(...await essentialPrimaryRecords(article,url,items,fetcher));
-          else records.push(...musicPressAlbumReferences(article,url,items));
-          if(source.method==='stereogum-aotw')records.push(...await stereogumPrimaryRecords(article,url,items,fetcher));
+          else {
+            const direct=musicPressAlbumReferences(article,url,items);
+            records.push(...direct);
+            if(source.method==='stereogum-aotw')records.push(...await stereogumPrimaryRecords(article,url,items,fetcher));
+            else if(items.length>direct.length)records.push(...await essentialPrimaryRecords(article,url,items,fetcher,8));
+          }
         } catch { /* A blocked or changed article cannot be treated as endorsement. */ }
       }
       status.push({source:source.name,status:verified?'ok':links.length?'empty':'no-articles',
