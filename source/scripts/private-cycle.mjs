@@ -218,7 +218,9 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
       saveArtistCache();
       state.weightedObservation={at:date,startsOn,profileRevision:remote.revision,coverage:comparison.coverage,
         before:Object.fromEntries(Object.entries(comparison.before.selected).map(([k,rows])=>[k,rows.map(row=>({id:row.item.id,title:row.item.title}))])),
-        after:Object.fromEntries(Object.entries(comparison.after.selected).map(([k,rows])=>[k,rows.map(row=>({id:row.item.id,title:row.item.title}))])),
+        after:Object.fromEntries(Object.entries(comparison.after.selected).map(([k,rows])=>[k,rows.map(row=>({id:row.item.id,title:row.item.title,score:row.score,editorialWork:row.editorialWork,weightedAffinity:row.weightedAffinity,creator:row.item.creator,url:row.item.url,tags:row.item.tags}))])),
+        albumAudit:comparison.after.rankings.filter(row=>row.item.format==='Album').map(row=>({id:row.item.id,title:row.item.title,score:row.score,editorialWork:row.editorialWork,weightedAffinity:row.weightedAffinity})).slice(0,40),
+        albumRejected:comparison.after.rejected.filter(row=>row.format==='Album').map(({id,title,reason})=>({id,title,reason})).slice(0,50),
         complete:comparison.after.complete,gaps:comparison.after.gaps};
     } catch { state.weightedObservation={at:date,profileRevision:remote.revision,status:'unavailable'}; }
   } else if(!profile.weightedProfile || state.weightedObservation?.profileRevision!==remote.revision){
