@@ -5,6 +5,7 @@ import { normalized } from './weekly-evidence.mjs';
 import { excludesJazz, excludesElectronicMix, editorialEndorsement, isFreshMusicMix, isNovaMix, isNtsMix, isYouTubeMix, isFipTape, MIN_YOUTUBE_MIX_VIEWS } from './recommendation-policy.mjs';
 
 import {makeWeightedAffinity, weightedAffinity} from './weighted-affinity.mjs';
+import {editorialWorkScore} from './editorial-work-score.mjs';
 
 // Never treat a curator, channel or DJ as a recording artist.
 export function candidateArtistCredits(item,now){
@@ -190,6 +191,11 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
       }
       row.weightedAffinity=match;
       row.score=Math.round((row.score+match.points*weightedWeight)*100)/100;
+      if(item.format==='Album'&&weightedProfile.style_preferences?.length){
+        const knownArtist=candidateArtistCredits(item,now).some(name=>weightedIndex.known.has(name.normalize('NFKC').toLowerCase().trim().replace(/\s+/gu,' ')));
+        row.editorialWork=editorialWorkScore(item,{styles:weightedProfile.style_preferences,affinity:match,known:knownArtist,now});
+        row.score=Math.round((row.score*(1-weightedWeight)+row.editorialWork.points*weightedWeight)*100)/100;
+      }
       // Do not write private scores or artist matches into item/reason/publicReason.
     }
     rankings.push(row);
