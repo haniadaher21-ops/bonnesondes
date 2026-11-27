@@ -214,3 +214,22 @@ jobs:
           const lives=await verifyLives(candidates,sources,process.env.YOUTUBE_DATA_API_KEY);
           console.log('LIVE_EDITORIAL_TEST '+JSON.stringify({status:lives.status,items:lives.items.map(x=>({creator:x.creator,title:x.title,minutes:x.minutes,date:x.date,tags:x.tags,url:x.url}))}));
           JS
+
+      - name: Auditer la collecte éditoriale multisource
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'editorial-collection-reliability'
+        env:
+          YOUTUBE_DATA_API_KEY: ${{ secrets.YOUTUBE_DATA_API_KEY }}
+        run: |
+          npm run build
+          node --input-type=module <<'JS'
+          import {verifyLives} from './scripts/weekly-evidence.mjs';
+          import {collectMusicPress} from './scripts/music-press.mjs';
+          import sources from './editorial/sources.json' with {type:'json'};
+          import pressSources from './editorial/music-press.json' with {type:'json'};
+          const videos=[['kexp-live','dW_7LAB1zF8','Chanpan'],['kexp-live','fJjg0QykS5Q','anaiis'],['kexp-live','L-vaq1xTPIM','Hermanos Gutiérrez'],['npr-tiny-desk','73wCQRQb7v0','Jungle'],['bbc-live-lounge-vevo','w5rnlWB-f04','Remi Wolf']];
+          const candidates=videos.map(([sourceId,id,creator])=>({id:'youtube-'+id,sourceId,creator,format:'Live session',officialVideo:true,url:'https://www.youtube.com/watch?v='+id,sourceUrl:'https://www.youtube.com/watch?v='+id,embed:{provider:'youtube',id}}));
+          const lives=await verifyLives(candidates,sources,process.env.YOUTUBE_DATA_API_KEY);
+          console.log('LIVE_STYLE_AUDIT '+JSON.stringify({status:lives.status,items:lives.items.map(x=>({creator:x.creator,tags:x.tags,evidence:x.styleEvidence}))}));
+          const press=await collectMusicPress(pressSources,{today:new Date().toISOString().slice(0,10)});
+          console.log('PRESS_SOURCE_AUDIT '+JSON.stringify(press.status));
+          JS
