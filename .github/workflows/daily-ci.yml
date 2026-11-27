@@ -136,3 +136,22 @@ jobs:
         run: |
           npm run build
           node scripts/check-public-artist-metadata.mjs
+
+      - name: Vérifier la résilience des API musicales
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'artist-api-resilience'
+        run: |
+          npm run build
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {enrichPublicArtists} from './scripts/public-artist-metadata.mjs';
+          const names=['Toro y Moi','Lorenzo Senni','Atlas Sound','Donato Dozzy'];
+          const cache=new Map(),backoff={},diagnostics={};
+          const rows=await enrichPublicArtists(names,{cache,backoff,diagnostics,limit:4});
+          console.log('PUBLIC_API_TEST '+JSON.stringify({results:[...rows].map(([artist,row])=>({artist,status:row.status,neighbors:row.neighbors?.length??0})),diagnostics}));
+          assert.equal(rows.size,names.length);
+          for(const row of rows.values())if(row.status==='verified')assert.ok(row.mbid&&Array.isArray(row.neighbors));
+          const again={};
+          await enrichPublicArtists(names,{cache,backoff,limit:0,diagnostics:again});
+          assert.equal(again.requests,0);
+          console.log('PUBLIC_CACHE_TEST '+JSON.stringify(again));
+          JS

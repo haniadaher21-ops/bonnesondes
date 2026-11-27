@@ -36,6 +36,7 @@ jobs:
           SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
           BONNES_ONDES_RUNNER_TOKEN: ${{ secrets.BONNES_ONDES_RUNNER_TOKEN }}
           AUTO_PUBLISH_ENABLED: 'false'
+          BONNES_ONDES_PUBLIC_METADATA: 'true'
       - name: Signaler un échec sans publier
         if: failure()
         run: echo '::error::Collecte quotidienne interrompue ; vérifier le profil, Supabase et les sources. Aucune édition publiée.'
