@@ -440,5 +440,16 @@
     "url": "https://www.nts.live/shows/brassfoot",
     "feed": "https://www.nts.live/api/v2/shows/brassfoot/episodes",
     "mixKind": "dj-set"
+  },
+  {
+    "id": "bbc-live-lounge-vevo",
+    "name": "BBC Radio 1 · Live Lounge (VEVO)",
+    "mode": "automatic",
+    "method": "youtube-atom",
+    "url": "https://www.youtube.com/@BBCRadio1VEVO",
+    "channelId": "UCKoafhJ9dkAWaEvlXCiBBwA",
+    "titleContains": "live lounge",
+    "provider": "YouTube",
+    "format": "Live session"
   }
 ]
