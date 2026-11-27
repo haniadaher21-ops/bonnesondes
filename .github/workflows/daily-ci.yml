@@ -187,4 +187,8 @@ jobs:
           console.log('STEREOGUM_STATUS '+JSON.stringify(result.status));
           console.log('STEREOGUM_MENTIONS '+JSON.stringify(result.mentions.map(x=>({headline:x.headline,date:x.editorialPublishedAt,url:x.editorialUrl}))));
           console.log('STEREOGUM_PRIMARY '+JSON.stringify(result.records.map(x=>({title:x.title,creator:x.creator,date:x.releaseDate,tags:x.tags,url:x.sourceUrl}))));
+          const {verifyAlbums}=await import('./scripts/weekly-evidence.mjs');
+          const {default:registered}=await import('./editorial/album-sources.json',{with:{type:'json'}});
+          const evidence=await verifyAlbums(registered.filter(x=>x.editorialSource==='Stereogum'));
+          console.log('STEREOGUM_RELEASE_TEST '+JSON.stringify(evidence.map(x=>({title:x.candidate?.title??x.title??x.record?.title,verified:!!x.candidate,tags:x.candidate?.tags,reason:x.reason??x.failure,source:x.candidate?.sourceUrl}))));
           JS
