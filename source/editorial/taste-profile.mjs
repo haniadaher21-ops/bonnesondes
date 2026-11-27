@@ -84,7 +84,7 @@ function feedback(item) {
  * @param {unknown} input @returns {WeightedTaste}
  */
 export function normalizeWeightedTaste(input){
-  if(!record(input)||!Array.isArray(input.artists)||input.artists.length>200||
+  if(!record(input)||!Array.isArray(input.artists)||input.artists.length>2000||
      !Array.isArray(input.excluded_artists)||input.excluded_artists.length>100||
      !Array.isArray(input.known_artist_names)||input.known_artist_names.length>2000)
     throw new Error('Profil musical pondéré invalide.');
@@ -119,6 +119,17 @@ export function normalizeTasteProfile(value) {
     return [entry.id, entry];
   })).values()].filter(item => item.saved || item.reaction);
   return result;
+}
+
+/** Merge an explicitly imported derived profile without replacing manual tastes or feedback.
+ * @param {TasteProfile} current
+ * @param {unknown} input
+ * @returns {TasteProfile}
+ */
+export function importWeightedTaste(current,input){
+  if(!record(input)||input.type!=='bonnes-ondes-weighted-profile'||input.version!==1)
+    throw new Error('Format de profil pondéré inconnu.');
+  return normalizeTasteProfile({...current,weightedProfile:normalizeWeightedTaste(input.weightedProfile)});
 }
 
 /** @param {string} json */
