@@ -184,6 +184,9 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
     const previouslySeen = Object.hasOwn(seen, canonicalUrl(item.url));
     const row={...rank(item, profile, today, tasteWeight, previouslySeen, artistIndex, tracklistWeight, now, Boolean(weightedIndex?.weights.size)), previouslySeen};
     if(weightedIndex){
+      if(weightedWeight===1&&item.format==='Live session'&&(!isoDate(item.date)||item.date<addDays(today,-90))){
+        rejected.push({id:item.id,title:item.title,format:item.format,url:item.url,reason:'Performance hors fenêtre des 90 jours'});continue;
+      }
       const match=weightedAffinity(candidateArtistCredits(item,now),weightedIndex,artistMetadata,{tracklist:item.format==='Radio show'});
       if(match.excluded){
         rejected.push({id:item.id,title:item.title,format:item.format,url:item.url,reason:'Exclusion du profil privé'});
