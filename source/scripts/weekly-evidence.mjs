@@ -85,7 +85,8 @@ export async function verifyAlbums(records, fetcher = fetch) {
 // that a video is soul, jazz or rap based on its channel or an artist's name.
 const musicStyles = ['jazz','soul','neo soul','funk','disco','house','techno','electronic','electronica',
   'ambient','indie rock','psychedelic rock','rock','punk','post punk','hip hop','rap','r b',
-  'reggae','dub','afrobeat','afrobeats','folk','country','pop','experimental','dance'];
+  'reggae','dub','afrobeat','afrobeats','folk','country','pop','experimental','dance',
+  'alternative r&b','contemporary r&b','indie pop','dream pop','art pop','alternative pop','synthpop','synth pop','hyperpop','dance pop','indie folk','folk rock','garage rock','cloud rap','grime','alternative hip hop','latin pop','reggaeton','bossa nova','afro house','downtempo','drum and bass'];
 function musicTags(snippet) {
   const published = Array.isArray(snippet?.tags) ? snippet.tags.slice(0,50) : [];
   const tagged = published.filter(value=>typeof value==='string').map(normalized);
