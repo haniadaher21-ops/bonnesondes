@@ -17,7 +17,7 @@ export function ntsEpisodePageGenres(html,title){
   const plain=s=>s.replace(/<[^>]*>/g,' ').replace(/&amp;/g,'&').replace(/&#39;|&apos;/g,"'").replace(/\s+/g,' ').trim();
   const head=[...html.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi)].find(m=>label(plain(m[1]))===label(title));
   if(!head)return [];
-  const section=html.slice(head.index+head[0].length,head.index+head[0].length+16000).split(/<h[1-4]\b|You Might Also Like|Tracklist/i)[0];
+  const section=html.slice(head.index+head[0].length,head.index+head[0].length+16000).split(/<h[134]\b|You Might Also Like|Tracklist/i)[0];
   return [...new Set([...section.matchAll(/<a\b[^>]*href=["'](?:https:\/\/www\.nts\.live)?\/explore\/genre\/[a-z0-9-]+\/?["'][^>]*>([\s\S]*?)<\/a>/gi)].map(m=>plain(m[1])).filter(x=>x&&x.length<=80))].slice(0,20);
 }
 
