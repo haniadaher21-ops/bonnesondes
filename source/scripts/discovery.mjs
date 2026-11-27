@@ -3,6 +3,7 @@ import { editorialFeed, parseFeed, reviewedArtist, spotifyCandidate, text } from
 
 import { linkedReleaseSources } from './weekly-evidence.mjs';
 import { livePerformer } from './recommendation-policy.mjs';
+import {tracklistEvidence} from './mix-tracklists.mjs';
 import { bandcampLinks } from './bandcamp-albums.mjs';
 
 const formats = ['Album', 'Radio show', 'Playlist', 'Live session'];
@@ -250,8 +251,10 @@ async function collect(source, request, collectedAt) {
         outcome.errors.push(error instanceof SyntaxError ? 'Réponse fournisseur invalide.' : error.message);
         if (source.method !== 'pitchfork-rss') continue;
       }
+      const {novaRssTracks,...verifiedFields}=verified;
+      const novaEvidence=Array.isArray(novaRssTracks)&&source.provider==='Radio Nova'?tracklistEvidence(novaRssTracks,feed,'nova-rss',new Date(collectedAt)):undefined;
       outcome.items.push({
-        source: source.name, ...verified, provider: verified.provider ?? source.provider, sourceId, sourceUrl: verified.sourceUrl ?? feed, collectedAt,
+        source: source.name, ...verifiedFields,...(novaEvidence&&{tracklist:novaEvidence}), provider: verified.provider ?? source.provider, sourceId, sourceUrl: verified.sourceUrl ?? feed, collectedAt,
         ...(source.format === 'Radio show' && source.mixKind === 'dj-set' && {
           mixKind:'dj-set',...(source.mixSelection && {novaMixVerified:true}),
         }),
