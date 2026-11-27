@@ -3,6 +3,7 @@ import {bandcampAlbum} from './bandcamp-albums.mjs';
 import {listeningResolver} from './album-links.mjs';
 import { text } from './discovery-feeds.mjs';
 import { livePerformer } from './recommendation-policy.mjs';
+import {officialLiveGenres} from './live-style-evidence.mjs';
 
 import { readPublicPage, albumListeningLink } from './album-catalogues.mjs';
 
@@ -125,9 +126,13 @@ export async function verifyLives(candidates, sources, key, fetcher = fetch) {
           || /\b(interview|shorts?|teaser|trailer|extrait|clip|official music video|behind the scenes)\b/i.test(title)) continue;
         if (item.creator && !normalized(title).includes(normalized(item.creator))) continue;
         const date=video.snippet?.publishedAt?.slice(0,10);
-        items.push({ ...item, title, creator: livePerformer(title,item.creator),
+        const creator=livePerformer(title,item.creator);
+        const videoTags=musicTags(video.snippet);
+        const descriptionTags=officialLiveGenres(video.snippet?.description,creator);
+        items.push({ ...item, title, creator,
           videoSourceUrl:item.url,officialVideo:true,
-          tags: [...new Set([...(item.tags ?? []), ...musicTags(video.snippet)])],
+          tags: [...new Set([...(item.tags ?? []), ...videoTags,...descriptionTags])],
+          styleEvidence:{videoTags,descriptionTags,sourceUrl:item.url},
           ...(isoDate(date) && {date,dateKind:'published'}),
           minutes: duration / 60, verificationStatus: 'performance-verified' });
       }
