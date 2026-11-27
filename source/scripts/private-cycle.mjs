@@ -18,7 +18,7 @@ import { legacyEdition, legacyItems, publishedFile, readJson } from './editorial
 import {filterConflictingDates} from './release-metadata.mjs';
 import { verifyAlbums, verifyLives, normalized } from './weekly-evidence.mjs';
 import { weeklyShortlist } from './weekly-ranking.mjs';
-import { compareWeeklyWeighted } from './weighted-weekly.mjs';
+import { compareWeeklyWeighted, refreshPublicMetadata } from './weighted-weekly.mjs';
 import { editorialEndorsement } from './recommendation-policy.mjs';
 import {publicProviderFetcher} from './provider-policy.mjs';
 import {observationReport,renderObservation} from './observation-report.mjs';
@@ -169,7 +169,23 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
       ids:editionItems(edition).map(item=>item.id)})),
   ].slice(-104);
   state.dryRuns = state.dryRuns.filter(run => Date.parse(run.at) >= now.getTime()-14*86400000).slice(-30);
+  // Public-source metadata may be warmed during daily collection independently
+  // of whether the owner has imported a weighted profile.
+  const publicSourceIds=new Set(sources.filter(source=>!source.onlyWhenFollowed).map(source=>source.id));
+  const publicReleaseUrls=new Set([...registered,...catalogues.records,...press.records,...endorsements.records].map(row=>row.sourceUrl));
+  const publicCorpus=items=>items.filter(item=>item.format==='Album'?publicReleaseUrls.has(item.releaseProofUrl)||publicReleaseUrls.has(item.sourceUrl):
+    item.mixKind!=='curated-mix'&&publicSourceIds.has(item.sourceId)&&item.playlistOrigin!=='followed');
+  const artistCache=new Map(Array.isArray(state.publicArtistCache)?state.publicArtistCache.slice(-400):[]);
+  const artistBackoff=state.artistMetadataBackoff??={};
   if (mode === 'collect') {
+    if(env.BONNES_ONDES_PUBLIC_METADATA==='true'){
+      try{
+        const {coverage}=await refreshPublicMetadata({options:{candidates,profile,earlier,catalog:legacyItems,startsOn,now},
+          publicCandidates:publicCorpus(candidates),cache:artistCache,backoff:artistBackoff,fetcher,limit:12});
+        state.publicArtistCache=[...artistCache].slice(-400);
+        console.log('Enrichissement public',JSON.stringify(coverage));
+      }catch{console.log('Enrichissement public temporairement indisponible');}
+    }
     await saveState();
     return {status:'collected', candidates:candidates.length, albums:albums.length,incremental,profileRevision:remote.revision, catalogues:catalogues.status,press:press.status};
   }
@@ -190,14 +206,10 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   // Limit provider requests to public configured sources and public release leads,
   // not followed-only sources or profile-driven YouTube searches.
   if(profile.weightedProfile && mode==='observe' && env.BONNES_ONDES_WEIGHTED_OBSERVE==='true'){
-    const publicSourceIds=new Set(sources.filter(source=>!source.onlyWhenFollowed).map(source=>source.id));
-    const publicReleaseUrls=new Set([...registered,...catalogues.records,...press.records,...endorsements.records].map(row=>row.sourceUrl));
-    const publicCandidates=rankedCandidates.filter(item=>item.format==='Album'?publicReleaseUrls.has(item.releaseProofUrl)||publicReleaseUrls.has(item.sourceUrl):
-      item.mixKind!=='curated-mix'&&publicSourceIds.has(item.sourceId)&&item.playlistOrigin!=='followed');
-    const cache=new Map(Array.isArray(state.publicArtistCache)?state.publicArtistCache.slice(-400):[]);
+    const publicCandidates=publicCorpus(rankedCandidates);
     try {
-      const comparison=await compareWeeklyWeighted({options:rankingOptions,weightedProfile:profile.weightedProfile,publicCandidates,cache,fetcher,limit:12});
-      state.publicArtistCache=[...cache].slice(-400);
+      const comparison=await compareWeeklyWeighted({options:rankingOptions,weightedProfile:profile.weightedProfile,publicCandidates,cache:artistCache,backoff:artistBackoff,fetcher,limit:12});
+      state.publicArtistCache=[...artistCache].slice(-400);
       state.weightedObservation={at:date,startsOn,profileRevision:remote.revision,coverage:comparison.coverage,
         before:Object.fromEntries(Object.entries(comparison.before.selected).map(([k,rows])=>[k,rows.map(row=>({id:row.item.id,title:row.item.title}))])),
         after:Object.fromEntries(Object.entries(comparison.after.selected).map(([k,rows])=>[k,rows.map(row=>({id:row.item.id,title:row.item.title}))])),
