@@ -38,3 +38,34 @@ test('Stereogum primary lead requires exact identity, original date and independ
  assert.equal(result.length,1);assert.deepEqual(result[0].tags,['dream pop']);
  assert.deepEqual(await stereogumPrimaryRecords(article,review,[{headline:'Other Album'}],fetcher),[]);
 });
+
+const live=(id,creator,tags)=>({id,title:creator+' - Song (Live on KEXP)',creator,format:'Live session',source:'KEXP',sourceId:'kexp-live',url:'https://www.youtube.com/watch?v='+id,sourceUrl:'https://www.youtube.com/watch?v='+id,date:'2026-11-24',minutes:5,officialVideo:true,verificationStatus:'performance-verified',tags});
+const radio=(id,tags,artists)=>({id,title:id,creator:'DJ Example',format:'Radio show',source:'NTS Radio',provider:'NTS',sourceId:'nts-example',mixKind:'dj-set',date:'2026-11-25',verificationStatus:'source-verified',url:'https://www.nts.live/shows/example/episodes/'+id,sourceUrl:'https://www.nts.live/shows/example/episodes/'+id,tags,tracklist:{status:'available',method:'nts-api',checkedAt:now.toISOString(),sourceUrl:'https://www.nts.live/api/v2/shows/example/episodes/'+id+'/tracklist',tracks:artists.map(artist=>({artist,title:'Title'}))}});
+test('live ranks work-specific styles ahead of familiar but unrelated artists',()=>{
+ const args={candidates:[live('aaaaaaaaaaa','Known Artist',['techno']),live('bbbbbbbbbbb','New Artist',['dream pop'])],profile:emptyTasteProfile(),earlier:[],catalog:[],startsOn:'2026-11-30',now};
+ const profile={artists:[{artist:'Known Artist',score:85}],excluded_artists:[],known_artist_names:['Known Artist'],style_preferences:styles};
+ const report=weeklyShortlist({...args,weightedProfile:profile,weightedWeight:1});
+ assert.equal(report.selected.live[0].item.creator,'New Artist');
+ assert.deepEqual(weeklyShortlist({...args,weightedProfile:profile}),weeklyShortlist(args));
+});
+test('mix style and verified programming outrank familiar DJ and unrelated genre',()=>{
+ const items=[radio('a',['techno'],['Known Artist','Other']),radio('b',['dream pop'],['New Artist','Other'])];
+ const args={candidates:items,profile:emptyTasteProfile(),earlier:[],catalog:[],startsOn:'2026-11-30',now};
+ const profile={artists:[{artist:'Known Artist',score:85},{artist:'DJ Example',score:100}],excluded_artists:[],known_artist_names:['Known Artist','DJ Example'],style_preferences:styles};
+ const report=weeklyShortlist({...args,weightedProfile:profile,weightedWeight:1});
+ assert.equal(report.selected.nts[0].item.id,'b');
+ assert.equal(report.selected.nts[0].weightedAffinity.points,0);
+ assert.equal(report.selected.nts[0].editorialWork.discovery,1);
+});
+test('missing tracklists and undocumented genres do not fabricate discovery',()=>{
+ const item=radio('a',[],['New Artist','Other']);
+ const result=editorialWorkScore(item,{styles,now,credits:['New Artist','Other'],tracklistVerified:false,knownArtists:new Set()});
+ assert.equal(result.styleMatch,0);assert.equal(result.discovery,0);
+ assert.equal(result.quality,.75);
+});
+test('one tagged artist cannot define an entire long mix',()=>{
+ const names=['New Artist',...Array.from({length:19},(_,i)=>'Other '+i)];
+ const result=editorialWorkScore(radio('a',[],names),{styles,now,credits:names,tracklistVerified:true,metadata:new Map([['new artist',{status:'verified',tags:['dream pop']}]]),knownArtists:new Set()});
+ assert.ok(result.styleMatch<.05);
+ assert.equal(result.documentedCredits,1);
+});
