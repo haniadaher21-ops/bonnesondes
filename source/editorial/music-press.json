@@ -47,5 +47,19 @@
     "method": "existing-collector",
     "listingUrl": "https://daily.bandcamp.com/album-of-the-day",
     "mode": "existing"
+  },
+  {
+    "id": "qobuz",
+    "name": "Qobuz Magazine",
+    "method": "manual-review",
+    "listingUrl": "https://www.qobuz.com/fr-fr/magazine",
+    "mode": "manual"
+  },
+  {
+    "id": "notion",
+    "name": "Notion Magazine",
+    "method": "manual-review",
+    "listingUrl": "https://notion.online/",
+    "mode": "manual"
   }
 ]
