@@ -76,3 +76,18 @@ test('NTS page genre extraction is scoped to the matching episode header',async(
  assert.deepEqual(ntsEpisodePageGenres(page,'Example & Friend'),['Soul','Folk']);
  assert.deepEqual(ntsEpisodePageGenres(page,'Other'),[]);
 });
+
+test('generic rock and a press award cannot substitute for musical fit',()=>{
+ const taste=[{tag:'neo soul',score:85},{tag:'alternative r&b',score:75},{tag:'indie rock',score:55}];
+ const unrelated=editorialWorkScore(album('a','Unknown',['rock','krautrock']),{styles:taste,now,known:false});
+ const match=editorialWorkScore(album('b','New Artist',['neo soul','funk']),{styles:taste,now,known:false});
+ assert.equal(unrelated.tasteSupported,false);assert.equal(unrelated.discovery,0);
+ assert.ok(match.tasteSupported);assert.ok(match.points>unrelated.points);
+ const args={candidates:[album('a','Unknown',['rock','krautrock']),album('b','New Artist',['neo soul','funk'])],profile:emptyTasteProfile(),earlier:[],catalog:[],startsOn:'2026-11-30',now};
+ const result=weeklyShortlist({...args,weightedProfile:{artists:[],known_artist_names:[],excluded_artists:[],style_preferences:taste},weightedWeight:1});
+ assert.deepEqual(result.selected.albums.map(x=>x.item.id),['b']);assert.equal(result.gaps.albums,2);
+});
+test('a known artist with meaningful affinity can qualify without documented album tags',()=>{
+ const result=editorialWorkScore(album('a','Known',[]),{styles,now,known:true,affinity:{points:12}});
+ assert.equal(result.tasteSupported,true);assert.equal(result.discovery,0);
+});
