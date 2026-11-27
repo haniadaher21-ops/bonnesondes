@@ -192,3 +192,25 @@ jobs:
           const evidence=await verifyAlbums(registered.filter(x=>x.editorialSource==='Stereogum'));
           console.log('STEREOGUM_RELEASE_TEST '+JSON.stringify(evidence.map(x=>({title:x.candidate?.title??x.title??x.record?.title,verified:!!x.candidate,tags:x.candidate?.tags,reason:x.reason??x.failure,source:x.candidate?.sourceUrl}))));
           JS
+
+      - name: Tester les nouvelles émissions NTS et le score éditorial
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'editorial-live-mixes'
+        env:
+          YOUTUBE_DATA_API_KEY: ${{ secrets.YOUTUBE_DATA_API_KEY }}
+        run: |
+          npm run build
+          node --input-type=module <<'JS'
+          import {discover} from './scripts/discovery.mjs';
+          import {enrichRadioTracklists} from './scripts/mix-tracklists.mjs';
+          import sources from './editorial/sources.json' with {type:'json'};
+          const chosen=sources.filter(x=>['nts-aloha-got-soul','nts-diana-ratsamee','nts-brassfoot'].includes(x.id));
+          const report=await discover({sources:chosen});
+          const items=report.candidates.filter(x=>x.date>='2026-11-23');
+          const result=await enrichRadioTracklists(items,{limit:8});
+          console.log('NTS_EDITORIAL_TEST '+JSON.stringify({sources:report.sources,items:result.items.map(x=>({title:x.title,date:x.date,tags:x.tags,tracks:x.tracklist?.tracks?.length??0,url:x.url})),diagnostics:result.diagnostics}));
+          const {verifyLives}=await import('./scripts/weekly-evidence.mjs');
+          const videos=[['kexp-live','dW_7LAB1zF8','Chanpan'],['kexp-live','fJjg0QykS5Q','anaiis'],['kexp-live','L-vaq1xTPIM','Hermanos Gutiérrez'],['colors','vWxm1G-d900','Milo J'],['npr-tiny-desk','73wCQRQb7v0','Jungle'],['bbc-live-lounge-vevo','w5rnlWB-f04','Remi Wolf']];
+          const candidates=videos.map(([sourceId,id,creator])=>({id:'youtube-'+id,sourceId,creator,format:'Live session',officialVideo:true,url:'https://www.youtube.com/watch?v='+id,sourceUrl:'https://www.youtube.com/watch?v='+id,embed:{provider:'youtube',id}}));
+          const lives=await verifyLives(candidates,sources,process.env.YOUTUBE_DATA_API_KEY);
+          console.log('LIVE_EDITORIAL_TEST '+JSON.stringify({status:lives.status,items:lives.items.map(x=>({creator:x.creator,title:x.title,minutes:x.minutes,date:x.date,tags:x.tags,url:x.url}))}));
+          JS

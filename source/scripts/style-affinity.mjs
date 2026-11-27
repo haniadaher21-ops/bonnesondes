@@ -11,11 +11,12 @@ const families={
   latin:['latin','latin pop','reggaeton','bossa nova','samba','cumbia','salsa','latin jazz','bolero'],
   afro:['afrobeats','afrobeat','afropop','amapiano','afro house','highlife','afro soul'],
   classical:['classical','modern classical','contemporary classical','minimalism','neoclassical'],
-  rock:['rock','alternative rock','indie rock','post punk','post-punk','psychedelic rock','pop rock','garage rock','hard rock','metal','punk'],
+  rock:['rock','soft rock','alternative rock','indie rock','post punk','post-punk','psychedelic rock','pop rock','garage rock','hard rock','metal','punk'],
   blues:['blues','blues rock','soul blues','rhythm and blues'],
+  reggae:['reggae','dub','lovers rock','dancehall','roots reggae'],
 };
 const norm=x=>typeof x==='string'?x.normalize('NFKC').toLowerCase().trim().replace(/[-_]+/g,' ').replace(/\s+/g,' '):'';
-const aliases=new Map([['r&b','rnb'],['rhythm and blues','rnb'],['hip hop','hip hop'],['synth pop','synthpop']]);
+const aliases=new Map([['r&b','rnb'],['r b','rnb'],['alt pop','alternative pop'],['leftfield pop','alternative pop'],['rhythm and blues','rnb'],['hip hop','hip hop'],['synth pop','synthpop']]);
 const canonical=x=>aliases.get(norm(x))??norm(x);
 const familyMap=new Map();
 for(const [family,values] of Object.entries(families))for(const raw of values){

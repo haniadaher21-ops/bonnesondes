@@ -9,6 +9,18 @@ const formats = ['Album', 'Radio show', 'Playlist', 'Live session'];
 const label = value => text(value).normalize('NFC').toLowerCase();
 const excludedVideo = /\b(?:shorts?|interview|behind the scenes|behind (?:the|.+ like a) version|teaser|trailer|sneak peek|official music video|preview|highlight(?:s)?|extrait)\b/i;
 
+// NTS exposes genre links on the individual episode page, not consistently
+// in the episode-list API. Restrict extraction to the matching H1 header,
+// before the description / related programmes so tags cannot bleed across.
+export function ntsEpisodePageGenres(html,title){
+  if(typeof html!=='string')return [];
+  const plain=s=>s.replace(/<[^>]*>/g,' ').replace(/&amp;/g,'&').replace(/&#39;|&apos;/g,"'").replace(/\s+/g,' ').trim();
+  const head=[...html.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi)].find(m=>label(plain(m[1]))===label(title));
+  if(!head)return [];
+  const section=html.slice(head.index+head[0].length,head.index+head[0].length+16000).split(/<h[134]\b|You Might Also Like|Tracklist/i)[0];
+  return [...new Set([...section.matchAll(/<a\b[^>]*href=["'](?:https:\/\/www\.nts\.live)?\/explore\/genre\/[a-z0-9-]+\/?["'][^>]*>([\s\S]*?)<\/a>/gi)].map(m=>plain(m[1])).filter(x=>x&&x.length<=80))].slice(0,20);
+}
+
 function ntsCandidates(payload, source) {
   const episodes = payload?.results;
   if (!Array.isArray(episodes)) throw new Error('Liste des épisodes NTS absente.');
@@ -25,6 +37,7 @@ function ntsCandidates(payload, source) {
       ...(tracklist?.origin === 'https://www.nts.live' && tracklist.pathname === tracklistPath && { tracklistUrl: tracklist.href }),
       id: 'nts-' + alias, title, creator:source.curator, format: 'Radio show', source: 'NTS Radio', date,
       dateKind: 'broadcast', broadcastAt: text(episode.broadcast),
+      tags: [...new Set([...(Array.isArray(episode.genres)?episode.genres:[]),...(Array.isArray(episode.embeds?.genres)?episode.embeds.genres:[])].map(g=>typeof g==='string'?g:g?.name??g?.title).filter(g=>typeof g==='string'&&g.length<=80))].slice(0,20),
       url: 'https://www.nts.live/shows/' + show + '/episodes/' + alias,
       artwork: sourceUrl(episode.media?.picture_medium)?.href,
     };
@@ -156,7 +169,13 @@ async function verifyCandidate(item, source, request) {
       throw new Error('Épisode FIP Tape redirigé hors de sa fiche.');
   }
   if (source.method === 'nts-episodes') {
-    await (await request(item.url)).body?.cancel();
+    const response=await request(item.url);
+    const resolved=response.url&&sourceUrl(response.url);
+    if(resolved&&(resolved.origin!=='https://www.nts.live'||resolved.pathname!==new URL(item.url).pathname)){
+      await response.body?.cancel();throw new Error('Épisode NTS redirigé hors de sa fiche.');
+    }
+    const tags=ntsEpisodePageGenres(await response.text(),item.title);
+    return {...item,tags:[...new Set([...(item.tags??[]),...tags])]};
   }
   if (source.method === 'bandcamp-notes' && item.format === 'Album') {
     let links = item.bandcampUrls ?? [];

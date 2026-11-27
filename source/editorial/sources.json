@@ -407,5 +407,49 @@
     "feed": "https://radiofrance-podcast.net/podcast09/35099478-7c72-4f9e-a6de-1b928400e9e5/podcast_6da709ab-470a-4054-97cd-b1241f9fedaa.xml",
     "itemPrefix": "/fip/podcasts/fip-tape/",
     "mixKind": "editorial-mixtape"
+  },
+  {
+    "id": "nts-aloha-got-soul",
+    "name": "NTS · Aloha Got Soul",
+    "provider": "NTS",
+    "format": "Radio show",
+    "mode": "automatic",
+    "method": "nts-episodes",
+    "url": "https://www.nts.live/shows/aloha-got-soul",
+    "feed": "https://www.nts.live/api/v2/shows/aloha-got-soul/episodes",
+    "mixKind": "dj-set"
+  },
+  {
+    "id": "nts-diana-ratsamee",
+    "name": "NTS · SEA to SEA",
+    "provider": "NTS",
+    "format": "Radio show",
+    "mode": "automatic",
+    "method": "nts-episodes",
+    "url": "https://www.nts.live/shows/diana-ratsamee",
+    "feed": "https://www.nts.live/api/v2/shows/diana-ratsamee/episodes",
+    "mixKind": "dj-set"
+  },
+  {
+    "id": "nts-brassfoot",
+    "name": "NTS · The NCA Show",
+    "provider": "NTS",
+    "format": "Radio show",
+    "mode": "automatic",
+    "method": "nts-episodes",
+    "url": "https://www.nts.live/shows/brassfoot",
+    "feed": "https://www.nts.live/api/v2/shows/brassfoot/episodes",
+    "mixKind": "dj-set"
+  },
+  {
+    "id": "bbc-live-lounge-vevo",
+    "name": "BBC Radio 1 · Live Lounge (VEVO)",
+    "mode": "automatic",
+    "method": "youtube-atom",
+    "url": "https://www.youtube.com/@BBCRadio1VEVO",
+    "channelId": "UCKoafhJ9dkAWaEvlXCiBBwA",
+    "titleContains": "live lounge",
+    "provider": "YouTube",
+    "format": "Live session"
   }
 ]
