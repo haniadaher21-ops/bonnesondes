@@ -21,7 +21,7 @@ test('all five requested editorial media are tracked, but unsupported sites neve
     assert.ok(sources.some(row=>row.name===name));
   assert.ok(sources.find(row=>row.id==='inrocks').mode==='manual');
   assert.ok(sources.find(row=>row.id==='npr').mode==='automatic');
-  assert.deepEqual(sources.filter(x=>x.mode==='automatic').map(x=>x.id),['nova','stereogum','pitchfork','npr']);
+  assert.deepEqual(sources.filter(x=>x.mode==='automatic').map(x=>x.id),['nova','stereogum','pitchfork','npr','bandcamp-essential']);
 });
 
 test('explicit album-curation articles and the last 30 days are required',()=>{
