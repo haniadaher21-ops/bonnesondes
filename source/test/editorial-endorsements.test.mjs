@@ -25,8 +25,8 @@ test('only the verified original album linked from a real Bandcamp Daily editori
    +'<h1>Artist, “Album”</h1><a href="'+release+'">Listen to album</a>'
    +'<a href="https://artist.bandcamp.com/album/unrelated">Also mentioned</a></article>';
  const request=async url=>{
-   if(url.endsWith('page=1'))return new Response('<a href="/album-of-the-day/artist-album-review">Artist, Album</a>');
-   if(url.endsWith('page=8'))return new Response('');
+   if(url==='https://daily.bandcamp.com/album-of-the-day')return new Response('<a href="/album-of-the-day/artist-album-review">Artist, Album</a>');
+   if(url.endsWith('page=1'))return new Response('');
    if(url===review)return new Response(html);
    if(url===release)return new Response(albumHTML);
    return new Response('unavailable',{status:404});
