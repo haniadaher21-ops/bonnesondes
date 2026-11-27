@@ -18,6 +18,7 @@ const text = html => String(html).replace(/<[^>]+>/g,' ')
   .replace(/\s+/g,' ').trim();
 const titleKey = value => normalized(value).replace(/\band\b/g,'').replace(/\s+/g,' ').trim();
 const articlePath = {
+  'bandcamp-essential': /^\/essential-releases\/essential-releases-[a-z0-9-]+\/?$/i,
   'nova-weekly': /^\/news\/[^?#]*albums-immanquables-de-la-semaine[^?#]*\/?$/i,
   'stereogum-aotw': /^\/\d+\/album-of-the-week-[a-z0-9-]+\/reviews\/album-of-the-week\/?$/i,
   'pitchfork-weekly': /^\/story\/\d+-new-albums-you-should-listen-to-now-[a-z0-9-]+\/?$/i,
@@ -66,6 +67,12 @@ export function musicPressMentions(html, source, articleUrl, today) {
       if(artist.length<2||title.length<2)continue;
       matches.push({creator:artist,title});
     }
+  } else if(source.method==='bandcamp-essential') {
+    for(const heading of html.matchAll(/<h[234]\b[^>]*>([\s\S]*?)<\/h[234]>/gi)){
+      const h=text(heading[1]);
+      const parts=h.match(/^(.+?)\s*(?:[–—]|:\s|,\s*[“"])(.+?)[”"]?$/u);
+      if(parts)matches.push({creator:parts[1].trim(),title:parts[2].trim()});
+    }
   } else if(source.method==='stereogum-aotw') {
     const h1=text(html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1]??'');
     if(/^Album Of The Week:\s*/i.test(h1))matches.push({headline:h1.replace(/^Album Of The Week:\s*/i,'')});
@@ -73,7 +80,7 @@ export function musicPressMentions(html, source, articleUrl, today) {
   return matches.map(item=>({...item,editorialSource:source.name,editorialUrl:articleUrl,
     editorialPublishedAt:date,editorialKind:'curator-pick',
     editorialClaim:source.method==='stereogum-aotw'?'Album of the Week':
-      source.method==='nova-weekly'?'Albums immanquables':'New albums to listen to'}));
+      source.method==='nova-weekly'?'Albums immanquables':source.method==='bandcamp-essential'?'Essential Releases':'New albums to listen to'}));
 }
 
 export function nprMusicFridayMentions(xml,source,today) {
@@ -123,11 +130,11 @@ export function nprMusicFridayMentions(xml,source,today) {
 // album identity, Spotify link and artwork before it can rank.
 export function musicPressAlbumReferences(html, articleUrl, mentions) {
   if (typeof html !== 'string' || !Array.isArray(mentions)) return [];
-  const sections = [...html.matchAll(/<h2\b[^>]*>([\s\S]*?)<\/h2>/gi)];
+  const sections = [...html.matchAll(/<h[234]\b[^>]*>([\s\S]*?)<\/h[234]>/gi)];
   const records = [];
   for (let i = 0; i < sections.length; i++) {
     const head = text(sections[i][1]).replace(/\s*\[[^\]]+\]\s*$/, '');
-    const parsed = head.match(/^(.+?):\s*(.+)$/);
+    const parsed = head.match(/^(.+?)\s*(?:[–—]|:\s|,\s*[“"])(.+?)[”"]?$/u);
     if (!parsed) continue;
     const creator = parsed[1].trim(), title = parsed[2].trim();
     const mention = mentions.find(m => m.title && titleKey(m.title) === titleKey(title)
