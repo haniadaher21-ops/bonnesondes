@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {emptyTasteProfile} from '../editorial/taste-profile.mjs';
 import {weeklyShortlist,candidateArtistCredits} from '../scripts/weekly-ranking.mjs';
-import {compareWeeklyWeighted,publicArtistQueue} from '../scripts/weighted-weekly.mjs';
+import {compareWeeklyWeighted,publicArtistQueue,mergePublicStyleEvidence} from '../scripts/weighted-weekly.mjs';
 
 const now=new Date('2026-11-25T09:00:00Z');
 const track=artist=>({artist,title:'Title'});
@@ -46,4 +46,18 @@ test('verified pop can outrank unmatched R&B in weighted mode without changing l
  const args={...options,candidates:[rnb,pop]};
  assert.equal(weeklyShortlist(args).selected.youtube[0].item.id,rnb.id);
  assert.equal(weeklyShortlist({...args,weightedProfile,weightedWeight:1}).selected.youtube[0].item.id,pop.id);
+});
+
+test('public album evidence provides a weaker, but real, live style signal during API outages',async()=>{
+ const album={creator:'New Artist',format:'Album',verificationStatus:'primary-verified',tags:['alternative r&b','soul'],sourceUrl:'https://artist.bandcamp.com/album/album'};
+ const live={creator:'New Artist',format:'Live session'};
+ const meta=await mergePublicStyleEvidence(new Map(),[album,live],{references:[],now});
+ assert.equal(meta.get('new artist').status,'public-style');
+ assert.deepEqual(meta.get('new artist').tags,['alternative r&b','soul']);
+ assert.equal(meta.get('new artist').neighbors,undefined);
+ assert.equal((await mergePublicStyleEvidence(new Map(),[album],{references:[],now})).size,0);
+});
+test('public enrichment rotates across albums, lives and mixes before long tracklists',()=>{
+ const rows=[...Array.from({length:5},(_,i)=>({item:{format:'Album',creator:'Album '+i}})),{item:{format:'Live session',creator:'Performer'}},{item:candidates[0]}];
+ assert.deepEqual(publicArtistQueue(rows,now).slice(0,3),['Album 0','Performer','Unknown A']);
 });
