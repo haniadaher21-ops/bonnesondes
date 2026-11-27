@@ -155,3 +155,7 @@ jobs:
           assert.equal(again.requests,0);
           console.log('PUBLIC_CACHE_TEST '+JSON.stringify(again));
           JS
+
+      - name: Retester les affinités publiques
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'affinity-retest-2026-11-27'
+        run: node scripts/retest-public-affinity.mjs
