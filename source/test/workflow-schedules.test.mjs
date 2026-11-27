@@ -25,3 +25,16 @@ test('weekly drafts stay scheduled but edition publication is strictly manual', 
   assert.match(weekly, /AUTO_PUBLISH_ENABLED: 'false'/);
   assert.match(weekly, /contents: read/);
 });
+
+test('on-demand draft uses a main-only explicit trigger and stores the result privately',()=>{
+ const draft=workflow('private-draft-on-demand.yml');
+ assert.match(draft,/branches: \[main\]/);
+ assert.match(draft,/paths: \['source\/editorial\/private-draft-request.json'\]/);
+ assert.match(draft,/if: github.ref == 'refs\/heads\/main'/);
+ assert.match(draft,/contents: read/);
+ assert.match(draft,/AUTO_PUBLISH_ENABLED: 'false'/);
+ assert.match(draft,/BONNES_ONDES_WEIGHTED_OBSERVE: 'true'/);
+ assert.match(draft,/privateCycle\(\{mode:'observe'\}\)/);
+ assert.match(draft,/draft.profileRevision!==remote.revision/);
+ assert.doesNotMatch(draft,/contents: write|pages: write|upload-artifact|BONNES_ONDES_OBSERVATION_DIR|BONNES_ONDES_PREVIEW_DIR|BONNES_ONDES_RELEASE_DIR/);
+});
