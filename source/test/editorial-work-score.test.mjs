@@ -100,3 +100,10 @@ test('live and mix quotas do not justify recommending music with no taste eviden
  assert.equal(result.selected.live.length,0);assert.equal(result.selected.nts.length,0);
  assert.equal(result.gaps.live,3);assert.equal(result.gaps.nts,1);
 });
+
+test('public artist catalogue style can qualify a live without YouTube genre tags',()=>{
+ const artist='New Artist';
+ const item=live('aaaaaaaaaaa',artist,[]);
+ const result=editorialWorkScore(item,{styles:[{tag:'alternative r&b',score:85}],now,credits:[artist],metadata:new Map([['new artist',{status:'public-style',tags:['alternative r&b']}]]),known:false});
+ assert.ok(result.tasteSupported);assert.equal(result.documentedCredits,1);assert.ok(result.styleMatch>=.5&&result.styleMatch<.6);
+});
