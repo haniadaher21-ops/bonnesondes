@@ -1,7 +1,7 @@
 import { readPublicPage } from './album-catalogues.mjs';
 import { normalized } from './release-metadata.mjs';
 import { isoDate } from '../editorial/edition.mjs';
-import { bandcampLinks } from './bandcamp-albums.mjs';
+import { bandcampAlbum, bandcampLinks } from './bandcamp-albums.mjs';
 import { parseFeed } from './discovery-feeds.mjs';
 
 // Articles published within the previous month are leads, not proof that an
@@ -158,6 +158,21 @@ export function matchMusicPress(record, mentions) {
     : titleKey(x.creator)===artist && titleKey(x.title)===title);
 }
 
+// A single-album Stereogum review can lead to primary releases directly,
+// but only the exact independently verified artist/title can match its headline.
+export async function stereogumPrimaryRecords(html,url,mentions,fetcher){
+  if(!mentions.some(m=>m.headline))return [];
+  const records=[];
+  for(const link of bandcampLinks(html,url).slice(0,4)){
+    try{
+      const primary=bandcampAlbum(await readPublicPage(link,fetcher),link,'Stereogum');
+      const match=primary&&matchMusicPress(primary,mentions);
+      if(match)records.push({...primary,...match});
+    }catch{/* No primary evidence, no candidate. */}
+  }
+  return records;
+}
+
 export async function collectMusicPress(sources,{fetcher=fetch,today=new Date().toISOString().slice(0,10)}={}) {
   const mentions=[],records=[],status=[];
   for(const source of sources) {
@@ -181,6 +196,7 @@ export async function collectMusicPress(sources,{fetcher=fetch,today=new Date().
           const items=musicPressMentions(article,source,url,today);
           examined++; verified+=items.length; mentions.push(...items);
           records.push(...musicPressAlbumReferences(article,url,items));
+          if(source.method==='stereogum-aotw')records.push(...await stereogumPrimaryRecords(article,url,items,fetcher));
         } catch { /* A blocked or changed article cannot be treated as endorsement. */ }
       }
       status.push({source:source.name,status:verified?'ok':links.length?'empty':'no-articles',
