@@ -155,3 +155,23 @@ jobs:
           assert.equal(again.requests,0);
           console.log('PUBLIC_CACHE_TEST '+JSON.stringify(again));
           JS
+
+      - name: Tester les genres publics sur de vraies relations
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'style-aware-affinity'
+        run: |
+          npm run build
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {enrichPublicArtists} from './scripts/public-artist-metadata.mjs';
+          import {styleAgreement} from './scripts/style-affinity.mjs';
+          const names=['Toro y Moi','Atlas Sound','Lorenzo Senni','Donato Dozzy'];
+          const cache=new Map(),backoff={},diagnostics={};
+          const rows=await enrichPublicArtists(names,{cache,backoff,diagnostics,limit:4,styleLimit:12});
+          for(const [name,row] of rows)console.log('PUBLIC_STYLE '+JSON.stringify({name,...row,neighbors:(row.neighbors??[]).map(n=>({...n,agreement:styleAgreement(row.tags,n.tags)}))}));
+          console.log('PUBLIC_STYLE_DIAGNOSTICS '+JSON.stringify(diagnostics));
+          assert.equal(rows.size,4);
+          const again={};
+          await enrichPublicArtists(names,{cache,backoff,limit:0,styleLimit:0,diagnostics:again});
+          assert.equal(again.requests,0);
+          console.log('PUBLIC_STYLE_CACHE '+JSON.stringify(again));
+          JS
