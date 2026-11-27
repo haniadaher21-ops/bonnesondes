@@ -38,3 +38,17 @@ test('network errors are neutral and retriable',async()=>{
  const r=await enrichPublicArtists(['Example A'],{fetcher:async()=>{throw Error('offline')},pause:async()=>{}});
  assert.equal(r.get('example a').status,'unavailable');
 });
+
+test('long tracklists retain useful affinity without repetition inflation',()=>{
+ const names=['Example A',...Array.from({length:49},(_,i)=>'Unknown '+i)];
+ const r=weightedAffinity(names,index,new Map(),{tracklist:true});
+ assert.ok(r.points>8&&r.points<10);
+ assert.equal(weightedAffinity([...names,'Example A'],index,new Map(),{tracklist:true}).points,r.points);
+});
+test('discovery bonus requires a verified relation and an actually new artist',()=>{
+ const p={artists:[{artist:'Example A',score:100}],known_artist_names:['Example A']};
+ const newIndex=makeWeightedAffinity(p);
+ assert.equal(weightedAffinity(['Example B'],newIndex,metadata).points,18);
+ assert.equal(weightedAffinity(['Unknown'],newIndex,metadata).points,0);
+ assert.equal(weightedAffinity(['Example B'],makeWeightedAffinity({...p,known_artist_names:['Example A','Example B']}),metadata).points,16.5);
+});
