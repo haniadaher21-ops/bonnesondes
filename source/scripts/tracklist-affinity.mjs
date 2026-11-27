@@ -34,6 +34,12 @@ function validEvidence(item,now){
     &&url.pathname==='/watch'&&/^[\w-]{11}$/.test(url.searchParams.get('v')??'')&&canonicalUrl(url.href)===canonicalUrl(proof.href);
   return false;
 }
+// Share the exact same verification gate with the weighted engine.
+export function verifiedTracklistArtists(item,now){
+  if(!validEvidence(item,now))return [];
+  const tracks=normalizeTracks(item.tracklist.tracks);
+  return tracks.length>=2?[...new Set(tracks.map(row=>row.artist).filter(Boolean))]:[];
+}
 // Each distinct artist counts once. Unknown artists are neutral. Caps and a
 // modest coverage component avoid rewarding repetitive or very long lists.
 export function mixTracklistAffinity(item,index,now){
