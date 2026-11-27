@@ -15,6 +15,9 @@ export const youtubeMixQueries=[
   '90s RnB neo soul slow jams DJ set',
   'blues soul motown vinyl DJ mix',
   'pop RnB soul eclectic DJ mix',
+  'indie pop dream pop vinyl DJ selection',
+  'pop alternative DJ mix',
+  'funk boogie disco vinyl DJ selection',
   'soulful mellow house balearic light house DJ set',
   'My Analog Journal soul funk DJ vinyl mix',
 ];
@@ -95,6 +98,25 @@ export function verifiedYouTubeMix(video, startsOn, today, channel) {
   return candidate;
 }
 
+// Preserve qualified candidates from every documented style instead of
+// truncating the pool by popularity. Views remain an eligibility threshold.
+export function diverseYouTubeMixPool(items,limit=35){
+  const styles=new Map();
+  for(const item of items){
+    const bucket=styles.get(item.mixStyle)??[];
+    bucket.push(item);styles.set(item.mixStyle,bucket);
+  }
+  for(const bucket of styles.values())bucket.sort((a,b)=>
+    Number(b.tracklist?.status==='available')-Number(a.tracklist?.status==='available')
+    || Number(b.curatorEstablished)-Number(a.curatorEstablished)
+    || b.date.localeCompare(a.date)||b.viewCount-a.viewCount);
+  const out=[];
+  for(let i=0;i<Math.max(0,...[...styles.values()].map(b=>b.length))&&out.length<limit;i++){
+    for(const bucket of styles.values())if(bucket[i]&&out.length<limit)out.push(bucket[i]);
+  }
+  return out;
+}
+
 export async function collectYouTubeMixes({startsOn,today,profile={},key,fetcher=fetch}={}) {
   if(!key||!isoDate(startsOn)||!isoDate(today))return {items:[],status:'not-configured'};
   const choices=(Array.isArray(profile.explore)?profile.explore:[])
@@ -117,7 +139,7 @@ export async function collectYouTubeMixes({startsOn,today,profile={},key,fetcher
       for(const item of data.items)if(videoId(item.id?.videoId))found.add(item.id.videoId);
     }catch(e){errors.push(String(e.message).slice(0,90));}
   }
-  const candidates=[],ids=[...found].slice(0,375),videos=[];
+  const candidates=[],ids=[...found].slice(0,500),videos=[];
   for(let offset=0;offset<ids.length;offset+=50){
     try{
       const data=await request('videos',{part:'snippet,status,contentDetails,statistics',id:ids.slice(offset,offset+50).join(',')});
@@ -138,8 +160,6 @@ export async function collectYouTubeMixes({startsOn,today,profile={},key,fetcher
     const picked=verifiedYouTubeMix(video,startsOn,today,channels.get(video.snippet?.channelId));
     if(picked)candidates.push(picked);
   }
-  candidates.sort((a,b)=>Number(b.curatorEstablished)-Number(a.curatorEstablished)
-    || b.viewCount-a.viewCount || b.date.localeCompare(a.date));
-  return {items:candidates.slice(0,35),status:errors.length?'partial: '+errors.length+' provider request(s) unavailable':'ok',
+  return {items:diverseYouTubeMixPool(candidates),status:errors.length?'partial: '+errors.length+' provider request(s) unavailable':'ok',
     found:found.size,eligible:candidates.length,queries:queries.length};
 }
