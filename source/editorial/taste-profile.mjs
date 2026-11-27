@@ -4,7 +4,7 @@ export const tasteProfileKey = 'off-frequency.taste-profile.v1';
  * @typedef {{url: string, name?: string, kind: 'playlist' | 'curator'}} SpotifyPreference
  * @typedef {'Loved' | 'Interesting' | 'Not for me' | 'Worth revisiting'} Reaction
  * @typedef {{id: string, saved: boolean, reaction?: Reaction, creator?: string, source?: string, genre?: string, mood?: string}} Feedback
- * @typedef {{artists: {artist:string, score:number}[], excluded_artists:string[], known_artist_names:string[]}} WeightedTaste
+ * @typedef {{artists: {artist:string, score:number}[], excluded_artists:string[], known_artist_names:string[], style_preferences?:{tag:string,score:number}[]}} WeightedTaste
  * @typedef {{
  *   version: 1, weightedProfile?: WeightedTaste, favoriteArtists: string[], explore: string[], avoid: string[],
  *   favoriteRadios: string[], favoritePublications: string[], spotify: SpotifyPreference[],
@@ -95,7 +95,17 @@ export function normalizeWeightedTaste(input){
     if(artist&&(!weights.has(key)||weights.get(key).score<row.score))weights.set(key,{artist,score:row.score});
   }
   const names=/** @param {unknown[]} rows */ rows=>[...new Set(rows.map(label).filter(Boolean))];
-  return {artists:[...weights.values()],excluded_artists:names(input.excluded_artists),known_artist_names:names(input.known_artist_names)};
+  const result=/** @type {WeightedTaste} */ ({artists:[...weights.values()],excluded_artists:names(input.excluded_artists),known_artist_names:names(input.known_artist_names)});
+  if(input.style_preferences!==undefined){
+    if(!Array.isArray(input.style_preferences)||input.style_preferences.length>100)throw new Error('Styles musicaux invalides.');
+    const styles=new Map();
+    for(const row of input.style_preferences){
+      if(!record(row)||typeof row.score!=='number'||!Number.isFinite(row.score)||row.score<0||row.score>100)throw new Error('Score stylistique invalide.');
+      const tag=label(row.tag);if(tag)styles.set(tag.toLowerCase(),{tag,score:row.score});
+    }
+    result.style_preferences=[...styles.values()];
+  }
+  return result;
 }
 
 /** @param {unknown} value @returns {TasteProfile} */

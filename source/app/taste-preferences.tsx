@@ -144,7 +144,7 @@ export default function TastePreferences({ library, recommendations, libraryRead
     </form>}
     {ready && <div className="taste-profile-transfer">
       <h2>Profil musical pondéré</h2>
-      <p>{profile.weightedProfile ? profile.weightedProfile.artists.length + ' artistes pondérés.' : 'Aucun profil pondéré importé.'} Le fichier synthétique ne remplace pas tes préférences manuelles. Si la synchronisation privée est active, il sera envoyé à ton compte Supabase.</p>
+      <p>{profile.weightedProfile ? profile.weightedProfile.artists.length + ' artistes pondérés' + (profile.weightedProfile.style_preferences?.length ? ' · ' + profile.weightedProfile.style_preferences.length + ' styles musicaux.' : '.') : 'Aucun profil pondéré importé.'} Le fichier synthétique ne remplace pas tes préférences manuelles. Si la synchronisation privée est active, il sera envoyé à ton compte Supabase.</p>
       <div className="taste-profile-actions">
         <label>Importer le profil musical synthétique<input type="file" accept=".json,application/json" onChange={importWeightedProfile} /></label>
         {profile.weightedProfile && <button className="text-link" type="button" onClick={() => {

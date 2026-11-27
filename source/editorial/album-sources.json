@@ -20,5 +20,38 @@
     "label": "Hyperion",
     "sourceUrl": "https://www.hyperion-records.co.uk/dc.asp?dc=D_CDA68483",
     "url": "https://open.spotify.com/album/3wIzyVeIS8pJX21HO9CuuX"
+  },
+  {
+    "title": "The Interdimensional Extraterrestrial Time Travelers Society",
+    "creator": "Danz CM",
+    "label": "Channel 9 Records",
+    "method": "bandcamp-album",
+    "sourceUrl": "https://danzcm.bandcamp.com/album/the-interdimensional-extraterrestrial-time-travelers-society",
+    "editorialSource": "Stereogum",
+    "editorialUrl": "https://stereogum.com/2518002/album-of-the-week-danz-cm-the-interdimensional-extraterrestrial-time-travelers-society/reviews/album-of-the-week",
+    "editorialKind": "curator-pick",
+    "editorialClaim": "Album of the Week",
+    "editorialPublishedAt": "2026-11-17",
+    "url": "https://open.spotify.com/album/4VPjkRkaJufOHPu5IDqEo1",
+    "listeningProofUrl": "https://onlygreatmusic.com/reviews/danz-cm-the-interdimensional-extraterrestrial-time-travelers-society/"
+  },
+  {
+    "title": "Star's Revenge II",
+    "creator": "Star's Revenge",
+    "label": "Star's Revenge",
+    "method": "bandcamp-album",
+    "sourceUrl": "https://starsrevenge.bandcamp.com/album/stars-revenge-ii",
+    "editorialSource": "Stereogum",
+    "editorialUrl": "https://stereogum.com/2520760/album-of-the-week-stars-revenge-stars-revenge-ii/reviews/album-of-the-week",
+    "editorialKind": "curator-pick",
+    "editorialClaim": "Album of the Week",
+    "editorialPublishedAt": "2026-11-24",
+    "tags": [
+      "garage rock",
+      "indie pop"
+    ],
+    "styleEvidenceUrl": "https://stereogum.com/2516599/stars-revenge-announce-new-album-stars-revenge-ii-hear-dont-worry-dynamite/music",
+    "url": "https://open.spotify.com/album/5bKzQ05WOEEpPKx7f58NMx",
+    "listeningProofUrl": "https://go.mhe.fm/starsrevenge_srii/ms-spotify-1"
   }
 ]
