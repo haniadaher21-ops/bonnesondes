@@ -192,3 +192,18 @@ jobs:
           const evidence=await verifyAlbums(registered.filter(x=>x.editorialSource==='Stereogum'));
           console.log('STEREOGUM_RELEASE_TEST '+JSON.stringify(evidence.map(x=>({title:x.candidate?.title??x.title??x.record?.title,verified:!!x.candidate,tags:x.candidate?.tags,reason:x.reason??x.failure,source:x.candidate?.sourceUrl}))));
           JS
+
+      - name: Tester les nouvelles émissions NTS et le score éditorial
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'editorial-live-mixes'
+        run: |
+          npm run build
+          node --input-type=module <<'JS'
+          import {discover} from './scripts/discovery.mjs';
+          import {enrichRadioTracklists} from './scripts/mix-tracklists.mjs';
+          import sources from './editorial/sources.json' with {type:'json'};
+          const chosen=sources.filter(x=>['nts-aloha-got-soul','nts-diana-ratsamee','nts-brassfoot'].includes(x.id));
+          const report=await discover({sources:chosen});
+          const items=report.candidates.filter(x=>x.date>='2026-11-23');
+          const result=await enrichRadioTracklists(items,{limit:8});
+          console.log('NTS_EDITORIAL_TEST '+JSON.stringify({sources:report.sources,items:result.items.map(x=>({title:x.title,date:x.date,tags:x.tags,tracks:x.tracklist?.tracks?.length??0,url:x.url})),diagnostics:result.diagnostics}));
+          JS
