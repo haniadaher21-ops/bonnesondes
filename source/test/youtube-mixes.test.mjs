@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {collectYouTubeMixes,verifiedYouTubeMix,youtubeMixQueries,targetedMixChannels} from '../scripts/youtube-mixes.mjs';
+import {diverseYouTubeMixPool,collectYouTubeMixes,verifiedYouTubeMix,youtubeMixQueries,targetedMixChannels} from '../scripts/youtube-mixes.mjs';
 import {isFreshMusicMix} from '../scripts/recommendation-policy.mjs';
 import {rollCandidates} from '../scripts/automation-policy.mjs';
 import {observationReport} from '../scripts/observation-report.mjs';
@@ -146,4 +146,12 @@ test('official targeted mix channel does not bypass views or genre',()=>{
  assert.equal(verifiedYouTubeMix(v,'2026-11-23','2026-11-22',c),undefined);
  v.statistics.viewCount='150000';v.snippet.title='Techno DJ set';
  assert.equal(verifiedYouTubeMix(v,'2026-11-23','2026-11-22',c),undefined);
+});
+
+test('qualified less viewed pop and blues mixes survive a popularity-heavy pool',()=>{
+ const soul=Array.from({length:50},(_,i)=>({id:'s'+i,mixStyle:'soul',date:'2026-11-25',viewCount:1000000+i,curatorEstablished:true}));
+ const pop={id:'pop',mixStyle:'pop',date:'2026-11-24',viewCount:100001,tracklist:{status:'available'}};
+ const blues={id:'blues',mixStyle:'blues',date:'2026-11-23',viewCount:100000};
+ const selected=diverseYouTubeMixPool([...soul,pop,blues],35);
+ assert.equal(selected.length,35);assert.ok(selected.includes(pop));assert.ok(selected.includes(blues));
 });
