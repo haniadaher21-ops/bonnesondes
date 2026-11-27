@@ -29,10 +29,10 @@ export function editorialWorkScore(item,{styles=[],affinity,known,now=new Date()
   const names=[...new Set(credits.map(key).filter(Boolean))];
   const documented=names.flatMap(name=>{
     const row=metadata.get(name);
-    return ['verified','identity'].includes(row?.status)&&musicalTags(row.tags).length?[{name,fit:live?albumStyleFit(row.tags,styles):styleFit(musicalTags(row.tags),styles)}]:[];
+    return ['verified','identity','public-style'].includes(row?.status)&&musicalTags(row.tags).length?[{name,fit:live?albumStyleFit(row.tags,styles):styleFit(musicalTags(row.tags),styles)}]:[];
   });
   const album=item.format==='Album';
-  const explicitFit=(album||live)?albumStyleFit(tags,styles):styleFit(tags,styles);
+  const explicitFit=(album||live||!isYouTubeMix(item))?albumStyleFit(tags,styles):styleFit(tags,styles);
   let style=explicitFit;
   if(mix&&tracklistVerified&&documented.length){
     // Coverage-weighted average: one artist does not define a long mix.
