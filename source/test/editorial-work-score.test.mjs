@@ -91,3 +91,12 @@ test('a known artist with meaningful affinity can qualify without documented alb
  const result=editorialWorkScore(album('a','Known',[]),{styles,now,known:true,affinity:{points:12}});
  assert.equal(result.tasteSupported,true);assert.equal(result.discovery,0);
 });
+
+test('live and mix quotas do not justify recommending music with no taste evidence',()=>{
+ const candidates=[live('aaaaaaaaaaa','Unknown',['rock']),radio('a',['techno'],['Unknown','Other'])];
+ const args={candidates,profile:emptyTasteProfile(),earlier:[],catalog:[],startsOn:'2026-11-30',now};
+ const profile={artists:[],excluded_artists:[],known_artist_names:[],style_preferences:[{tag:'dream pop',score:85},{tag:'neo soul',score:80}]};
+ const result=weeklyShortlist({...args,weightedProfile:profile,weightedWeight:1});
+ assert.equal(result.selected.live.length,0);assert.equal(result.selected.nts.length,0);
+ assert.equal(result.gaps.live,3);assert.equal(result.gaps.nts,1);
+});
