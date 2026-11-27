@@ -58,6 +58,7 @@ export function editorialEndorsement(item) {
   const mediaIsRecent=isoDate(mediaDay);
   const mediaPick=kind==='curator-pick' && mediaIsRecent && (
     (['www.nova.fr','nova.fr'].includes(host) && /^\/news\/[a-z0-9-]*albums-immanquables-de-la-semaine[a-z0-9-]*\/?$/.test(path))
+    || (host==='daily.bandcamp.com' && /^\/essential-releases\/essential-releases-[a-z0-9-]+\/?$/.test(path) && item.editorialClaim==='Essential Releases')
     || (host==='stereogum.com' && /^\/\d+\/album-of-the-week-[a-z0-9-]+\/reviews\/album-of-the-week\/?$/.test(path))
     || (host==='pitchfork.com' && /^\/story\/\d+-new-albums-you-should-listen-to-now-[a-z0-9-]+\/?$/.test(path))
     || (['npr.org','www.npr.org'].includes(host) && /new-music-friday/.test(path))
