@@ -72,6 +72,7 @@ export function musicPressMentions(html, source, articleUrl, today) {
       const h=text(heading[1]);
       const parts=h.match(/^(.+?)\s*(?:[–—]|:\s|,\s*[“"])(.+?)[”"]?$/u);
       if(parts)matches.push({creator:parts[1].trim(),title:parts[2].trim()});
+      else if(h.length>=4&&h.length<=180)matches.push({headline:h});
     }
   } else if(source.method==='stereogum-aotw') {
     const h1=text(html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1]??'');
@@ -180,6 +181,22 @@ export async function stereogumPrimaryRecords(html,url,mentions,fetcher){
   return records;
 }
 
+// The roundup may place the artist and album in one unpunctuated
+// heading. Verify each linked original record independently and require an
+// exact heading match in either order; an incidental article link is not a pick.
+export async function essentialPrimaryRecords(html,url,mentions,fetcher){
+  const records=[];
+  for(const link of bandcampLinks(html,url).slice(0,20)){
+    try{
+      const primary=bandcampAlbum(await readPublicPage(link,fetcher),link,'Bandcamp Daily');
+      if(!primary)continue;
+      const match=matchMusicPress(primary,mentions)??mentions.find(m=>m.headline&&titleKey(m.headline)===titleKey(primary.title)+' '+titleKey(primary.creator));
+      if(match)records.push({...primary,...match});
+    }catch{/* Unverified records remain outside selection. */}
+  }
+  return records;
+}
+
 export async function collectMusicPress(sources,{fetcher=fetch,today=new Date().toISOString().slice(0,10)}={}) {
   const mentions=[],records=[],status=[];
   for(const source of sources) {
@@ -202,7 +219,8 @@ export async function collectMusicPress(sources,{fetcher=fetch,today=new Date().
           const article=await readPublicPage(url,fetcher);
           const items=musicPressMentions(article,source,url,today);
           examined++; verified+=items.length; mentions.push(...items);
-          records.push(...musicPressAlbumReferences(article,url,items));
+          if(source.method==='bandcamp-essential')records.push(...await essentialPrimaryRecords(article,url,items,fetcher));
+          else records.push(...musicPressAlbumReferences(article,url,items));
           if(source.method==='stereogum-aotw')records.push(...await stereogumPrimaryRecords(article,url,items,fetcher));
         } catch { /* A blocked or changed article cannot be treated as endorsement. */ }
       }
