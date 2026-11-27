@@ -52,3 +52,14 @@ test('discovery bonus requires a verified relation and an actually new artist',(
  assert.equal(weightedAffinity(['Unknown'],newIndex,metadata).points,0);
  assert.equal(weightedAffinity(['Example B'],makeWeightedAffinity({...p,known_artist_names:['Example A','Example B']}),metadata).points,16.5);
 });
+
+test('artists beyond rank 200 contribute directly and through verified relations',()=>{
+ const artists=Array.from({length:1570},(_,i)=>({artist:'Fixture '+i,score:Math.max(1,100-i/16)}));
+ const idx=makeWeightedAffinity({artists,known_artist_names:artists.map(x=>x.artist),excluded_artists:['Fixture 1569']});
+ assert.equal(idx.weights.size,1569);
+ assert.ok(weightedAffinity(['Fixture 1500'],idx).points>0);
+ const edges=new Map([['new artist',{status:'verified',mbid:b,neighbors:[{artist:'Fixture 1500',mbid:a}]}]]);
+ assert.ok(weightedAffinity(['New artist'],idx,edges).points>0);
+ assert.equal(weightedAffinity(['Fixture 1569'],idx).excluded,true);
+ assert.equal(weightedAffinity(['Unknown'],idx).points,0);
+});

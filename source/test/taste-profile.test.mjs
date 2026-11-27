@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import {
-  emptyTasteProfile, normalizeTasteProfile, parseTasteProfile, spotifyPreferencesFromText,
+  emptyTasteProfile, normalizeTasteProfile, parseTasteProfile, spotifyPreferencesFromText, importWeightedTaste,
   tasteProfileForExport, tasteProfileKey,
 } from '../editorial/taste-profile.mjs';
 
@@ -89,3 +89,15 @@ test('collection feedback is optional, preserves IDs, and exports only ranking f
  assert.deepEqual(parseTasteProfile(JSON.stringify(clean)),clean);
  assert.throws(()=>normalizeTasteProfile({...base,weightedProfile:{...raw,artists:[{artist:'Example A',score:101}]}}),/Score musical/);
  });
+
+test('full derived profile imports without truncation or replacement of manual preferences',()=>{
+ const artists=Array.from({length:1570},(_,i)=>({artist:'Fixture '+i,score:Math.max(.5,100-i/16)}));
+ const base=normalizeTasteProfile({...emptyTasteProfile(),favoriteArtists:['Manual favorite'],signals:{curators:['Manual curator'],items:[{id:'one',saved:true}]}});
+ const next=importWeightedTaste(base,{type:'bonnes-ondes-weighted-profile',version:1,weightedProfile:{artists,excluded_artists:[],known_artist_names:artists.map(x=>x.artist)}});
+ assert.equal(next.weightedProfile.artists.length,1570);
+ assert.equal(next.weightedProfile.artists.at(-1).score,artists.at(-1).score);
+ assert.deepEqual(next.favoriteArtists,base.favoriteArtists);
+ assert.deepEqual(next.signals,base.signals);
+ assert.deepEqual(parseTasteProfile(JSON.stringify(next)),next);
+ assert.throws(()=>importWeightedTaste(base,{type:'bonnes-ondes-weighted-profile',version:1,weightedProfile:{artists:Array.from({length:2001},()=>artists[0]),excluded_artists:[],known_artist_names:[]}}),/invalide/);
+});

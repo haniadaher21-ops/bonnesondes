@@ -1,6 +1,6 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import {
-  emptyTasteProfile, normalizeTasteProfile, parseTasteProfile, spotifyPreferencesFromText,
+  emptyTasteProfile, normalizeTasteProfile, parseTasteProfile, spotifyPreferencesFromText, importWeightedTaste,
   tasteProfileForExport, tasteProfileKey, type TasteProfile,
 } from '../editorial/taste-profile.mjs';
 import type { Recommendation } from './content';
@@ -88,6 +88,20 @@ export default function TastePreferences({ library, recommendations, libraryRead
     }
   }
 
+  async function importWeightedProfile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = '';
+    if (!file) return;
+    setError(''); setStatus('');
+    try {
+      const current = localStorage.getItem(tasteProfileKey);
+      const next = importWeightedTaste(current ? parseTasteProfile(current) : profile, JSON.parse(await file.text()));
+      persist(next, 'Profil musical pondéré importé. Tes préférences manuelles et réactions sont conservées.');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Profil musical pondéré invalide.');
+    }
+  }
+
   function downloadProfile() {
     setStatus('');
     setError('');
@@ -128,6 +142,18 @@ export default function TastePreferences({ library, recommendations, libraryRead
       </ul>}
       <div className="wide"><button className="primary" type="submit">Enregistrer le profil</button></div>
     </form>}
+    {ready && <div className="taste-profile-transfer">
+      <h2>Profil musical pondéré</h2>
+      <p>{profile.weightedProfile ? profile.weightedProfile.artists.length + ' artistes pondérés.' : 'Aucun profil pondéré importé.'} Le fichier synthétique ne remplace pas tes préférences manuelles. Si la synchronisation privée est active, il sera envoyé à ton compte Supabase.</p>
+      <div className="taste-profile-actions">
+        <label>Importer le profil musical synthétique<input type="file" accept=".json,application/json" onChange={importWeightedProfile} /></label>
+        {profile.weightedProfile && <button className="text-link" type="button" onClick={() => {
+          const next = {...profile};
+          delete next.weightedProfile;
+          persist(next, 'Profil pondéré retiré des préférences.');
+        }}>Retirer le profil pondéré</button>}
+      </div>
+    </div>}
     {ready && <div className="taste-profile-transfer">
       <h2>Sauvegarder ou transférer le profil</h2>
       <p>Le profil est stocké dans ce navigateur. Le fichier téléchargé contient tes dernières préférences enregistrées. Un import remplace le profil.</p>
