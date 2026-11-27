@@ -11,7 +11,8 @@ function styleFit(tags,styles){
 }
 // Generic tags alone cannot establish close affinity for an unfamiliar album.
 const broadAlbumTags=new Set(['pop','rock','electronic','indie','dance','hip hop','rap','classical','latin']);
-function albumStyleFit(tags,styles){
+export function albumStyleFit(tags,styles){
+  tags=musicalTags(tags);
   const precise=tags.filter(t=>!broadAlbumTags.has(t));
   if(!precise.length)return Math.min(.18,styleFit(tags,styles)*.25);
   const scores=styles.map(s=>{
