@@ -199,8 +199,8 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
         const feedback=profile.signals.items.find(entry=>entry.id===item.id);
         const avoid=matchingValue(profile.avoid,[item.genre,item.mood,...(item.tags??[])]);
         const adjustment=(feedback?.reaction==='Not for me'?-40:feedback?.reaction==='Loved'?12:0)-(avoid?35:0);
-        if(item.format==='Album'&&weightedWeight===1&&(!row.editorialWork.tasteSupported||avoid||feedback?.reaction==='Not for me')){
-          rejected.push({id:item.id,title:item.title,format:item.format,url:item.url,reason:avoid||feedback?.reaction==='Not for me'?'Préférence négative explicite':'Affinité musicale insuffisamment étayée'});
+        if(weightedWeight===1&&(!row.editorialWork.tasteSupported||avoid||feedback?.reaction==='Not for me'||(item.format==='Radio show'&&excludesElectronicMix(item)))){
+          rejected.push({id:item.id,title:item.title,format:item.format,url:item.url,reason:avoid||feedback?.reaction==='Not for me'||(item.format==='Radio show'&&excludesElectronicMix(item))?'Préférence négative explicite':'Affinité musicale insuffisamment étayée'});
           continue;
         }
         const workPoints=row.editorialWork.points+adjustment;
