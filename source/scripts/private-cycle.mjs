@@ -92,6 +92,7 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     method:item.sourceUrl.includes('.bandcamp.com/')?'bandcamp-album':undefined,
     editorialSource:item.editorialSource,editorialUrl:item.editorialUrl,
     editorialKind:item.editorialKind,editorialClaim:item.editorialClaim,
+    editorialPublishedAt:item.editorialPublishedAt,tags:item.tags,
   }));
   const bySource=new Map();
   for(const record of [...priorAlbums,...registered,...catalogues.records,...linked,...press.records,...endorsements.records]) {
@@ -107,7 +108,7 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
       : x?.editorialClaim==='Best New Music'?3
       : x?.editorialClaim==='Album of the Day'?3
       : x?.editorialKind?1:0;
-    if(mention && priority(mention)>priority(record)) Object.assign(record,mention);
+    if(mention && (priority(mention)>priority(record)||!record.editorialPublishedAt&&priority(mention)===priority(record))) Object.assign(record,mention);
   }
   const preferredSources=[...profile.favoritePublications,...profile.favoriteRadios,...profile.spotify.map(row=>row.name).filter(Boolean)].map(normalized);
   const preferredArtists=profile.favoriteArtists.map(normalized);
