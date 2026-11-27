@@ -130,3 +130,9 @@ jobs:
           assert.equal(before.rankings.length,after.rankings.length);
           assert.ok(after.rankings.every(x=>Number.isFinite(x.score)));
           JS
+
+      - name: Build et sondage public MusicBrainz / ListenBrainz
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'affinity-private-pilot'
+        run: |
+          npm run build
+          node scripts/check-public-artist-metadata.mjs
