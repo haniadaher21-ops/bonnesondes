@@ -28,7 +28,7 @@ const numHeader=(res,name)=>{
 };
 function retryDelay(res,now){
   const seconds=numHeader(res,'retry-after');
-  const date=Date.parse(res.headers?.get?.('retry-after')??'');
+  const date=seconds===null?Date.parse(res.headers?.get?.('retry-after')??''):NaN;
   const reset=numHeader(res,'x-ratelimit-reset-in');
   return Math.max(0,seconds===null?0:1000*seconds,Number.isFinite(date)?date-now:0,
     reset===null?0:1000*reset);
@@ -116,17 +116,17 @@ export async function enrichPublicArtists(names,{
       const id=resolveIdentity(name,found);
       if(!id){
         const result={status:'ambiguous_or_missing',checkedAt:new Date(clock()).toISOString()};
-        out.set(k,result);cache.set(k,result);continue;
+        out.set(k,result);cache.delete(k);cache.set(k,result);continue;
       }
       identity={status:'identity',mbid:id,tags:(found.artists.find(a=>a.id===id)?.tags??[]).filter(t=>typeof t.name==='string'&&Number(t.count)>0).sort((a,b)=>b.count-a.count).slice(0,12).map(t=>t.name),checkedAt:new Date(clock()).toISOString()};
-      cache.set(k,identity);
+      cache.delete(k);cache.set(k,identity);
     }
     const url='https://api.listenbrainz.org/1/lb-radio/artist/'+identity.mbid+'?'+new URLSearchParams({mode:'medium',max_similar_artists:'10',max_recordings_per_artist:'1',pop_begin:'0',pop_end:'100'});
     const data=await get(url);
     try{
       if(!data)throw Error('Missing relationships');
       const result={status:'verified',mbid:identity.mbid,neighbors:parseNeighbors(identity.mbid,data),tags:identity.tags??[],sourceUrl:url,checkedAt:new Date(clock()).toISOString()};
-      out.set(k,result);cache.set(k,result);
+      out.set(k,result);cache.delete(k);cache.set(k,result);
     }catch{
       if(stale){out.set(k,saved);diagnostics.stale++;}
       else out.set(k,identity);
