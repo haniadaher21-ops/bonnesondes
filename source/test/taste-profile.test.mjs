@@ -79,3 +79,13 @@ test('collection feedback is optional, preserves IDs, and exports only ranking f
   assert.deepEqual(parseTasteProfile(JSON.stringify(exported)), exported);
   assert.deepEqual(library, before);
 });
+
+ test('weighted profiles preserve existing preferences and strip raw listening fields',()=>{
+ const raw={artists:[{artist:'Example A',score:85,history:['private'],recent_minutes:123},{artist:'example a',score:50}],excluded_artists:['Example B'],known_artist_names:['Example A','Example B'],known_tracks_normalized:['private track'],history_start:'2026-01-01'};
+ const base={...emptyTasteProfile(),favoriteArtists:['Manual favorite'],weightedProfile:raw};
+ const clean=normalizeTasteProfile(base);
+ assert.deepEqual(clean.weightedProfile,{artists:[{artist:'Example A',score:85}],excluded_artists:['Example B'],known_artist_names:['Example A','Example B']});
+ assert.deepEqual(clean.favoriteArtists,['Manual favorite']);
+ assert.deepEqual(parseTasteProfile(JSON.stringify(clean)),clean);
+ assert.throws(()=>normalizeTasteProfile({...base,weightedProfile:{...raw,artists:[{artist:'Example A',score:101}]}}),/Score musical/);
+ });
