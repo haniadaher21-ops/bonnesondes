@@ -43,7 +43,7 @@ const matchingValue = (needles, fields) => needles.find(needle => {
 });
 const feedbackWeight = { Loved: 24, Interesting: 10, 'Worth revisiting': 12, 'Not for me': -40 };
 
-function rank(item, profile, today, tasteWeight, previouslySeen, artistIndex, tracklistWeight, now) {
+function rank(item, profile, today, tasteWeight, previouslySeen, artistIndex, tracklistWeight, now, weightedMode=false) {
   const signals = [];
   let affinity = 0;
   function signal(value, points, reason) {
@@ -113,7 +113,8 @@ function rank(item, profile, today, tasteWeight, previouslySeen, artistIndex, tr
   const trustedSession = /\b(?:Kiosk Radio|Boiler Room|HÖR Berlin|The Lot Radio|My Analog Journal)\b/i
     .test([item.source,item.title].join(' '));
   const genericCompilation = /\bbest\s+(?:vintage|soul|funk|old school).*\bmix\b/i.test(item.title??'');
-  const genreStrength = {rnb:135,soul:125,blues:112,pop:96,'light-house':90,funk:65};
+  const genreStrength = weightedMode ? {rnb:104,soul:102,blues:100,pop:100,'light-house':98,funk:96}
+    : {rnb:135,soul:125,blues:112,pop:96,'light-house':90,funk:65};
   const mixQuality = videoMix ? (genreStrength[item.mixStyle]??0)
     + 20*Number(genuineSelector) + 12*Number(vinylSelection)
     + 5*Number(/\bvinyl\b/i.test(item.title??''))
@@ -180,9 +181,9 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
       continue;
     }
     const previouslySeen = Object.hasOwn(seen, canonicalUrl(item.url));
-    const row={...rank(item, profile, today, tasteWeight, previouslySeen, artistIndex, tracklistWeight, now), previouslySeen};
+    const row={...rank(item, profile, today, tasteWeight, previouslySeen, artistIndex, tracklistWeight, now, Boolean(weightedIndex?.weights.size)), previouslySeen};
     if(weightedIndex){
-      const match=weightedAffinity(candidateArtistCredits(item,now),weightedIndex,artistMetadata);
+      const match=weightedAffinity(candidateArtistCredits(item,now),weightedIndex,artistMetadata,{tracklist:item.format==='Radio show'});
       if(match.excluded){
         rejected.push({id:item.id,title:item.title,format:item.format,url:item.url,reason:'Exclusion du profil privé'});
         continue;

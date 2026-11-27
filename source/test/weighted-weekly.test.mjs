@@ -15,7 +15,7 @@ test('real weekly selection uses weighted scores only when enabled',()=>{
  assert.deepEqual(old,off);
  assert.equal(old.selected.nts[0].item.id,'a');
  assert.equal(on.selected.nts[0].item.id,'z');
- assert.equal(on.rankings[0].weightedAffinity.points,15);
+ assert.equal(on.rankings[0].weightedAffinity.points,11);
  assert.equal(on.rankings[0].publicReason,old.rankings.find(x=>x.item.id==='z').publicReason);
  assert.equal(on.rankings[0].reason,old.rankings.find(x=>x.item.id==='z').reason);
 });
@@ -38,4 +38,12 @@ test('public lookup order is independent of private profile and fair across trac
  assert.ok(urls.every(u=>!decodeURIComponent(u).includes('Example')));
  assert.equal(result.before.selected.nts[0].item.id,'a');
  assert.equal(result.after.selected.nts[0].item.id,'z');
+});
+
+test('verified pop can outrank unmatched R&B in weighted mode without changing legacy ranking',()=>{
+ const yt=(id,style,artists)=>({id,title:'DJ Example',creator:'DJ '+id,format:'Radio show',source:'YouTube',provider:'YouTube',sourceId:'yt-'+id,mixKind:'curated-mix',date:'2026-11-24',verificationStatus:'source-verified',url:'https://www.youtube.com/watch?v='+id,sourceUrl:'https://www.youtube.com/watch?v='+id,embed:{provider:'youtube',id},audienceVerified:true,viewCount:150000,mixStyle:style,mixStyleVerified:true,tracklist:{status:'available',method:'youtube-description',checkedAt:now.toISOString(),sourceUrl:'https://www.youtube.com/watch?v='+id,tracks:artists.map(track)}});
+ const rnb=yt('aaaaaaaaaaa','rnb',['Unknown A','Unknown B']),pop=yt('zzzzzzzzzzz','pop',['Example A','Example B']);
+ const args={...options,candidates:[rnb,pop]};
+ assert.equal(weeklyShortlist(args).selected.youtube[0].item.id,rnb.id);
+ assert.equal(weeklyShortlist({...args,weightedProfile,weightedWeight:1}).selected.youtube[0].item.id,pop.id);
 });
