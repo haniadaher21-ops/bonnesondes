@@ -1,5 +1,7 @@
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
 import { canonicalUrl, isoDate, sourceUrl } from '../editorial/edition.mjs';
+import {documentedMixStyles} from './mix-style-evidence.mjs';
+import {youtubeDescriptionTracks,tracklistEvidence} from './mix-tracklists.mjs';
 import { isDedicatedNovaMixEpisode } from './nova-mixes.mjs';
 
 export const text = value => typeof value === 'string' ? value.trim() : '';
@@ -60,9 +62,18 @@ export function editorialFeed(xml, source) {
     if(source.mixSelection && !isDedicatedNovaMixEpisode(title,source.mixSelection)) continue;
     const item = { title, url, ...dates };
     switch (source.method) {
-      case 'podcast-rss':
-        candidates.push({ ...item, id: source.id + ':' + new URL(url).pathname, format: 'Radio show' });
+      case 'podcast-rss': {
+        const description=[entry.description,entry['content:encoded']].map(v=>text(v?.['#text']??v)).join('\n').replace(/<br\s*\/?>|<\/(?:p|li|div)>/gi,'\n').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&');
+        const nova=source.provider==='Radio Nova'&&source.mixKind==='dj-set';
+        const tags=nova?documentedMixStyles({title,description}):[];
+        // Only accept orientation supported by an explicit header or artist
+        // names in the episode title; do not infer a list from prose.
+        const parsed=nova?youtubeDescriptionTracks(description,title):{tracks:[]};
+        candidates.push({ ...item, id: source.id + ':' + new URL(url).pathname, format: 'Radio show',
+          ...(tags.length&&{tags,styleEvidence:{tags,sourceUrl:source.feed}}),
+          ...(parsed.tracks.length>=2&&{novaRssTracks:parsed.tracks}) });
         break;
+      }
       case 'pitchfork-rss':
         candidates.push({ ...item, id: 'pitchfork:' + new URL(url).pathname, format: 'Album', verificationStatus: 'release-date-needed' });
         break;
