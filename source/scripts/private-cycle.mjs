@@ -20,6 +20,7 @@ import { verifyAlbums, verifyLives, normalized } from './weekly-evidence.mjs';
 import { weeklyShortlist } from './weekly-ranking.mjs';
 import { compareWeeklyWeighted, refreshPublicMetadata } from './weighted-weekly.mjs';
 import { editorialEndorsement } from './recommendation-policy.mjs';
+import {albumStyleFit} from './editorial-work-score.mjs';
 import {publicProviderFetcher} from './provider-policy.mjs';
 import {observationReport,renderObservation} from './observation-report.mjs';
 import { editionForCycle, publicationDecision, publicEdition, rollCandidates } from './automation-policy.mjs';
@@ -112,7 +113,10 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   }
   const preferredSources=[...profile.favoritePublications,...profile.favoriteRadios,...profile.spotify.map(row=>row.name).filter(Boolean)].map(normalized);
   const preferredArtists=profile.favoriteArtists.map(normalized);
-  const priority=record=>38*Number(preferredArtists.includes(normalized(record.creator)))
+  const privateWeights=new Map((profile.weightedProfile?.artists??[]).map(row=>[normalized(row.artist),row.score]));
+  const priority=record=>120*albumStyleFit(record.tags??[],profile.weightedProfile?.style_preferences??[])
+    + .8*(privateWeights.get(normalized(record.creator))??0)
+    +38*Number(preferredArtists.includes(normalized(record.creator)))
     +8*Number(preferredSources.includes(normalized(record.label)))
     +60*Number(preferredSources.includes(normalized(record.editorialSource)))
     +90*Number(record.editorialKind==='critic-pick')+70*Number(record.editorialKind==='curator-pick')
