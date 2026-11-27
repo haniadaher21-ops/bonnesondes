@@ -30,6 +30,7 @@ function validEvidence(item,now){
     &&proof.origin===url.origin&&[ '/api/v2'+url.pathname, '/api/v2'+url.pathname+'/tracklist'].includes(proof.pathname);
   if(e.method==='fip-page')return item.sourceId==='fip-tape'&&url.origin==='https://www.radiofrance.fr'
     &&/^\/fip\/podcasts\/fip-tape\/la-mixtape-de-[a-z0-9-]+-\d+\/?$/.test(url.pathname)&&canonicalUrl(url.href)===canonicalUrl(proof.href);
+  if(e.method==='nova-rss')return item.provider==='Radio Nova'&&item.mixKind==='dj-set'&&url.origin==='https://podcasts.nova.fr'&&proof.origin===url.origin&&proof.pathname.endsWith('/feed/rss/website.xml')&&url.pathname.startsWith(proof.pathname.replace(/feed\/rss\/website\.xml$/,''));
   if(e.method==='youtube-description')return item.mixKind==='curated-mix'&&url.origin==='https://www.youtube.com'
     &&url.pathname==='/watch'&&/^[\w-]{11}$/.test(url.searchParams.get('v')??'')&&canonicalUrl(url.href)===canonicalUrl(proof.href);
   return false;

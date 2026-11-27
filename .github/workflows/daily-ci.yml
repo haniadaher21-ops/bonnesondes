@@ -247,3 +247,27 @@ jobs:
           const daily=await collectEditorialEndorsements();
           console.log('DAILY_ALBUM_AUDIT '+JSON.stringify({status:daily.status,records:daily.records.map(x=>({title:x.title,creator:x.creator,date:x.releaseDate,tags:x.tags,source:x.sourceUrl}))}));
           JS
+
+      - name: Auditer la collecte élargie et les preuves musicales publiques
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'broader-music-evidence'
+        env:
+          YOUTUBE_DATA_API_KEY: ${{ secrets.YOUTUBE_DATA_API_KEY }}
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {collectRecentLives} from './scripts/recent-lives.mjs';
+          import {verifyLives} from './scripts/weekly-evidence.mjs';
+          import {discover} from './scripts/discovery.mjs';
+          import {collectMusicPress} from './scripts/music-press.mjs';
+          import sources from './editorial/sources.json' with {type:'json'};
+          import pressSources from './editorial/music-press.json' with {type:'json'};
+          const now=new Date(),key=process.env.YOUTUBE_DATA_API_KEY;
+          const recent=await collectRecentLives({sources,key,now});
+          const lives=await verifyLives(recent.items,sources,key);
+          console.log('RECENT_LIVE_AUDIT '+JSON.stringify({found:recent.items.length,verified:lives.items.length,withGenres:lives.items.filter(x=>x.tags?.length).length,sources:recent.sources,examples:lives.items.filter(x=>/^(anaiis|Hermanos Gutiérrez|CMAT)$/i.test(x.creator)).map(x=>({creator:x.creator,title:x.title,date:x.date,tags:x.tags,url:x.url})),sample:lives.items.slice(0,8).map(x=>({creator:x.creator,title:x.title,date:x.date,tags:x.tags}))}));
+          assert.ok(lives.items.length>0,'Aucune vidéo officielle récente vérifiée');
+          const radio=await discover({sources:sources.filter(x=>x.provider==='Radio Nova'&&x.mixKind==='dj-set'),now});
+          console.log('NOVA_EVIDENCE_AUDIT '+JSON.stringify({sources:radio.sources,items:radio.candidates.map(x=>({title:x.title,date:x.date,tags:x.tags,tracks:x.tracklist?.tracks?.length??0}))}));
+          const press=await collectMusicPress(pressSources.filter(x=>['nova','npr','pitchfork'].includes(x.id)),{today:now.toISOString().slice(0,10)});
+          console.log('PRESS_EVIDENCE_AUDIT '+JSON.stringify({status:press.status,records:press.records.map(x=>({creator:x.creator,title:x.title,tags:x.tags,source:x.editorialSource}))}));
+          JS

@@ -11,6 +11,7 @@ import { readRunnerProfile, syncRpc } from '../private-sync/client.mjs';
 import { collectAlbumCatalogues, readPublicPage } from './album-catalogues.mjs';
 import {enrichRadioTracklists} from './mix-tracklists.mjs';
 import { collectYouTubeMixes } from './youtube-mixes.mjs';
+import {collectRecentLives} from './recent-lives.mjs';
 import { collectEditorialEndorsements } from './editorial-endorsements.mjs';
 import { collectMusicPress, matchMusicPress } from './music-press.mjs';
 import { discover } from './discovery.mjs';
@@ -51,12 +52,13 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     && Number.isFinite(Date.parse(snapshot.at)) && now.getTime()-Date.parse(snapshot.at)>=0
     && now.getTime()-Date.parse(snapshot.at)<(snapshot.status.some(row=>!['ok','empty'].includes(row.status))?3600000:6*3600000) && Array.isArray(snapshot.records) && Array.isArray(snapshot.status)
 ;
-  const [collection,catalogues,endorsements,press] = await Promise.all([
+  const [collection,catalogues,endorsements,press,recentLives] = await Promise.all([
     discover({sources,profile,existing:known,now,fetcher}),
     cached ? Promise.resolve({records:snapshot.records,status:snapshot.status.map(row=>({...row,cachedAt:snapshot.at}))})
       : collectAlbumCatalogues({startsOn,today:parisDate(now),fetcher,catalogues:catalogueConfig}),
     collectEditorialEndorsements({fetcher}),
     collectMusicPress(readJson(new URL('../editorial/music-press.json',import.meta.url)),{fetcher,today:parisDate(now)}),
+    collectRecentLives({sources,key:env.YOUTUBE_DATA_API_KEY,now,fetcher}),
   ]);
   const date = now.toISOString();
   if(!cached)state.albumCatalogueSnapshot={at:date,startsOn,fingerprint:catalogueFingerprint,
@@ -73,7 +75,7 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     publicCandidates:youtubeMixes.items.slice(0,12).map(({title,source,date,url})=>({title,source,date,url}))};
   if(mode!=='collect') console.log('YouTube mix discovery',JSON.stringify(youtubeMixSummary));
   const newlyDiscoveredYouTubeMixes=youtubeMixes.items.map(item=>({...item,collectedAt:date}));
-  const previous = rollCandidates(state.candidates,[...collection.candidates,...archivalLives,...newlyDiscoveredYouTubeMixes],now);
+  const previous = rollCandidates(state.candidates,[...collection.candidates,...archivalLives,...recentLives.items,...newlyDiscoveredYouTubeMixes],now);
   const registered = readJson(new URL('../editorial/album-sources.json',import.meta.url));
   const linked = previous.filter(item => item.format === 'Album' && item.creator && item.editorialKind)
     .flatMap(item => [
@@ -149,13 +151,13 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   // Never carry a past verification into this run if its primary source is unavailable.
   const base = previous.filter(item => !albumKeys.has(canonicalUrl(item.url))).map(item=>
     item.format==='Album' && item.verificationStatus==='primary-verified' ? {...item,verificationStatus:'release-date-needed'} : item);
-  const rolled = rollCandidates(base,[...collection.candidates,...newlyDiscoveredYouTubeMixes,...albums],now);
+  const rolled = rollCandidates(base,[...collection.candidates,...recentLives.items,...newlyDiscoveredYouTubeMixes,...albums],now);
   const {items:candidates,diagnostics:tracklists}=await enrichRadioTracklists(rolled,{fetcher,now});
   console.log('Tracklists des mixes',JSON.stringify(tracklists));
   const headers = {'x-bo-runner':env.BONNES_ONDES_RUNNER_TOKEN};
   const beforeKeys=new Set(state.candidates.map(item=>canonicalUrl(item.url)));
   const incremental={before:state.candidates.length,after:candidates.length,new:candidates.filter(item=>!beforeKeys.has(canonicalUrl(item.url))).length,
-    catalogueCache:cached,
+    catalogueCache:cached,recentLives:{count:recentLives.items.length,status:recentLives.status,sources:recentLives.sources},
     retained:candidates.filter(item=>beforeKeys.has(canonicalUrl(item.url))).length,tracklists:{...tracklists,youtubeAvailable:candidates.filter(item=>item.tracklist?.method==='youtube-description'&&item.tracklist.status==='available').length}};
   const profileSignalCounts=Object.fromEntries(['favoriteArtists','favoriteRadios','favoritePublications','spotify','explore','avoid'].map(key=>[key,profile[key].length]));
   profileSignalCounts.reactions=profile.signals.items.length;
@@ -221,6 +223,9 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
         after:Object.fromEntries(Object.entries(comparison.after.selected).map(([k,rows])=>[k,rows.map(row=>({id:row.item.id,title:row.item.title,score:row.score,editorialWork:row.editorialWork,weightedAffinity:row.weightedAffinity,creator:row.item.creator,url:row.item.url,tags:row.item.tags}))])),
         albumAudit:comparison.after.rankings.filter(row=>row.item.format==='Album').map(row=>({id:row.item.id,title:row.item.title,score:row.score,editorialWork:row.editorialWork,weightedAffinity:row.weightedAffinity})).slice(0,40),
         albumRejected:comparison.after.rejected.filter(row=>row.format==='Album').map(({id,title,reason})=>({id,title,reason})).slice(0,50),
+        recentLives:{count:recentLives.items.length,status:recentLives.status,sources:recentLives.sources},
+        liveAudit:comparison.after.rankings.filter(row=>row.item.format==='Live session').slice(0,40).map(row=>({id:row.item.id,title:row.item.title,date:row.item.date,score:row.score,editorialWork:row.editorialWork,weightedAffinity:row.weightedAffinity})),
+        mixAudit:comparison.after.rankings.filter(row=>row.item.format==='Radio show').slice(0,60).map(row=>({id:row.item.id,title:row.item.title,score:row.score,editorialWork:row.editorialWork,weightedAffinity:row.weightedAffinity})),
         complete:comparison.after.complete,gaps:comparison.after.gaps};
     } catch { state.weightedObservation={at:date,profileRevision:remote.revision,status:'unavailable'}; }
   } else if(!profile.weightedProfile || state.weightedObservation?.profileRevision!==remote.revision){

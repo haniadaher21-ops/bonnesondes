@@ -1,3 +1,4 @@
+import {documentedMixStyles} from './mix-style-evidence.mjs';
 import {youtubeDescriptionTracks,tracklistEvidence} from './mix-tracklists.mjs';
 import {isoDate,sourceUrl} from '../editorial/edition.mjs';
 import {excludesJazz,excludesElectronicMix,MIN_YOUTUBE_MIX_VIEWS} from './recommendation-policy.mjs';
@@ -77,7 +78,9 @@ export function verifiedYouTubeMix(video, startsOn, today, channel) {
     || status.privacyStatus!=='public'||status.embeddable!==true||length<20*60
     || !(mixTitle.test(title) || (targeted && (targeted.name==='My Analog Journal' || /the\s*lot\s*radio|hÖr|soulection\s+radio/i.test(title))))||notMix.test(title)||spamTitle.test(title)
     || snippet.liveBroadcastContent==='live'||!style || !respected)return;
-  const tags=tagsOf(snippet);
+  const rawTags=tagsOf(snippet);
+  const styleTags=documentedMixStyles({title,tags:rawTags,description:snippet.description});
+  const tags=[...new Set([...rawTags,...styleTags])];
   const candidate={
     id:'youtube-'+id,title,creator:targeted?.name??channelTitle,format:'Radio show',
     source:'YouTube · '+(targeted?.name??channelTitle),provider:'YouTube',sourceId:'youtube-mix-'+channelId,
@@ -88,7 +91,7 @@ export function verifiedYouTubeMix(video, startsOn, today, channel) {
     verificationStatus:'source-verified',audienceVerified:true,
     viewCount:views,subscriberCount:subscribers,curatorEstablished:known,
     officialVideo:true,videoSourceUrl:'https://www.youtube.com/watch?v='+id,
-    embed:{provider:'youtube',id},tags,
+    embed:{provider:'youtube',id},tags,styleEvidence:{tags:styleTags,sourceUrl:'https://www.youtube.com/watch?v='+id},
   };
   const parsed=youtubeDescriptionTracks(snippet.description,title);
   const evidence=tracklistEvidence(parsed.tracks,candidate.url,'youtube-description',new Date(today+'T00:00:00Z'));
