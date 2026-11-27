@@ -25,6 +25,7 @@ function ntsCandidates(payload, source) {
       ...(tracklist?.origin === 'https://www.nts.live' && tracklist.pathname === tracklistPath && { tracklistUrl: tracklist.href }),
       id: 'nts-' + alias, title, creator:source.curator, format: 'Radio show', source: 'NTS Radio', date,
       dateKind: 'broadcast', broadcastAt: text(episode.broadcast),
+      tags: [...new Set([...(Array.isArray(episode.genres)?episode.genres:[]),...(Array.isArray(episode.embeds?.genres)?episode.embeds.genres:[])].map(g=>typeof g==='string'?g:g?.name??g?.title).filter(g=>typeof g==='string'&&g.length<=80))].slice(0,20),
       url: 'https://www.nts.live/shows/' + show + '/episodes/' + alias,
       artwork: sourceUrl(episode.media?.picture_medium)?.href,
     };
