@@ -42,7 +42,8 @@ export async function verifyAlbums(records, fetcher = fetch) {
       const structuredDate = primaryReleaseDate(html, record);
       if (record.releaseDate && structuredDate && record.releaseDate !== structuredDate) throw new Error();
       const releaseDate = record.releaseDate ?? structuredDate;
-      if(record.method==='bandcamp-album' && (!structuredDate || !bandcampAlbum(html,primary.href,record.label)))throw new Error();
+      const primaryAlbum=record.method==='bandcamp-album'?bandcampAlbum(html,primary.href,record.label):undefined;
+      if(record.method==='bandcamp-album' && (!structuredDate || !primaryAlbum))throw new Error();
       if (/\b(reissue|remaster(?:ed)?|anniversary|deluxe|expanded)\b/i.test(record.title)) throw new Error();
       if (!releaseDate) throw new Error();
       verifiedReleaseDate = releaseDate;
@@ -70,7 +71,7 @@ export async function verifyAlbums(records, fetcher = fetch) {
         ...(trustedCover && {artwork:cover.href}),
         provider: record.label, format: 'Album', url: spotify.href, sourceUrl: primary.href,
         releaseDate, releaseProofUrl: record.dateProofUrl ?? primary.href, date: releaseDate, dateKind: 'release', verificationStatus: 'primary-verified',
-        embed: { provider: 'spotify', id: albumId }, listeningProofUrl:oembedUrl,listeningMappingUrl:record.url?record.listeningMappingUrl:listening.proof, tags:record.tags ?? [],
+        embed: { provider: 'spotify', id: albumId }, listeningProofUrl:oembedUrl,listeningMappingUrl:record.url?record.listeningMappingUrl:listening.proof, tags:[...new Set([...(record.tags??[]),...(primaryAlbum?.tags??[])])],
         editorialSource:record.editorialSource,editorialUrl:record.editorialUrl,editorialKind:record.editorialKind,editorialClaim:record.editorialClaim,
         editorialPublishedAt:record.editorialPublishedAt,
       };
