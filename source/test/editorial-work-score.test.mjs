@@ -76,3 +76,34 @@ test('NTS page genre extraction is scoped to the matching episode header',async(
  assert.deepEqual(ntsEpisodePageGenres(page,'Example & Friend'),['Soul','Folk']);
  assert.deepEqual(ntsEpisodePageGenres(page,'Other'),[]);
 });
+
+test('generic rock and a press award cannot substitute for musical fit',()=>{
+ const taste=[{tag:'neo soul',score:85},{tag:'alternative r&b',score:75},{tag:'indie rock',score:55}];
+ const unrelated=editorialWorkScore(album('a','Unknown',['rock','krautrock']),{styles:taste,now,known:false});
+ const match=editorialWorkScore(album('b','New Artist',['neo soul','funk']),{styles:taste,now,known:false});
+ assert.equal(unrelated.tasteSupported,false);assert.equal(unrelated.discovery,0);
+ assert.ok(match.tasteSupported);assert.ok(match.points>unrelated.points);
+ const args={candidates:[album('a','Unknown',['rock','krautrock']),album('b','New Artist',['neo soul','funk'])],profile:emptyTasteProfile(),earlier:[],catalog:[],startsOn:'2026-11-30',now};
+ const result=weeklyShortlist({...args,weightedProfile:{artists:[],known_artist_names:[],excluded_artists:[],style_preferences:taste},weightedWeight:1});
+ assert.deepEqual(result.selected.albums.map(x=>x.item.id),['b']);assert.equal(result.gaps.albums,2);
+});
+test('a known artist with meaningful affinity can qualify without documented album tags',()=>{
+ const result=editorialWorkScore(album('a','Known',[]),{styles,now,known:true,affinity:{points:12}});
+ assert.equal(result.tasteSupported,true);assert.equal(result.discovery,0);
+});
+
+test('live and mix quotas do not justify recommending music with no taste evidence',()=>{
+ const candidates=[live('aaaaaaaaaaa','Unknown',['rock']),radio('a',['techno'],['Unknown','Other'])];
+ const args={candidates,profile:emptyTasteProfile(),earlier:[],catalog:[],startsOn:'2026-11-30',now};
+ const profile={artists:[],excluded_artists:[],known_artist_names:[],style_preferences:[{tag:'dream pop',score:85},{tag:'neo soul',score:80}]};
+ const result=weeklyShortlist({...args,weightedProfile:profile,weightedWeight:1});
+ assert.equal(result.selected.live.length,0);assert.equal(result.selected.nts.length,0);
+ assert.equal(result.gaps.live,3);assert.equal(result.gaps.nts,1);
+});
+
+test('public artist catalogue style can qualify a live without YouTube genre tags',()=>{
+ const artist='New Artist';
+ const item=live('aaaaaaaaaaa',artist,[]);
+ const result=editorialWorkScore(item,{styles:[{tag:'alternative r&b',score:85}],now,credits:[artist],metadata:new Map([['new artist',{status:'public-style',tags:['alternative r&b']}]]),known:false});
+ assert.ok(result.tasteSupported);assert.equal(result.documentedCredits,1);assert.ok(result.styleMatch>=.5&&result.styleMatch<.6);
+});

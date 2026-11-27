@@ -61,5 +61,12 @@
     "method": "manual-review",
     "listingUrl": "https://notion.online/",
     "mode": "manual"
+  },
+  {
+    "id": "bandcamp-essential",
+    "name": "Bandcamp Daily",
+    "method": "bandcamp-essential",
+    "listingUrl": "https://daily.bandcamp.com/essential-releases",
+    "mode": "automatic"
   }
 ]

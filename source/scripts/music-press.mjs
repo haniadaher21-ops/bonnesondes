@@ -3,6 +3,7 @@ import { normalized } from './release-metadata.mjs';
 import { isoDate } from '../editorial/edition.mjs';
 import { bandcampAlbum, bandcampLinks } from './bandcamp-albums.mjs';
 import { parseFeed } from './discovery-feeds.mjs';
+import {musicalTags} from './style-affinity.mjs';
 
 // Articles published within the previous month are leads, not proof that an
 // album was released then. Primary release dates and Spotify identity are
@@ -18,6 +19,7 @@ const text = html => String(html).replace(/<[^>]+>/g,' ')
   .replace(/\s+/g,' ').trim();
 const titleKey = value => normalized(value).replace(/\band\b/g,'').replace(/\s+/g,' ').trim();
 const articlePath = {
+  'bandcamp-essential': /^\/essential-releases\/essential-releases-[a-z0-9-]+\/?$/i,
   'nova-weekly': /^\/news\/[^?#]*albums-immanquables-de-la-semaine[^?#]*\/?$/i,
   'stereogum-aotw': /^\/\d+\/album-of-the-week-[a-z0-9-]+\/reviews\/album-of-the-week\/?$/i,
   'pitchfork-weekly': /^\/story\/\d+-new-albums-you-should-listen-to-now-[a-z0-9-]+\/?$/i,
@@ -66,6 +68,13 @@ export function musicPressMentions(html, source, articleUrl, today) {
       if(artist.length<2||title.length<2)continue;
       matches.push({creator:artist,title});
     }
+  } else if(source.method==='bandcamp-essential') {
+    for(const heading of html.matchAll(/<h[234]\b[^>]*>([\s\S]*?)<\/h[234]>/gi)){
+      const h=text(heading[1]);
+      const parts=h.match(/^(.+?)\s*(?:[–—]|:\s|,\s*[“"])(.+?)[”"]?$/u);
+      if(parts)matches.push({creator:parts[1].trim(),title:parts[2].trim()});
+      else if(h.length>=4&&h.length<=180)matches.push({headline:h});
+    }
   } else if(source.method==='stereogum-aotw') {
     const h1=text(html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i)?.[1]??'');
     if(/^Album Of The Week:\s*/i.test(h1))matches.push({headline:h1.replace(/^Album Of The Week:\s*/i,'')});
@@ -73,7 +82,7 @@ export function musicPressMentions(html, source, articleUrl, today) {
   return matches.map(item=>({...item,editorialSource:source.name,editorialUrl:articleUrl,
     editorialPublishedAt:date,editorialKind:'curator-pick',
     editorialClaim:source.method==='stereogum-aotw'?'Album of the Week':
-      source.method==='nova-weekly'?'Albums immanquables':'New albums to listen to'}));
+      source.method==='nova-weekly'?'Albums immanquables':source.method==='bandcamp-essential'?'Essential Releases':'New albums to listen to'}));
 }
 
 export function nprMusicFridayMentions(xml,source,today) {
@@ -123,11 +132,11 @@ export function nprMusicFridayMentions(xml,source,today) {
 // album identity, Spotify link and artwork before it can rank.
 export function musicPressAlbumReferences(html, articleUrl, mentions) {
   if (typeof html !== 'string' || !Array.isArray(mentions)) return [];
-  const sections = [...html.matchAll(/<h2\b[^>]*>([\s\S]*?)<\/h2>/gi)];
+  const sections = [...html.matchAll(/<h[234]\b[^>]*>([\s\S]*?)<\/h[234]>/gi)];
   const records = [];
   for (let i = 0; i < sections.length; i++) {
     const head = text(sections[i][1]).replace(/\s*\[[^\]]+\]\s*$/, '');
-    const parsed = head.match(/^(.+?):\s*(.+)$/);
+    const parsed = head.match(/^(.+?)\s*(?:[–—]|:\s|,\s*[“"])(.+?)[”"]?$/u);
     if (!parsed) continue;
     const creator = parsed[1].trim(), title = parsed[2].trim();
     const mention = mentions.find(m => m.title && titleKey(m.title) === titleKey(title)
@@ -173,6 +182,42 @@ export async function stereogumPrimaryRecords(html,url,mentions,fetcher){
   return records;
 }
 
+// The roundup may place the artist and album in one unpunctuated
+// heading. Verify each linked original record independently and require an
+// exact heading match in either order; an incidental article link is not a pick.
+// Scope descriptive evidence to the exact artist/album heading. Do not copy
+// prose or classify artists mentioned in comparisons outside that section.
+export function pressStyleTags(html,record){
+  const sections=[...html.matchAll(/<h[234]\b[^>]*>([\s\S]*?)<\/h[234]>/gi)];
+  const artist=titleKey(record.creator),album=titleKey(record.title);
+  if(!artist||!album)return [];
+  const i=sections.findIndex(h=>{
+    const name=titleKey(text(h[1]));
+    return name===artist+' '+album||name===album+' '+artist;
+  });
+  if(i<0)return [];
+  const content=text(html.slice(sections[i].index+sections[i][0].length,sections[i+1]?.index??html.length)).slice(0,3500);
+  const genreRx=/\b(?:alternative r&b|contemporary r&b|neo[- ]soul|r&b|rnb|soul|funk|dream pop|indie pop|art pop|alternative pop|hyperpop|synth[- ]?pop|indie rock|psychedelic rock|folk rock|indie folk|folk|hip[- ]hop|grime|rap|afrobeats|reggaeton|blues|disco|trip[- ]hop|downtempo|bossa nova|ambient)\b/gi;
+  const tags=[];
+  for(const sentence of content.split(/[.!?](?=\s|$)/)){
+    if(/\b(?:not|rather than|unlike|sounds like|compared to|for fans of|reminiscent of|cover of)\b/i.test(sentence))continue;
+    tags.push(...(sentence.match(genreRx)??[]));
+  }
+  return musicalTags(tags);
+}
+export async function essentialPrimaryRecords(html,url,mentions,fetcher){
+  const records=[];
+  for(const link of bandcampLinks(html,url).slice(0,20)){
+    try{
+      const primary=bandcampAlbum(await readPublicPage(link,fetcher),link,'Bandcamp Daily');
+      if(!primary)continue;
+      const match=matchMusicPress(primary,mentions)??mentions.find(m=>m.headline&&titleKey(m.headline)===titleKey(primary.title)+' '+titleKey(primary.creator));
+      if(match){const pressTags=pressStyleTags(html,primary);records.push({...primary,...match,tags:[...new Set([...(primary.tags??[]),...pressTags])],pressStyleEvidence:{tags:pressTags,url}});}
+    }catch{/* Unverified records remain outside selection. */}
+  }
+  return records;
+}
+
 export async function collectMusicPress(sources,{fetcher=fetch,today=new Date().toISOString().slice(0,10)}={}) {
   const mentions=[],records=[],status=[];
   for(const source of sources) {
@@ -195,7 +240,8 @@ export async function collectMusicPress(sources,{fetcher=fetch,today=new Date().
           const article=await readPublicPage(url,fetcher);
           const items=musicPressMentions(article,source,url,today);
           examined++; verified+=items.length; mentions.push(...items);
-          records.push(...musicPressAlbumReferences(article,url,items));
+          if(source.method==='bandcamp-essential')records.push(...await essentialPrimaryRecords(article,url,items,fetcher));
+          else records.push(...musicPressAlbumReferences(article,url,items));
           if(source.method==='stereogum-aotw')records.push(...await stereogumPrimaryRecords(article,url,items,fetcher));
         } catch { /* A blocked or changed article cannot be treated as endorsement. */ }
       }

@@ -2,8 +2,8 @@ import { bandcampAlbum, bandcampLinks } from './bandcamp-albums.mjs';
 import { readPublicPage, plain } from './album-catalogues.mjs';
 import { normalized } from './release-metadata.mjs';
 
-const editions = ['https://daily.bandcamp.com/album-of-the-day?page=1',
-  'https://daily.bandcamp.com/album-of-the-day?page=8'];
+const editions = ['https://daily.bandcamp.com/album-of-the-day',
+  'https://daily.bandcamp.com/album-of-the-day?page=1'];
 const officialArticle = /^https:\/\/daily\.bandcamp\.com\/album-of-the-day\/[a-z0-9-]+\/?$/i;
 const decode = html => plain(String(html).replace(/&quot;/g,'"').replace(/&#(?:39|x27);/gi,"'")
   .replace(/&ldquo;|&rdquo;/g,'"').replace(/&lsquo;|&rsquo;/g,"'")

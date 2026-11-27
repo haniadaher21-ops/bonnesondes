@@ -199,6 +199,10 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
         const feedback=profile.signals.items.find(entry=>entry.id===item.id);
         const avoid=matchingValue(profile.avoid,[item.genre,item.mood,...(item.tags??[])]);
         const adjustment=(feedback?.reaction==='Not for me'?-40:feedback?.reaction==='Loved'?12:0)-(avoid?35:0);
+        if(weightedWeight===1&&(!row.editorialWork.tasteSupported||avoid||feedback?.reaction==='Not for me'||(item.format==='Radio show'&&excludesElectronicMix(item)))){
+          rejected.push({id:item.id,title:item.title,format:item.format,url:item.url,reason:avoid||feedback?.reaction==='Not for me'||(item.format==='Radio show'&&excludesElectronicMix(item))?'Préférence négative explicite':'Affinité musicale insuffisamment étayée'});
+          continue;
+        }
         const workPoints=row.editorialWork.points+adjustment;
         row.score=Math.round((row.score*(1-weightedWeight)+workPoints*weightedWeight)*100)/100;
       }
@@ -219,7 +223,7 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
     const chosen = [];
     const localProviders = new Set();
     while (chosen.length < group.max) {
-      const provider = ({ item }) => item.format === 'Live session'
+      const provider = ({ item }) => group.name==='albums'&&weightedIndex&&weightedProfile.style_preferences?.length ? (item.editorialSource??item.provider??item.source) : item.format === 'Live session'
         ? (item.sourceId ?? item.source) : (item.provider ?? item.source);
       const remaining = options.filter(entry => {
         const { item } = entry;
@@ -235,7 +239,7 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
           && !(performance && performances.has(performance));
       });
       const adjusted = entry => entry.score
-        - (group.name === 'albums' ? 38 : 18) * Number(localProviders.has(provider(entry)))
+        - (group.name === 'albums' ? (weightedIndex&&weightedProfile.style_preferences?.length?8:38) : 18) * Number(localProviders.has(provider(entry)))
         - 6 * (providers.get(provider(entry)) ?? 0);
       remaining.sort((a,b)=>adjusted(b)-adjusted(a));
       const entry = remaining[0];

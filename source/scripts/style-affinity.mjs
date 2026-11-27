@@ -1,6 +1,6 @@
 // Conservative, explicit taxonomy: only musical tags, not countries, eras or moods.
 const families={
-  rnb:['rnb','r&b','rhythm and blues','alternative r&b','contemporary r&b','neo soul','neo-soul','soul','quiet storm','new jack swing','soul pop','funk','psychedelic soul'],
+  rnb:['rnb','r&b','rhythm and blues','alternative r&b','contemporary r&b','neo soul','neo-soul','soul','quiet storm','new jack swing','soul pop','funk','psychedelic soul','boogie'],
   pop:['pop','pop rock','dance pop','dance-pop','art pop','synthpop','synth pop','hyperpop','electropop','alternative pop','indie pop','dream pop','bedroom pop','chillwave'],
   indie:['indie','indie rock','indie pop','alternative rock','post punk','post-punk','dream pop','shoegaze','psychedelic rock','garage rock','lo fi','lo-fi','folk rock','indie folk','art rock','chillwave'],
   rap:['hip hop','hip-hop','rap','alternative hip hop','conscious hip hop','trap','cloud rap','french hip hop','uk hip hop','boom bap','grime','gangsta rap'],
@@ -16,7 +16,7 @@ const families={
   reggae:['reggae','dub','lovers rock','dancehall','roots reggae'],
 };
 const norm=x=>typeof x==='string'?x.normalize('NFKC').toLowerCase().trim().replace(/[-_]+/g,' ').replace(/\s+/g,' '):'';
-const aliases=new Map([['r&b','rnb'],['r b','rnb'],['alt pop','alternative pop'],['leftfield pop','alternative pop'],['rhythm and blues','rnb'],['hip hop','hip hop'],['synth pop','synthpop']]);
+const aliases=new Map([['r&b','rnb'],['r b','rnb'],['experimental rnb','alternative r&b'],['experimental r&b','alternative r&b'],['alternative rnb','alternative r&b'],['contemporary rnb','contemporary r&b'],['hip-hop/rap','hip hop'],['hip hop/rap','hip hop'],['alt pop','alternative pop'],['leftfield pop','alternative pop'],['rhythm and blues','rnb'],['hip hop','hip hop'],['synth pop','synthpop']]);
 const canonical=x=>aliases.get(norm(x))??norm(x);
 const familyMap=new Map();
 for(const [family,values] of Object.entries(families))for(const raw of values){

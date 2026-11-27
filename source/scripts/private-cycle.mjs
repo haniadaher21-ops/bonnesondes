@@ -20,6 +20,7 @@ import { verifyAlbums, verifyLives, normalized } from './weekly-evidence.mjs';
 import { weeklyShortlist } from './weekly-ranking.mjs';
 import { compareWeeklyWeighted, refreshPublicMetadata } from './weighted-weekly.mjs';
 import { editorialEndorsement } from './recommendation-policy.mjs';
+import {albumStyleFit} from './editorial-work-score.mjs';
 import {publicProviderFetcher} from './provider-policy.mjs';
 import {observationReport,renderObservation} from './observation-report.mjs';
 import { editionForCycle, publicationDecision, publicEdition, rollCandidates } from './automation-policy.mjs';
@@ -112,7 +113,10 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
   }
   const preferredSources=[...profile.favoritePublications,...profile.favoriteRadios,...profile.spotify.map(row=>row.name).filter(Boolean)].map(normalized);
   const preferredArtists=profile.favoriteArtists.map(normalized);
-  const priority=record=>38*Number(preferredArtists.includes(normalized(record.creator)))
+  const privateWeights=new Map((profile.weightedProfile?.artists??[]).map(row=>[normalized(row.artist),row.score]));
+  const priority=record=>120*albumStyleFit(record.tags??[],profile.weightedProfile?.style_preferences??[])
+    + .8*(privateWeights.get(normalized(record.creator))??0)
+    +38*Number(preferredArtists.includes(normalized(record.creator)))
     +8*Number(preferredSources.includes(normalized(record.label)))
     +60*Number(preferredSources.includes(normalized(record.editorialSource)))
     +90*Number(record.editorialKind==='critic-pick')+70*Number(record.editorialKind==='curator-pick')
@@ -214,7 +218,9 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
       saveArtistCache();
       state.weightedObservation={at:date,startsOn,profileRevision:remote.revision,coverage:comparison.coverage,
         before:Object.fromEntries(Object.entries(comparison.before.selected).map(([k,rows])=>[k,rows.map(row=>({id:row.item.id,title:row.item.title}))])),
-        after:Object.fromEntries(Object.entries(comparison.after.selected).map(([k,rows])=>[k,rows.map(row=>({id:row.item.id,title:row.item.title}))])),
+        after:Object.fromEntries(Object.entries(comparison.after.selected).map(([k,rows])=>[k,rows.map(row=>({id:row.item.id,title:row.item.title,score:row.score,editorialWork:row.editorialWork,weightedAffinity:row.weightedAffinity,creator:row.item.creator,url:row.item.url,tags:row.item.tags}))])),
+        albumAudit:comparison.after.rankings.filter(row=>row.item.format==='Album').map(row=>({id:row.item.id,title:row.item.title,score:row.score,editorialWork:row.editorialWork,weightedAffinity:row.weightedAffinity})).slice(0,40),
+        albumRejected:comparison.after.rejected.filter(row=>row.format==='Album').map(({id,title,reason})=>({id,title,reason})).slice(0,50),
         complete:comparison.after.complete,gaps:comparison.after.gaps};
     } catch { state.weightedObservation={at:date,profileRevision:remote.revision,status:'unavailable'}; }
   } else if(!profile.weightedProfile || state.weightedObservation?.profileRevision!==remote.revision){

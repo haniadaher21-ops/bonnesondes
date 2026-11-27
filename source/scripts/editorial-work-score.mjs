@@ -9,6 +9,18 @@ function styleFit(tags,styles){
     .sort((a,b)=>b-a);
   return clamp((scores[0]??0)+.10*(scores[1]??0));
 }
+// Generic tags alone cannot establish close affinity for an unfamiliar album.
+const broadAlbumTags=new Set(['pop','rock','electronic','indie','dance','hip hop','rap','classical','latin']);
+export function albumStyleFit(tags,styles){
+  tags=musicalTags(tags);
+  const precise=tags.filter(t=>!broadAlbumTags.has(t));
+  if(!precise.length)return Math.min(.18,styleFit(tags,styles)*.25);
+  const scores=styles.map(s=>{
+    const agreement=styleAgreement(precise,[s.tag]);
+    return clamp(s.score/100)*({specific:1,family:.45,different:0,unknown:0}[agreement]??0);
+  }).sort((a,b)=>b-a);
+  return clamp((scores[0]??0)+.08*(scores[1]??0));
+}
 // Only episode / release / performance tags and independently enriched track
 // credits. Never substitute the channel or DJ's own artist style for the set.
 export function editorialWorkScore(item,{styles=[],affinity,known,now=new Date(),credits=[],metadata=new Map(),knownArtists=new Set(),tracklistVerified=false}={}){
@@ -17,9 +29,10 @@ export function editorialWorkScore(item,{styles=[],affinity,known,now=new Date()
   const names=[...new Set(credits.map(key).filter(Boolean))];
   const documented=names.flatMap(name=>{
     const row=metadata.get(name);
-    return ['verified','identity'].includes(row?.status)&&musicalTags(row.tags).length?[{name,fit:styleFit(musicalTags(row.tags),styles)}]:[];
+    return ['verified','identity','public-style'].includes(row?.status)&&musicalTags(row.tags).length?[{name,fit:live?albumStyleFit(row.tags,styles):styleFit(musicalTags(row.tags),styles)}]:[];
   });
-  const explicitFit=styleFit(tags,styles);
+  const album=item.format==='Album';
+  const explicitFit=(album||live||!isYouTubeMix(item))?albumStyleFit(tags,styles):styleFit(tags,styles);
   let style=explicitFit;
   if(mix&&tracklistVerified&&documented.length){
     // Coverage-weighted average: one artist does not define a long mix.
@@ -37,7 +50,9 @@ export function editorialWorkScore(item,{styles=[],affinity,known,now=new Date()
   const freshness=Number.isFinite(age)&&age>=0?clamp(1-age/window):0;
   const newFraction=names.length?names.filter(n=>!knownArtists.has(n)).length/names.length:0;
   const supportedNew=mix&&tracklistVerified&&names.length>=2&&(explicitFit>=.35||documented.some(r=>r.fit>=.35));
-  const discovery=mix?(supportedNew?newFraction:0):(!known&&(style>0||affinity?.corroborated>0)?1:0);
-  const points=35*style+25*quality+20*clamp((affinity?.points??0)/30)+10*discovery+10*freshness;
-  return {points:Math.round(points*100)/100,styleEvidence:tags.length>0,styleMatch:style,quality,discovery,freshness,documentedCredits:documented.length,totalCredits:names.length};
+  const artistFit=clamp((affinity?.points??0)/30);
+  const tasteSupported=style>=.33||artistFit>=.20;
+  const discovery=mix?(tasteSupported&&supportedNew?newFraction:0):(!known&&tasteSupported&&(style>=.33||affinity?.corroborated>0)?1:0);
+  const points=mix?40*style+35*artistFit+15*quality+5*discovery+5*freshness:live?40*style+35*artistFit+15*quality+5*discovery+5*freshness:50*style+25*artistFit+15*quality+5*discovery+5*freshness;
+  return {points:Math.round(points*100)/100,styleEvidence:tags.length>0,styleMatch:style,artistFit,tasteSupported,quality,discovery,freshness,documentedCredits:documented.length,totalCredits:names.length};
 }

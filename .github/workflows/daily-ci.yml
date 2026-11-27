@@ -233,3 +233,17 @@ jobs:
           const press=await collectMusicPress(pressSources,{today:new Date().toISOString().slice(0,10)});
           console.log('PRESS_SOURCE_AUDIT '+JSON.stringify(press.status));
           JS
+
+      - name: Vérifier la couverture réelle des nouvelles sélections Bandcamp
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'album-taste-first'
+        run: |
+          npm run build
+          node --input-type=module <<'JS'
+          import {collectMusicPress} from './scripts/music-press.mjs';
+          import {collectEditorialEndorsements} from './scripts/editorial-endorsements.mjs';
+          import sources from './editorial/music-press.json' with {type:'json'};
+          const results=await collectMusicPress(sources.filter(x=>x.id==='bandcamp-essential'),{today:'2026-11-27'});
+          console.log('ESSENTIAL_AUDIT '+JSON.stringify({status:results.status,mentions:results.mentions.slice(0,30).map(x=>({creator:x.creator,title:x.title,headline:x.headline})),records:results.records.map(x=>({title:x.title,creator:x.creator,date:x.releaseDate,tags:x.tags,source:x.sourceUrl}))}));
+          const daily=await collectEditorialEndorsements();
+          console.log('DAILY_ALBUM_AUDIT '+JSON.stringify({status:daily.status,records:daily.records.map(x=>({title:x.title,creator:x.creator,date:x.releaseDate,tags:x.tags,source:x.sourceUrl}))}));
+          JS
