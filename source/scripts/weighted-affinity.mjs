@@ -14,10 +14,11 @@ export function makeWeightedAffinity(profile) {
 
 // The public metadata map is keyed by candidate artist, not private favorites.
 // An ambiguous identity or missing evidence must contribute no indirect bonus.
-export function weightedAffinity(names,index,metadata=new Map()) {
+export function weightedAffinity(names,index,metadata=new Map(),{tracklist=false}={}) {
   const artists = [...new Set(names.map(key).filter(Boolean))];
   if(artists.some(k=>index.blocked.has(k))) return {excluded:true,points:0,artists:artists.length,matches:0,related:0};
-  let sum=0,matches=0,related=0;
+  let sum=0,matches=0,related=0,discoveries=0;
+  const scores=[];
   for(const k of artists) {
     const direct=index.weights.get(k)??0;
     const entry=metadata.get(k);
@@ -30,11 +31,16 @@ export function weightedAffinity(names,index,metadata=new Map()) {
       }
     }
     if(direct>0 && direct>=indirect) matches++;
-    else if(indirect>0) related++;
-    sum+=Math.max(direct,indirect);
+    else if(indirect>0){related++;if(index.known.size&&!index.known.has(k))discoveries++;}
+    const value=Math.max(direct,indirect);sum+=value;scores.push(value);
   }
-  // At most 30 extra points; unknown artists remain neutral and dilute coverage.
-  return {excluded:false,points:Math.round(30*sum/Math.max(1,artists.length)/100*100)/100,artists:artists.length,matches,related};
+  // Albums and lives use mean credit affinity. A long mix rewards up to three
+  // distinct strong matches plus coverage, so a single favorite is useful but
+  // cannot dominate. Unknown artists with no verified relation remain neutral.
+  const mean=sum/Math.max(1,artists.length);
+  const base=tracklist?0.08*scores.sort((a,b)=>b-a).slice(0,3).reduce((a,b)=>a+b,0)+0.06*mean:0.30*mean;
+  const novelty=Math.min(3,discoveries*1.5);
+  return {excluded:false,points:Math.round(Math.min(30,base+novelty)*100)/100,artists:artists.length,matches,related,discoveries};
 }
 
 // Supply only already-eligible baseline candidates with verified artist credits.
