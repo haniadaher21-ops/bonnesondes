@@ -4,7 +4,7 @@ import {makeWeightedAffinity,weightedAffinity,compareWeightedRanking} from '../s
 import {resolveIdentity,parseNeighbors,enrichPublicArtists} from '../scripts/public-artist-metadata.mjs';
 const a='11111111-1111-1111-1111-111111111111',b='22222222-2222-2222-2222-222222222222';
 const index=makeWeightedAffinity({artists:[{artist:'Example A',score:100},{artist:'Blocked',score:99}],excluded_artists:['Blocked']});
-const metadata=new Map([['example b',{status:'verified',mbid:b,neighbors:[{artist:'Example A',mbid:a}]}]]);
+const metadata=new Map([['example b',{status:'verified',mbid:b,tags:['neo soul'],neighbors:[{artist:'Example A',mbid:a,tags:['neo-soul']}]}]]);
 test('direct affinity is bounded, deduplicated and unknown neutral',()=>{
  assert.equal(weightedAffinity(['Example A','example a'],index).points,30);
  assert.equal(weightedAffinity(['Unknown'],index).points,0);
