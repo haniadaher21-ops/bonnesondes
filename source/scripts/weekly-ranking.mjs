@@ -1,9 +1,17 @@
 import { canonicalUrl, editionItems, isoDate, parisDate, sourceUrl, validateEdition } from '../editorial/edition.mjs';
-import { buildArtistAffinity, mixTracklistAffinity } from './tracklist-affinity.mjs';
+import { buildArtistAffinity, mixTracklistAffinity, verifiedTracklistArtists } from './tracklist-affinity.mjs';
 import { spotifyPlaylistId } from './discovery-feeds.mjs';
 import { normalized } from './weekly-evidence.mjs';
 import { excludesJazz, excludesElectronicMix, editorialEndorsement, isFreshMusicMix, isNovaMix, isNtsMix, isYouTubeMix, isFipTape, MIN_YOUTUBE_MIX_VIEWS } from './recommendation-policy.mjs';
 
+import {makeWeightedAffinity, weightedAffinity} from './weighted-affinity.mjs';
+
+// Never treat a curator, channel or DJ as a recording artist.
+export function candidateArtistCredits(item,now){
+  if(['Album','Live session'].includes(item.format))return [item.creator,...(item.artistCredits??[])].filter(x=>typeof x==='string'&&x.trim());
+  if(item.format==='Radio show')return verifiedTracklistArtists(item,now);
+  return []; // no verified playlist track evidence yet
+}
 const DAY = 86400000;
 const addDays = (date, days) => new Date(Date.parse(date) + days * DAY).toISOString().slice(0, 10);
 const groups = [
@@ -152,8 +160,10 @@ function exclusion(item, today, startsOn) {
   if (isoDate(item.date) && item.date > today) return 'Publication encore à venir';
 }
 
-export function weeklyShortlist({ candidates, sources = [], profile, earlier, catalog, startsOn, now = new Date(), tasteWeight = 0.7, tracklistWeight = 1, seen = {} }) {
+export function weeklyShortlist({ candidates, sources = [], profile, earlier, catalog, startsOn, now = new Date(), tasteWeight = 0.7, tracklistWeight = 1, seen = {}, weightedProfile, artistMetadata = new Map(), weightedWeight = 0 }) {
   if (!isoDate(startsOn) || !Number.isFinite(tasteWeight) || tasteWeight < 0 || tasteWeight > 1 || !Number.isFinite(tracklistWeight) || tracklistWeight < 0 || tracklistWeight > 1) throw new Error('Date ou poids de profil invalide.');
+  if(!Number.isFinite(weightedWeight)||weightedWeight<0||weightedWeight>1)throw new Error('Poids affinitaire invalide.');
+  const weightedIndex=weightedProfile&&weightedWeight>0?makeWeightedAffinity(weightedProfile):null;
   const today = parisDate(now);
   const albumWindowStart = addDays(startsOn, -14);
   const known = [...catalog, ...earlier.flatMap(editionItems)];
@@ -170,7 +180,18 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
       continue;
     }
     const previouslySeen = Object.hasOwn(seen, canonicalUrl(item.url));
-    rankings.push({ ...rank(item, profile, today, tasteWeight, previouslySeen, artistIndex, tracklistWeight, now), previouslySeen });
+    const row={...rank(item, profile, today, tasteWeight, previouslySeen, artistIndex, tracklistWeight, now), previouslySeen};
+    if(weightedIndex){
+      const match=weightedAffinity(candidateArtistCredits(item,now),weightedIndex,artistMetadata);
+      if(match.excluded){
+        rejected.push({id:item.id,title:item.title,format:item.format,url:item.url,reason:'Exclusion du profil privé'});
+        continue;
+      }
+      row.weightedAffinity=match;
+      row.score=Math.round((row.score+match.points*weightedWeight)*100)/100;
+      // Do not write private scores or artist matches into item/reason/publicReason.
+    }
+    rankings.push(row);
   }
   rankings.sort((a, b) => b.score - a.score || a.item.id.localeCompare(b.item.id));
   const selected = {};
@@ -232,7 +253,7 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
     .map(group => [group.name, group.count - selected[group.name].length]));
   const errors = validateEdition(draft, earlier, catalog);
   const personalized = [profile.favoriteArtists, profile.favoriteRadios, profile.favoritePublications, profile.spotify,
-    profile.explore, profile.avoid, profile.signals.items, profile.signals.curators].some(group => group.length > 0) && tasteWeight > 0;
+    profile.explore, profile.avoid, profile.signals.items, profile.signals.curators].some(group => group.length > 0) && tasteWeight > 0 || Boolean(weightedIndex && weightedIndex.weights.size);
   return { generatedAt: now.toISOString(), personalized, tasteWeight, complete: errors.length === 0, draft,
     selected, rankings, gaps, errors, rejected, sources };
 }
