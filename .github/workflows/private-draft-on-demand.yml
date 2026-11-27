@@ -1,0 +1,57 @@
+name: Brouillon musical privé à la demande
+on:
+  push:
+    branches: [main]
+    paths: ['source/editorial/private-draft-request.json']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: bonnes-ondes-private-cycle
+  cancel-in-progress: false
+jobs:
+  draft:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: source
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - run: npm ci
+      - run: npm test && npm run typecheck
+      - name: Calculer le brouillon privé sans publication
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          BONNES_ONDES_RUNNER_TOKEN: ${{ secrets.BONNES_ONDES_RUNNER_TOKEN }}
+          YOUTUBE_DATA_API_KEY: ${{ secrets.YOUTUBE_DATA_API_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          AUTO_PUBLISH_ENABLED: 'false'
+          BONNES_ONDES_WEIGHTED_OBSERVE: 'true'
+        run: |
+          node --input-type=module <<'JS'
+          import {privateCycle} from './scripts/private-cycle.mjs';
+          import {readRunnerProfile} from './private-sync/client.mjs';
+          const quiet=()=>{};
+          console.log=quiet; console.warn=quiet; console.error=quiet; console.info=quiet; console.debug=quiet;
+          try {
+            const result=await privateCycle({mode:'observe'});
+            const remote=await readRunnerProfile({url:process.env.SUPABASE_URL,publicKey:process.env.SUPABASE_PUBLISHABLE_KEY},process.env.BONNES_ONDES_RUNNER_TOKEN);
+            const draft=remote.state?.weightedObservation;
+            if(!draft||draft.profileRevision!==remote.revision||draft.status==='unavailable'||draft.at!==remote.state.collections?.at(-1)?.at)throw Error('Missing current comparison');
+            process.stdout.write('Comparaison privée enregistrée dans Supabase. Publication désactivée.\n');
+          }catch{
+            process.stdout.write('Comparaison privée indisponible. Aucune publication.\n');
+            process.exitCode=1;
+          }
+          JS
