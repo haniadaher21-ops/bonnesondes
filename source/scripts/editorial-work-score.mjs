@@ -29,10 +29,10 @@ export function editorialWorkScore(item,{styles=[],affinity,known,now=new Date()
   const names=[...new Set(credits.map(key).filter(Boolean))];
   const documented=names.flatMap(name=>{
     const row=metadata.get(name);
-    return ['verified','identity'].includes(row?.status)&&musicalTags(row.tags).length?[{name,fit:styleFit(musicalTags(row.tags),styles)}]:[];
+    return ['verified','identity'].includes(row?.status)&&musicalTags(row.tags).length?[{name,fit:live?albumStyleFit(row.tags,styles):styleFit(musicalTags(row.tags),styles)}]:[];
   });
   const album=item.format==='Album';
-  const explicitFit=album?albumStyleFit(tags,styles):styleFit(tags,styles);
+  const explicitFit=(album||live)?albumStyleFit(tags,styles):styleFit(tags,styles);
   let style=explicitFit;
   if(mix&&tracklistVerified&&documented.length){
     // Coverage-weighted average: one artist does not define a long mix.
@@ -52,7 +52,7 @@ export function editorialWorkScore(item,{styles=[],affinity,known,now=new Date()
   const supportedNew=mix&&tracklistVerified&&names.length>=2&&(explicitFit>=.35||documented.some(r=>r.fit>=.35));
   const artistFit=clamp((affinity?.points??0)/30);
   const tasteSupported=style>=.33||artistFit>=.20;
-  const discovery=album?(!known&&tasteSupported&&(style>=.33||affinity?.corroborated>0)?1:0):mix?(supportedNew?newFraction:0):(!known&&(style>0||affinity?.corroborated>0)?1:0);
-  const points=album?50*style+25*artistFit+15*quality+5*discovery+5*freshness:35*style+25*quality+20*artistFit+10*discovery+10*freshness;
+  const discovery=mix?(tasteSupported&&supportedNew?newFraction:0):(!known&&tasteSupported&&(style>=.33||affinity?.corroborated>0)?1:0);
+  const points=mix?40*style+35*artistFit+15*quality+5*discovery+5*freshness:live?40*style+35*artistFit+15*quality+5*discovery+5*freshness:50*style+25*artistFit+15*quality+5*discovery+5*freshness;
   return {points:Math.round(points*100)/100,styleEvidence:tags.length>0,styleMatch:style,artistFit,tasteSupported,quality,discovery,freshness,documentedCredits:documented.length,totalCredits:names.length};
 }
