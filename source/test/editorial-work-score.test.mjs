@@ -69,3 +69,10 @@ test('one tagged artist cannot define an entire long mix',()=>{
  assert.ok(result.styleMatch<.05);
  assert.equal(result.documentedCredits,1);
 });
+
+test('NTS page genre extraction is scoped to the matching episode header',async()=>{
+ const {ntsEpisodePageGenres}=await import('../scripts/discovery.mjs');
+ const page='<h1>Example &amp; Friend</h1><a href="/explore/genre/soulrhythm-soul">Soul</a><a href="/explore/genre/rock-folk">Folk</a><h3>Description</h3><h4>You Might Also Like</h4><a href="/explore/genre/housetechno-techno">Techno</a>';
+ assert.deepEqual(ntsEpisodePageGenres(page,'Example & Friend'),['Soul','Folk']);
+ assert.deepEqual(ntsEpisodePageGenres(page,'Other'),[]);
+});
