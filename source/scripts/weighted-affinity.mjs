@@ -1,3 +1,4 @@
+import {styleAgreement,corroboratedNeighborScore} from './style-affinity.mjs';
 // Optional, private scoring layer. No network, logging or persistence here.
 const key = value => typeof value === 'string' ? value.normalize('NFKC').toLowerCase().trim().replace(/\s+/gu,' ') : '';
 const bounded = value => typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.min(100,value)) : 0;
@@ -17,21 +18,25 @@ export function makeWeightedAffinity(profile) {
 export function weightedAffinity(names,index,metadata=new Map(),{tracklist=false}={}) {
   const artists = [...new Set(names.map(key).filter(Boolean))];
   if(artists.some(k=>index.blocked.has(k))) return {excluded:true,points:0,artists:artists.length,matches:0,related:0};
-  let sum=0,matches=0,related=0,discoveries=0;
+  let sum=0,matches=0,related=0,discoveries=0,corroborated=0;
   const scores=[];
   for(const k of artists) {
     const direct=index.weights.get(k)??0;
     const entry=metadata.get(k);
-    let indirect=0;
+    let indirect=0,confirmed=false;
+    const neighbors=[];
     if(entry?.status==='verified' && mbid.test(entry.mbid??'')) {
       for(const row of entry.neighbors??[]) {
         const name=key(row.artist);
         if(!name || !mbid.test(row.mbid??'') || row.mbid===entry.mbid || index.blocked.has(name)) continue;
-        indirect=Math.max(indirect,0.55*(index.weights.get(name)??0));
+        neighbors.push({id:row.mbid,weight:index.weights.get(name)??0,agreement:styleAgreement(entry.tags,row.tags)});
       }
     }
+    const evidence=corroboratedNeighborScore(neighbors);
+    indirect=evidence.value;confirmed=evidence.corroborated;
+    if(confirmed)corroborated++;
     if(direct>0 && direct>=indirect) matches++;
-    else if(indirect>0){related++;if(index.known.size&&!index.known.has(k))discoveries++;}
+    else if(indirect>0){related++;if(confirmed&&index.known.size&&!index.known.has(k))discoveries++;}
     const value=Math.max(direct,indirect);sum+=value;scores.push(value);
   }
   // Albums and lives use mean credit affinity. A long mix rewards up to three
@@ -40,7 +45,7 @@ export function weightedAffinity(names,index,metadata=new Map(),{tracklist=false
   const mean=sum/Math.max(1,artists.length);
   const base=tracklist?0.08*scores.sort((a,b)=>b-a).slice(0,3).reduce((a,b)=>a+b,0)+0.06*mean:0.30*mean;
   const novelty=Math.min(3,discoveries*1.5);
-  return {excluded:false,points:Math.round(Math.min(30,base+novelty)*100)/100,artists:artists.length,matches,related,discoveries};
+  return {excluded:false,points:Math.round(Math.min(30,base+novelty)*100)/100,artists:artists.length,matches,related,discoveries,corroborated};
 }
 
 // Supply only already-eligible baseline candidates with verified artist credits.
