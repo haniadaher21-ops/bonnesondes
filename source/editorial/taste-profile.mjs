@@ -4,8 +4,9 @@ export const tasteProfileKey = 'off-frequency.taste-profile.v1';
  * @typedef {{url: string, name?: string, kind: 'playlist' | 'curator'}} SpotifyPreference
  * @typedef {'Loved' | 'Interesting' | 'Not for me' | 'Worth revisiting'} Reaction
  * @typedef {{id: string, saved: boolean, reaction?: Reaction, creator?: string, source?: string, genre?: string, mood?: string}} Feedback
+ * @typedef {{artists: {artist:string, score:number}[], excluded_artists:string[], known_artist_names:string[]}} WeightedTaste
  * @typedef {{
- *   version: 1, favoriteArtists: string[], explore: string[], avoid: string[],
+ *   version: 1, weightedProfile?: WeightedTaste, favoriteArtists: string[], explore: string[], avoid: string[],
  *   favoriteRadios: string[], favoritePublications: string[], spotify: SpotifyPreference[],
  *   signals: {curators: string[], items: Feedback[]},
  * }} TasteProfile
@@ -79,10 +80,29 @@ function feedback(item) {
   return result;
 }
 
+/** Validate and minimize a derived listening profile. No history, timestamps or track data.
+ * @param {unknown} input @returns {WeightedTaste}
+ */
+export function normalizeWeightedTaste(input){
+  if(!record(input)||!Array.isArray(input.artists)||input.artists.length>200||
+     !Array.isArray(input.excluded_artists)||input.excluded_artists.length>100||
+     !Array.isArray(input.known_artist_names)||input.known_artist_names.length>2000)
+    throw new Error('Profil musical pondéré invalide.');
+  const weights=new Map();
+  for(const row of input.artists){
+    if(!record(row)||typeof row.score!=='number'||!Number.isFinite(row.score)||row.score<0||row.score>100)throw new Error('Score musical invalide.');
+    const artist=label(row.artist), key=artist.toLowerCase();
+    if(artist&&(!weights.has(key)||weights.get(key).score<row.score))weights.set(key,{artist,score:row.score});
+  }
+  const names=/** @param {unknown[]} rows */ rows=>[...new Set(rows.map(label).filter(Boolean))];
+  return {artists:[...weights.values()],excluded_artists:names(input.excluded_artists),known_artist_names:names(input.known_artist_names)};
+}
+
 /** @param {unknown} value @returns {TasteProfile} */
 export function normalizeTasteProfile(value) {
   if (!record(value) || value.version !== 1) throw new Error('Version de profil inconnue.');
   const result = emptyTasteProfile();
+  if(value.weightedProfile!==undefined)result.weightedProfile=normalizeWeightedTaste(value.weightedProfile);
   for (const field of textFields) result[field] = labels(value[field]);
   if (!Array.isArray(value.spotify) || value.spotify.length > 100) throw new Error('La liste des liens Spotify est invalide.');
   const spotify = new Map();
