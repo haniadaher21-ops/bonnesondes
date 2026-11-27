@@ -63,3 +63,78 @@ test('artists beyond rank 200 contribute directly and through verified relations
  assert.equal(weightedAffinity(['Fixture 1569'],idx).excluded,true);
  assert.equal(weightedAffinity(['Unknown'],idx).points,0);
 });
+
+const identityResponse=(name='Example A')=>({count:1,artists:[{id:a,name,score:100}]});
+const relationResponse={[b]:[{similar_artist_mbid:b,similar_artist_name:'Example B'}]};
+const response=(status,data,headers={})=>new Response(JSON.stringify(data),{status,headers});
+function fakeTime(){
+ let time=Date.parse('2026-11-27T12:00:00Z');const waits=[];
+ return {clock:()=>time,pause:async ms=>{waits.push(ms);time+=ms;},waits};
+}
+test('503 recovers with a bounded retry and obeys Retry-After',async()=>{
+ const time=fakeTime(),diagnostics={},urls=[];
+ const fetcher=async url=>{
+   urls.push(url);
+   if(urls.length===1)return response(503,{}, {'Retry-After':'7'});
+   return response(200,url.includes('musicbrainz.org')?identityResponse():relationResponse);
+ };
+ const rows=await enrichPublicArtists(['Example A'],{...time,fetcher,diagnostics});
+ assert.equal(rows.get('example a').status,'verified');
+ assert.equal(diagnostics.retries,1);
+ assert.equal(urls.length,3);
+ assert.ok(time.waits.includes(7000));
+});
+test('persistent outage defers new work but never hides later cached matches',async()=>{
+ const time=fakeTime(),backoff={},diagnostics={},urls=[];
+ const cache=new Map([['cached artist',{status:'verified',mbid:a,neighbors:[],checkedAt:new Date(time.clock()).toISOString()}]]);
+ const opts={...time,backoff,diagnostics,cache,fetcher:async url=>{urls.push(url);return response(503,{}, {'Retry-After':'120'});}};
+ const rows=await enrichPublicArtists(['Example A','Example B','Cached Artist'],opts);
+ assert.equal(urls.length,1);
+ assert.equal(rows.get('cached artist').status,'verified');
+ assert.equal(diagnostics.cacheHits,1);
+ assert.ok(Date.parse(backoff['musicbrainz.org'])>time.clock());
+ await enrichPublicArtists(['Example C'],opts);
+ assert.equal(urls.length,1);
+});
+test('verified identity survives ListenBrainz outage and is reused after cooldown',async()=>{
+ const time=fakeTime(),backoff={},cache=new Map(),urls=[];
+ const opts={...time,backoff,cache,fetcher:async url=>{
+  urls.push(url);
+  return url.includes('musicbrainz.org')?response(200,identityResponse()):response(429,{}, {'Retry-After':'120'});
+ }};
+ const first=await enrichPublicArtists(['Example A'],opts);
+ assert.equal(first.get('example a').status,'identity');
+ assert.equal(cache.get('example a').mbid,a);
+ await time.pause(16*60000);
+ const second=await enrichPublicArtists(['Example A'],{...opts,fetcher:async url=>{urls.push(url);return response(200,relationResponse);}});
+ assert.equal(second.get('example a').status,'verified');
+ assert.equal(urls.filter(u=>u.includes('musicbrainz.org')).length,1);
+ assert.equal(urls.length,3);
+});
+test('expired relations remain useful within the bounded stale window during outage',async()=>{
+ const time=fakeTime(),cache=new Map([['example a',{status:'verified',mbid:a,neighbors:[{artist:'Example B',mbid:b}],checkedAt:new Date(time.clock()-40*86400000).toISOString()}]]);
+ const diagnostics={};
+ const rows=await enrichPublicArtists(['Example A'],{...time,cache,diagnostics,fetcher:async()=>response(503,{}, {'Retry-After':'60'})});
+ assert.equal(rows.get('example a').status,'verified');
+ assert.equal(diagnostics.stale,1);
+ assert.equal(cache.get('example a').neighbors.length,1);
+});
+test('zero remaining rate quota defers later calls without discarding successful result',async()=>{
+ const time=fakeTime(),backoff={},urls=[];
+ const rows=await enrichPublicArtists(['Example A','Example C'],{...time,backoff,fetcher:async url=>{
+  urls.push(url);
+  return url.includes('musicbrainz.org')?response(200,identityResponse()):response(200,relationResponse,{'X-RateLimit-Remaining':'0','X-RateLimit-Reset-In':'120'});
+ }});
+ assert.equal(rows.get('example a').status,'verified');
+ assert.equal(rows.get('example c').status,'unavailable');
+ assert.equal(urls.length,2);
+ assert.ok(Date.parse(backoff['api.listenbrainz.org'])>=time.clock()+120000);
+});
+test('lookup budget does not hide cache hits or repeat known negative identities',async()=>{
+ const time=fakeTime(),cache=new Map(),urls=[];
+ const opts={...time,cache,fetcher:async url=>{urls.push(url);return response(200,{count:0,artists:[]});}};
+ await enrichPublicArtists(['Unknown'],opts);
+ const rows=await enrichPublicArtists(['New','Unknown'],{...opts,limit:0});
+ assert.equal(rows.get('unknown').status,'ambiguous_or_missing');
+ assert.equal(urls.length,1);
+});
