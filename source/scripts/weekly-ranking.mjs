@@ -194,7 +194,13 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
       if(item.format==='Album'&&weightedProfile.style_preferences?.length){
         const knownArtist=candidateArtistCredits(item,now).some(name=>weightedIndex.known.has(name.normalize('NFKC').toLowerCase().trim().replace(/\s+/gu,' ')));
         row.editorialWork=editorialWorkScore(item,{styles:weightedProfile.style_preferences,affinity:match,known:knownArtist,now});
-        row.score=Math.round((row.score*(1-weightedWeight)+row.editorialWork.points*weightedWeight)*100)/100;
+        // Explicit negative feedback and avoidance remain effective; the new
+        // editorial score must not quietly override the user's manual choices.
+        const feedback=profile.signals.items.find(entry=>entry.id===item.id);
+        const avoid=matchingValue(profile.avoid,[item.genre,item.mood,...(item.tags??[])]);
+        const adjustment=(feedback?.reaction==='Not for me'?-40:feedback?.reaction==='Loved'?12:0)-(avoid?35:0);
+        const workPoints=row.editorialWork.points+adjustment;
+        row.score=Math.round((row.score*(1-weightedWeight)+workPoints*weightedWeight)*100)/100;
       }
       // Do not write private scores or artist matches into item/reason/publicReason.
     }
