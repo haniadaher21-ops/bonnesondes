@@ -17,7 +17,7 @@ export function editionForCycle(at) {
   return new Date(Date.parse(date) + delta * DAY).toISOString().slice(0,10);
 }
 
-export function publicationDecision({at, startsOn, editions, complete, enabled, observations = [], fingerprint}) {
+export function publicationDecision({at, startsOn, editions, complete, enabled, observations = [], fingerprint, weightedLaunchApproved = false}) {
   const date = parisDate(at);
   if (editions.some(edition => edition.startsOn === startsOn)) return {status:'noop', reason:'Édition déjà enregistrée'};
   if (!complete) return {status:'blocked',reason:'Preuves ou quotas insuffisants'};
@@ -26,6 +26,9 @@ export function publicationDecision({at, startsOn, editions, complete, enabled, 
   const target = editionForCycle(at);
   const sameCycle = startsOn === target && (date === startsOn || (new Date(date + 'T12:00:00Z').getUTCDay() === 0 && hour >= 18));
   if (!sameCycle) return {status:'blocked',reason:'Hors du cycle dimanche 18 h – lundi'};
+  // The owner explicitly approved the weighted launch. All per-release checks
+  // and the Sunday/Monday window still apply; legacy mode keeps its two-week gate.
+  if(weightedLaunchApproved===true)return {status:'publish',reason:'Lancement pondéré approuvé, contrôles satisfaits'};
   const recent = observations.filter(run => run.complete === true && run.fingerprint === fingerprint
     && Date.parse(run.at) >= at.getTime() - 14*DAY && Date.parse(run.at) <= at.getTime());
   const successful = new Set(recent.map(run => run.id));
@@ -59,8 +62,8 @@ export function publicEdition(report, earlier, catalog) {
   const draft = {...report.draft};
   draft.coverImageId = nextEditionImageId(earlier);
   const artists = new Set();
-  if(draft.mixPolicy==='nts-nova-youtube-v1' && (draft.mixes.length!==3+draft.mixes.filter(isFipTape).length || draft.mixes.filter(isFipTape).length>1
-    || draft.mixes.filter(isNtsMix).length!==1||draft.mixes.filter(isNovaMix).length!==1
+  if(['nts-nova-youtube-v1','nts-youtube-nova-optional-v2'].includes(draft.mixPolicy) && (draft.mixes.length!==2+draft.mixes.filter(isNovaMix).length+draft.mixes.filter(isFipTape).length || draft.mixes.filter(isFipTape).length>1
+    || draft.mixes.filter(isNtsMix).length!==1||(draft.mixPolicy==='nts-nova-youtube-v1'?draft.mixes.filter(isNovaMix).length!==1:draft.mixes.filter(isNovaMix).length>1)
     || draft.mixes.filter(isYouTubeMix).length!==1))
     throw new Error('Sélection obligatoire : un NTS, un Nova et un YouTube crédible.');
   for (const section of ['albums','mixes','playlists','live']) {
