@@ -151,7 +151,7 @@ export function validateEdition(edition, earlier = [], catalog = []) {
         && ['www.radiofrance.fr','radiofrance.fr'].includes(url?.hostname)
         && /^\/fip\/podcasts\/fip-tape\/la-mixtape-de-[a-z0-9-]+-\d+\/?$/.test(url.pathname);
     });
-    if(mixes.length!==2+nova.length+fipTapes.length||fipTapes.length>1) errors.push('Les compléments aux mixes NTS, Nova et YouTube doivent être des épisodes FIP Tape vérifiés.');
+    if(optionalNova?(mixes.length!==2+nova.length+fipTapes.length||fipTapes.length>1):mixes.length!==3+fipTapes.length) errors.push('Les compléments aux mixes NTS, Nova et YouTube doivent être des épisodes FIP Tape vérifiés.');
     if(optionalNova?nova.length>1:nova.length!==1)errors.push(optionalNova?'Sélection Radio Nova invalide.':'Un vrai DJ set Radio Nova est obligatoire.');
     if(youtube.length!==1)errors.push('Un mix YouTube à audience vérifiée est obligatoire.');
     if(mixes.filter(item=>isNts(sourceUrl(item?.url))).length!==1)errors.push('Un unique mix NTS est obligatoire.');
