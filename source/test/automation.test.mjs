@@ -106,3 +106,13 @@ test('ECM uses the explicitly marked original release date rather than the page 
   const record=ecmRelease(html,'https://ecmrecords.com/product/a-record/');
   assert.equal(record.releaseDate,'2026-11-13');
 });
+
+test('weighted launch approval never bypasses date, opt-in, evidence or duplicate guards',()=>{
+ const args={at:new Date('2026-11-29T17:30:00Z'),startsOn:'2026-11-30',editions:[],complete:true,enabled:'true',weightedLaunchApproved:true};
+ assert.equal(publicationDecision(args).status,'publish');
+ assert.equal(publicationDecision({...args,enabled:'false'}).status,'observe');
+ assert.equal(publicationDecision({...args,complete:false}).status,'blocked');
+ assert.equal(publicationDecision({...args,at:new Date('2026-11-28T17:30:00Z')}).status,'blocked');
+ assert.equal(publicationDecision({...args,editions:[{startsOn:args.startsOn}]}).status,'noop');
+ assert.equal(publicationDecision({...args,weightedLaunchApproved:false}).status,'blocked');
+});

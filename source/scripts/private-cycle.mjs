@@ -207,17 +207,22 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     : []);
   const rankedCandidates=candidates.filter(item=>!(item.mixKind==='curated-mix'
     && previewExcludedIds.has(item.embed?.id))).map(item=>liveById.get(item.id)??item);
-  const rankingOptions={candidates:rankedCandidates,sources:collection.sources,profile,earlier,catalog:legacyItems,startsOn,now,seen:Object.fromEntries(previous.map(item=>[canonicalUrl(item.url),item.firstSeenAt]))};
-  const report = weeklyShortlist(rankingOptions);
+  const weightedRelease=env.BONNES_ONDES_WEIGHTED_RELEASE==='true';
+  const rankingOptions={optionalNova:weightedRelease,candidates:rankedCandidates,sources:collection.sources,profile,earlier,catalog:legacyItems,startsOn,now,seen:Object.fromEntries(previous.map(item=>[canonicalUrl(item.url),item.firstSeenAt]))};
+  let report = weeklyShortlist(rankingOptions);
+  if(weightedRelease&&(!profile.weightedProfile?.artists?.length||!profile.weightedProfile?.style_preferences?.length)){
+    await saveState();return {status:'blocked',reason:'Profil pondéré indisponible'};
+  }
   // Shadow comparison only: never replace the public report, its logs, its
   // artifacts, or the publication decision with the personal weighted ranking.
   // Limit provider requests to public configured sources and public release leads,
   // not followed-only sources or profile-driven YouTube searches.
-  if(profile.weightedProfile && mode==='observe' && env.BONNES_ONDES_WEIGHTED_OBSERVE==='true'){
+  if(profile.weightedProfile && (weightedRelease || (mode==='observe' && env.BONNES_ONDES_WEIGHTED_OBSERVE==='true'))){
     const publicCandidates=publicCorpus(rankedCandidates);
     try {
       const comparison=await compareWeeklyWeighted({options:rankingOptions,weightedProfile:profile.weightedProfile,publicCandidates,cache:artistCache,backoff:artistBackoff,fetcher,limit:12});
       saveArtistCache();
+      if(weightedRelease)report=comparison.after;
       state.weightedObservation={at:date,startsOn,profileRevision:remote.revision,coverage:comparison.coverage,
         before:Object.fromEntries(Object.entries(comparison.before.selected).map(([k,rows])=>[k,rows.map(row=>({id:row.item.id,title:row.item.title}))])),
         after:Object.fromEntries(Object.entries(comparison.after.selected).map(([k,rows])=>[k,rows.map(row=>({id:row.item.id,title:row.item.title,score:row.score,editorialWork:row.editorialWork,weightedAffinity:row.weightedAffinity,creator:row.item.creator,url:row.item.url,tags:row.item.tags}))])),
@@ -227,7 +232,7 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
         liveAudit:comparison.after.rankings.filter(row=>row.item.format==='Live session').slice(0,40).map(row=>({id:row.item.id,title:row.item.title,date:row.item.date,score:row.score,editorialWork:row.editorialWork,weightedAffinity:row.weightedAffinity})),
         mixAudit:comparison.after.rankings.filter(row=>row.item.format==='Radio show').slice(0,60).map(row=>({id:row.item.id,title:row.item.title,score:row.score,editorialWork:row.editorialWork,weightedAffinity:row.weightedAffinity})),
         complete:comparison.after.complete,gaps:comparison.after.gaps};
-    } catch { state.weightedObservation={at:date,profileRevision:remote.revision,status:'unavailable'}; }
+    } catch { state.weightedObservation={at:date,profileRevision:remote.revision,status:'unavailable'}; if(weightedRelease){await saveState();return {status:'blocked',reason:'Classement pondéré indisponible'};} }
   } else if(!profile.weightedProfile || state.weightedObservation?.profileRevision!==remote.revision){
     delete state.weightedObservation;
   }
@@ -257,7 +262,7 @@ export async function privateCycle({mode = 'observe', env = process.env, now = n
     const result=observationReport(report,{profileRevision:remote.revision,profileUpdatedAt:remote.profileUpdatedAt,
       profileSignalCounts,comparison,tracklistComparison,incremental,albumEvidence:evidence,catalogues:[...catalogues.status,...endorsements.status,...press.status],sources:collection.sources,liveStatus:lives.status,
       youtubeMixes:youtubeMixSummary,build});
-    if(env.BONNES_ONDES_OBSERVATION_DIR) {
+    if(env.BONNES_ONDES_OBSERVATION_DIR && !weightedRelease) {
       await mkdir(env.BONNES_ONDES_OBSERVATION_DIR,{recursive:true});
       await writeFile(join(env.BONNES_ONDES_OBSERVATION_DIR,'recommendations.json'),JSON.stringify(result,null,2)+'\n',{mode:0o600});
       await writeFile(join(env.BONNES_ONDES_OBSERVATION_DIR,'recommendations.md'),renderObservation(result),{mode:0o600});
@@ -371,7 +376,8 @@ export default function PreviewEdition() {
     if (!html.includes('/bonnesondes/_next/')) throw new Error('Chemins statiques invalides.');
     await writeReport('passed');
     const decision = publicationDecision({at:now,startsOn,editions,complete:true,
-      enabled:mode === 'publish' ? env.AUTO_PUBLISH_ENABLED : 'false',observations:state.dryRuns,fingerprint});
+      enabled:mode === 'publish' ? env.AUTO_PUBLISH_ENABLED : 'false',observations:state.dryRuns,fingerprint,
+      weightedLaunchApproved:weightedRelease&&env.BONNES_ONDES_WEIGHTED_LAUNCH_APPROVED==='true'});
     if (mode === 'observe') {
       if (env.BONNES_ONDES_PREVIEW_DIR) {
         await readFile(join(staging,'out/previsualisation/2026-11-23/index.html'),'utf8');

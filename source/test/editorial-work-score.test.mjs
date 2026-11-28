@@ -107,3 +107,13 @@ test('public artist catalogue style can qualify a live without YouTube genre tag
  const result=editorialWorkScore(item,{styles:[{tag:'alternative r&b',score:85}],now,credits:[artist],metadata:new Map([['new artist',{status:'public-style',tags:['alternative r&b']}]]),known:false});
  assert.ok(result.tasteSupported);assert.equal(result.documentedCredits,1);assert.ok(result.styleMatch>=.5&&result.styleMatch<.6);
 });
+
+test('Nova may be absent only in the explicitly opted-in weighted release, all other quotas remain',()=>{
+ const args={candidates:[],profile:emptyTasteProfile(),earlier:[],catalog:[],startsOn:'2026-11-30',now};
+ const profile={artists:[{artist:'Example Artist',score:85}],excluded_artists:[],known_artist_names:['Example Artist'],style_preferences:styles};
+ const old=weeklyShortlist({...args,optionalNova:true});
+ const weighted=weeklyShortlist({...args,weightedProfile:profile,weightedWeight:1,optionalNova:true});
+ assert.equal(old.gaps.nova,1);assert.equal(old.draft.mixPolicy,'nts-nova-youtube-v1');
+ assert.equal(weighted.gaps.nova,undefined);assert.equal(weighted.draft.mixPolicy,'nts-youtube-nova-optional-v2');
+ assert.equal(weighted.gaps.youtube,1);assert.equal(weighted.gaps.nts,1);assert.equal(weighted.gaps.live,3);assert.equal(weighted.gaps.albums,3);assert.equal(weighted.complete,false);
+});

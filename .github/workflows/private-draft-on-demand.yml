@@ -38,6 +38,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
           AUTO_PUBLISH_ENABLED: 'false'
           BONNES_ONDES_WEIGHTED_OBSERVE: 'true'
+          BONNES_ONDES_WEIGHTED_RELEASE: 'true'
         run: |
           node --input-type=module <<'JS'
           import {privateCycle} from './scripts/private-cycle.mjs';
@@ -48,8 +49,8 @@ jobs:
             const result=await privateCycle({mode:'observe'});
             const remote=await readRunnerProfile({url:process.env.SUPABASE_URL,publicKey:process.env.SUPABASE_PUBLISHABLE_KEY},process.env.BONNES_ONDES_RUNNER_TOKEN);
             const draft=remote.state?.weightedObservation;
-            if(!draft||draft.profileRevision!==remote.revision||draft.status==='unavailable'||draft.at!==remote.state.collections?.at(-1)?.at)throw Error('Missing current comparison');
-            process.stdout.write('Comparaison privée enregistrée dans Supabase. Publication désactivée.\n');
+            if(result.status!=='observe'||result.complete!==true||!draft||draft.complete!==true||draft.profileRevision!==remote.revision||draft.status==='unavailable'||draft.at!==remote.state.collections?.at(-1)?.at)throw Error('Missing current comparison');
+            process.stdout.write('Brouillon pondéré complet et build vérifié, enregistré en privé. Publication désactivée.\n');
           }catch{
             process.stdout.write('Comparaison privée indisponible. Aucune publication.\n');
             process.exitCode=1;

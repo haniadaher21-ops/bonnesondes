@@ -57,3 +57,17 @@ test('edition 002 is manually published today with the exact verified preview co
   assert.equal(selectEdition([legacyEdition,item],new Date('2026-11-22T21:00:00Z')),item);
   assert.equal(selectEdition([legacyEdition,item],new Date('2026-11-23T07:00:00Z')),item);
 });
+
+test('weighted edition can omit Nova without accepting arbitrary mixes or losing YouTube',()=>{
+ const original=editions.find(edition=>edition.number==='002');
+ const copy=structuredClone(original);
+ copy.mixPolicy='nts-youtube-nova-optional-v2';
+ copy.mixes=[original.mixes[0],original.mixes[2],original.mixes[3]];
+ assert.deepEqual(validateEdition(copy,[legacyEdition],legacyItems),[]);
+ const noYoutube={...copy,mixes:[copy.mixes[0],copy.mixes[2]]};
+ assert.match(validateEdition(noYoutube,[legacyEdition],legacyItems).join('\n'),/mix YouTube/);
+ const bad={...copy,mixes:[...copy.mixes,{...copy.mixes[2],id:'unknown',url:'https://example.org/mix'}]};
+ assert.match(validateEdition(bad,[legacyEdition],legacyItems).join('\n'),/FIP Tape vérifiés/);
+ const strict={...copy,mixPolicy:'nts-nova-youtube-v1'};
+ assert.match(validateEdition(strict,[legacyEdition],legacyItems).join('\n'),/Radio Nova/);
+});
