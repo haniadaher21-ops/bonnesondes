@@ -162,10 +162,11 @@ function exclusion(item, today, startsOn) {
   if (isoDate(item.date) && item.date > today) return 'Publication encore à venir';
 }
 
-export function weeklyShortlist({ candidates, sources = [], profile, earlier, catalog, startsOn, now = new Date(), tasteWeight = 0.7, tracklistWeight = 1, seen = {}, weightedProfile, artistMetadata = new Map(), weightedWeight = 0 }) {
+export function weeklyShortlist({ candidates, sources = [], profile, earlier, catalog, startsOn, now = new Date(), tasteWeight = 0.7, tracklistWeight = 1, seen = {}, weightedProfile, artistMetadata = new Map(), weightedWeight = 0, optionalNova = false }) {
   if (!isoDate(startsOn) || !Number.isFinite(tasteWeight) || tasteWeight < 0 || tasteWeight > 1 || !Number.isFinite(tracklistWeight) || tracklistWeight < 0 || tracklistWeight > 1) throw new Error('Date ou poids de profil invalide.');
   if(!Number.isFinite(weightedWeight)||weightedWeight<0||weightedWeight>1)throw new Error('Poids affinitaire invalide.');
   const weightedIndex=weightedProfile&&weightedWeight>0?makeWeightedAffinity(weightedProfile):null;
+  const allowMissingNova=optionalNova===true&&weightedIndex&&weightedWeight===1&&weightedProfile.style_preferences?.length>0;
   const today = parisDate(now);
   const albumWindowStart = addDays(startsOn, -14);
   const known = [...catalog, ...earlier.flatMap(editionItems)];
@@ -266,10 +267,10 @@ export function weeklyShortlist({ candidates, sources = [], profile, earlier, ca
   const draft = {
     number: String(Number(previous?.number ?? 1) + 1).padStart(3, '0'),
     startsOn, label: 'semaine du ' + startsOn, albumWindowStart, featuredId: picks('nts')[0]?.id,
-    mixPolicy:'nts-nova-youtube-v1',
+    mixPolicy:allowMissingNova?'nts-youtube-nova-optional-v2':'nts-nova-youtube-v1',
     albums: picks('albums'), mixes: [...picks('nts'), ...picks('nova'), ...picks('youtube'), ...picks('fip')], playlists: picks('playlists'), live: picks('live'),
   };
-  const gaps = Object.fromEntries(groups.filter(group => selected[group.name].length < group.count)
+  const gaps = Object.fromEntries(groups.filter(group => !(allowMissingNova&&group.name==='nova')&&selected[group.name].length < group.count)
     .map(group => [group.name, group.count - selected[group.name].length]));
   const errors = validateEdition(draft, earlier, catalog);
   const personalized = [profile.favoriteArtists, profile.favoriteRadios, profile.favoritePublications, profile.spotify,
