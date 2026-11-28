@@ -1,5 +1,10 @@
 name: Bonnes Ondes · Observation et publication
 on:
+  schedule:
+    - cron: '30 18 * * 0'
+      timezone: Europe/Paris
+    - cron: '17 0 * * 1'
+      timezone: Europe/Paris
   workflow_dispatch:
     inputs:
       mode:
@@ -14,9 +19,9 @@ concurrency:
   cancel-in-progress: false
 jobs:
   cycle:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/main' && vars.WEIGHTED_PUBLICATION_PAUSED != 'true' && (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule')
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     permissions:
       contents: write
       pages: write
@@ -38,7 +43,7 @@ jobs:
         id: prepare
         working-directory: source
         env:
-          REQUEST_MODE: ${{ inputs.mode }}
+          REQUEST_MODE: ${{ github.event_name == 'schedule' && 'publish' || inputs.mode }}
           EVENT_NAME: ${{ github.event_name }}
           SCHEDULE: ${{ github.event.schedule }}
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
@@ -47,16 +52,33 @@ jobs:
           YOUTUBE_DATA_API_KEY: ${{ secrets.YOUTUBE_DATA_API_KEY }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
-          AUTO_PUBLISH_ENABLED: ${{ vars.AUTO_PUBLISH_ENABLED }}
+          AUTO_PUBLISH_ENABLED: 'true'
+          BONNES_ONDES_WEIGHTED_RELEASE: 'true'
+          BONNES_ONDES_WEIGHTED_LAUNCH_APPROVED: 'true'
           BONNES_ONDES_RELEASE_DIR: ${{ runner.temp }}/bonnes-ondes-release
         shell: bash
         run: |
           set -euo pipefail
           mode="$REQUEST_MODE"
           if [ -z "$mode" ]; then mode=observe; fi
-          node scripts/private-cycle.mjs "$mode"
+          REQUEST_MODE="$mode" node --input-type=module <<'JS'
+          import {privateCycle} from './scripts/private-cycle.mjs';
+          import {appendFile} from 'node:fs/promises';
+          const quiet=()=>{};
+          console.log=quiet; console.warn=quiet; console.error=quiet; console.info=quiet; console.debug=quiet;
+          try {
+            const result=await privateCycle({mode:process.env.REQUEST_MODE});
+            const status=['ready','noop','observe','collected','blocked'].includes(result.status)?result.status:'blocked';
+            await appendFile(process.env.GITHUB_OUTPUT,'status='+status+'\n');
+            process.stdout.write('Cycle pondéré : '+status+'\n');
+            if(status==='blocked'||(process.env.REQUEST_MODE==='publish'&&!['ready','noop'].includes(status)))process.exitCode=1;
+          }catch{
+            process.stdout.write('Cycle pondéré interrompu ; aucune nouvelle release.\n');
+            process.exitCode=1;
+          }
+          JS
       - name: Enregistrer la release complète
-        if: steps.prepare.outputs.status == 'ready' && vars.AUTO_PUBLISH_ENABLED == 'true' && github.ref == 'refs/heads/main'
+        if: steps.prepare.outputs.status == 'ready' && vars.WEIGHTED_PUBLICATION_PAUSED != 'true' && github.ref == 'refs/heads/main'
         env:
           RELEASE_DIR: ${{ runner.temp }}/bonnes-ondes-release
         shell: bash
@@ -68,15 +90,14 @@ jobs:
           # Retain previous hashed assets for cached pages.
           cp -R "$RELEASE_DIR"/. .
           touch .nojekyll
-          git add source/editorial/editions.json index.html index.txt __next*.txt _next art .nojekyll
-          git add 404.html 404 _not-found
+          git add -A -- source/editorial/editions.json index.html index.txt __next*.txt _next art .nojekyll 404.html 404 _not-found edition-images icon.svg bonnes-ondes-mark.svg
           if git diff --cached --quiet; then exit 0; fi
           git config user.name 'Bonnes Ondes'
           git config user.email 'actions@users.noreply.github.com'
           git commit -m 'Publier la prochaine édition Bonnes Ondes'
           git push origin HEAD:main
       - name: Déclencher Pages pour le commit de release
-        if: steps.prepare.outputs.status == 'ready' && vars.AUTO_PUBLISH_ENABLED == 'true' && github.ref == 'refs/heads/main'
+        if: steps.prepare.outputs.status == 'ready' && vars.WEIGHTED_PUBLICATION_PAUSED != 'true' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
