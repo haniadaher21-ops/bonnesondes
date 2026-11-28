@@ -31,7 +31,7 @@ jobs:
           cache: npm
           cache-dependency-path: source/package-lock.json
       - run: npm ci
-      - run: node scripts/private-cycle.mjs observe
+      - name: Vérifier le brouillon pondéré en privé
         env:
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
@@ -40,18 +40,24 @@ jobs:
           BONNES_ONDES_WEIGHTED_OBSERVE: 'true'
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
-          BONNES_ONDES_OBSERVATION_DIR: .discovery/weekly
+          BONNES_ONDES_WEIGHTED_RELEASE: 'true'
           YOUTUBE_DATA_API_KEY: ${{ secrets.YOUTUBE_DATA_API_KEY }}
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: bonnes-ondes-brouillon-hebdomadaire
-          path: source/.discovery/weekly/
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 7
+        run: |
+          node --input-type=module <<'JS'
+          import {privateCycle} from './scripts/private-cycle.mjs';
+          const quiet=()=>{};
+          console.log=quiet; console.warn=quiet; console.error=quiet; console.info=quiet; console.debug=quiet;
+          try {
+            const result=await privateCycle({mode:'observe'});
+            if(result.status!=='observe'||result.complete!==true)throw Error('Incomplete draft');
+            process.stdout.write('Brouillon pondéré complet, build validé en privé.\n');
+          }catch{
+            process.stdout.write('Brouillon pondéré bloqué ; aucune publication.\n');
+            process.exitCode=1;
+          }
+          JS
       - name: Signaler un brouillon bloqué
         if: failure()
         run: |
           echo '::error::Brouillon hebdomadaire incomplet ou indisponible ; aucune édition publiée.'
-          echo 'Le brouillon n’a pas passé tous les contrôles. Voir les logs et l’artefact, si disponible.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Le brouillon n’a pas passé tous les contrôles. Les détails restent dans le brouillon privé.' >> "$GITHUB_STEP_SUMMARY"
