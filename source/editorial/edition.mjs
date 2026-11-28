@@ -73,7 +73,8 @@ export function validateEdition(edition, earlier = [], catalog = []) {
       continue;
     }
     const strictMixLineup=edition.mixPolicy==='nts-nova-youtube-v1';
-    const [min, max] = { albums: [3, 3], mixes: strictMixLineup ? [3,5] : [2, Infinity], playlists: [1, 1], live: [3, Infinity] }[group];
+    const optionalNovaLineup=edition.mixPolicy==='nts-youtube-nova-optional-v2';
+    const [min, max] = { albums: [3, 3], mixes: strictMixLineup ? [3,5] : optionalNovaLineup?[2,4]:[2, Infinity], playlists: [1, 1], live: [3, Infinity] }[group];
     if (items.length < min || items.length > max) errors.push('Quota non respecté pour ' + group + '.');
     for (const item of items) {
       if (!item || item.format !== format || !text(item.id) || !text(item.title) || !text(item.source) || !text(item.reason)) {
@@ -122,7 +123,8 @@ export function validateEdition(edition, earlier = [], catalog = []) {
   }
   const mixes = Array.isArray(edition.mixes) ? edition.mixes : [];
   if (!mixes.some(item => isNts(sourceUrl(item?.url)))) errors.push('Un épisode NTS est obligatoire.');
-  if (edition.mixPolicy === 'nts-nova-youtube-v1') {
+  if (['nts-nova-youtube-v1','nts-youtube-nova-optional-v2'].includes(edition.mixPolicy)) {
+    const optionalNova=edition.mixPolicy==='nts-youtube-nova-optional-v2';
     const novaPaths={
       'nova-danse':'/radio-nova-nova-danse/',
       'nova-club-mixes':'/radio-nova-nova-club/',
@@ -149,8 +151,8 @@ export function validateEdition(edition, earlier = [], catalog = []) {
         && ['www.radiofrance.fr','radiofrance.fr'].includes(url?.hostname)
         && /^\/fip\/podcasts\/fip-tape\/la-mixtape-de-[a-z0-9-]+-\d+\/?$/.test(url.pathname);
     });
-    if(mixes.length!==3+fipTapes.length) errors.push('Les compléments aux mixes NTS, Nova et YouTube doivent être des épisodes FIP Tape vérifiés.');
-    if(nova.length!==1)errors.push('Un vrai DJ set Radio Nova est obligatoire.');
+    if(mixes.length!==2+nova.length+fipTapes.length||fipTapes.length>1) errors.push('Les compléments aux mixes NTS, Nova et YouTube doivent être des épisodes FIP Tape vérifiés.');
+    if(optionalNova?nova.length>1:nova.length!==1)errors.push('Sélection Radio Nova invalide.');
     if(youtube.length!==1)errors.push('Un mix YouTube à audience vérifiée est obligatoire.');
     if(mixes.filter(item=>isNts(sourceUrl(item?.url))).length!==1)errors.push('Un unique mix NTS est obligatoire.');
   }
